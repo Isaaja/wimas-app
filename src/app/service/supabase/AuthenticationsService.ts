@@ -1,21 +1,35 @@
-import AuthenticationsError from "../../exceptions/AuthenticationsError";
+import InvariantError from "@/app/exceptions/InvariantError";
 import { prisma } from "@/app/lib/prismaClient";
-import bcrypt from "bcryptjs";
 
-export async function loginUser(username: string, password: string) {
-  const user = await prisma.user.findUnique({
-    where: { username },
+export async function addRefreshToken(token: string, userId: number) {
+  const refreshToken = await prisma.authentication.create({
+    data: {
+      token,
+      user: {
+        connect: { user_id: userId },
+      },
+    },
   });
 
-  if (!user) {
-    throw new AuthenticationsError("User not found");
+  return refreshToken;
+}
+
+export async function verifyRefreshToken(token: string) {
+  const verifyRefreshToken = await prisma.authentication.findUnique({
+    where: {
+      token,
+    },
+  });
+
+  if (!verifyRefreshToken) {
+    throw new InvariantError("Refresh token tidak valid");
   }
 
-  const validPassword = await bcrypt.compare(password, user.password);
-  if (!validPassword) {
-    throw new AuthenticationsError("Invalid password");
-  }
+  return verifyRefreshToken;
+}
 
-  const { password: _, ...userSafe } = user;
-  return userSafe;
+export async function deleteRefreshToken(token: string) {
+  await prisma.authentication.delete({
+    where: { token },
+  });
 }
