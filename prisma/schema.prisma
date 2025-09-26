@@ -14,18 +14,112 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Post {
-  id        Int     @id @default(autoincrement())
-  title     String
-  content   String?
-  published Boolean @default(false)
-  author    User?   @relation(fields: [authorId], references: [id])
-  authorId  Int?
+enum Role {
+  SUPERADMIN
+  ADMIN
+  BORROWER
+}
+
+enum LoanStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  RETURNED
 }
 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
-  posts Post[]
+  user_id    Int     @id @default(autoincrement())
+  name       String
+  username   String  @unique
+  password   String
+  role       Role    @default(BORROWER)
+  status     String? // optional: e.g. active/inactive
+
+  loans      Loan[]      @relation("UserLoans")
+  reports    Report[]    @relation("UserReports")
+
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}
+
+model Category {
+  category_id   Int    @id @default(autoincrement())
+  category_name String
+
+  products      Product[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Product {
+  product_id   Int      @id @default(autoincrement())
+  product_name String
+  product_code String?  @unique
+  product_image String?
+  quantity     Int
+  condition    String?  // e.g. new/good/broken
+  category_id  Int
+  category     Category @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+
+  loanDetails  LoanDetail[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Loan {
+  loan_id      Int         @id @default(autoincrement())
+  user_id      Int
+  user         User        @relation("UserLoans", fields: [user_id], references: [user_id], onDelete: Cascade)
+  loan_date    DateTime    @default(now())
+  return_date  DateTime?   // nullable until returned
+  status       LoanStatus  @default(REQUESTED)
+
+  details      LoanDetail[]
+  histories    LoanHistory[]
+
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+}
+
+model LoanDetail {
+  loan_detail_id Int     @id @default(autoincrement())
+  loan_id        Int
+  product_id     Int
+  quantity       Int
+
+  loan           Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  product        Product  @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([loan_id])
+  @@index([product_id])
+}
+
+model LoanHistory {
+  history_id Int      @id @default(autoincrement())
+  loan_id    Int
+  activity   String
+  timestamp  DateTime @default(now())
+
+  loan       Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+
+  @@index([loan_id])
+}
+
+model Report {
+  report_id  Int      @id @default(autoincrement())
+  user_id    Int?
+  user       User?     @relation("UserReports", fields: [user_id], references: [user_id], onDelete: SetNull)
+  file_path  String
+  start_date DateTime?
+  end_date   DateTime?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([user_id])
 }
