@@ -20,7 +20,7 @@ const TokenManager = {
         refreshToken,
         process.env.REFRESH_TOKEN_KEY as string
       );
-      return payload; // berisi data user yang di-encode
+      return payload;
     } catch (error) {
       throw new InvariantError("Refresh token tidak valid");
     }

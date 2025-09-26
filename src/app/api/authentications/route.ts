@@ -39,3 +39,54 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function PUT(req: Request) {
+  const { refreshToken } = await req.json();
+  try {
+    AuthenticationsValidator.validatePutAuthenticationPayload({ refreshToken });
+    await verifyRefreshToken(refreshToken);
+
+    const decoded = TokenManager.verifyRefreshToken(refreshToken);
+
+    if (typeof decoded === "string") {
+      throw new Error("Invalid token payload");
+    }
+
+    const accessToken = TokenManager.generateAccessToken(decoded);
+
+    return NextResponse.json({
+      status: "success",
+      data: {
+        accessToken,
+      },
+    });
+  } catch (error: any) {
+    const status = error.statusCode || 500;
+    return NextResponse.json(
+      { status: "fail", message: error.message },
+      { status }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  const { refreshToken } = await req.json();
+  try {
+    AuthenticationsValidator.validateDeleteAuthenticationPayload({
+      refreshToken,
+    });
+    await verifyRefreshToken(refreshToken);
+    await deleteRefreshToken(refreshToken);
+
+    return NextResponse.json({
+      status: "success",
+      message: "Berhasil menghapus token",
+    });
+  } catch (error: any) {
+    const status = error.statusCode || 500;
+    return NextResponse.json(
+      { status: "fail", message: error.message },
+      { status }
+    );
+  }
+}
