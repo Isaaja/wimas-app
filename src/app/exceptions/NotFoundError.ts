@@ -1,6 +1,6 @@
 import ClientError from "./ClientError";
 class NotFoundError extends ClientError {
-  constructor(message) {
+  constructor(message: any) {
     super(message, 404);
     this.name = "NotFoundError";
   }

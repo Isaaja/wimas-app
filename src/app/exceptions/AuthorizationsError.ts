@@ -1,7 +1,7 @@
 import ClientError from "./ClientError";
 
 class AuthorizationError extends ClientError {
-  constructor(message) {
+  constructor(message: any) {
     super(message, 403);
     this.name = "AuthorizationError";
   }

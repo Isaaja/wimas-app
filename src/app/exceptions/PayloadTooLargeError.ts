@@ -1,6 +1,6 @@
 import ClientError from "./ClientError";
 class PayloadTooLargeError extends ClientError {
-  constructor(message) {
+  constructor(message: any) {
     super(message, 413);
     this.name = "PayloadTooLargeError";
   }

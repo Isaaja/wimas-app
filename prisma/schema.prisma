@@ -37,6 +37,7 @@ model User {
 
   loans      Loan[]      @relation("UserLoans")
   reports    Report[]    @relation("UserReports")
+  authentications Authentication[]
 
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
@@ -122,4 +123,13 @@ model Report {
   updatedAt  DateTime @updatedAt
 
   @@index([user_id])
+}
+
+model Authentication {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  token     String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  
 }
