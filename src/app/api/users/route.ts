@@ -4,13 +4,13 @@ import UsersValidator from "@/app/validator/users";
 import NotFoundError from "@/app/exceptions/NotFoundError";
 
 export async function POST(req: Request) {
+  const { name, username, password } = await req.json();
+
   try {
-    const body = await req.json();
-
+    
     // Validation
-    UsersValidator.validateUserPayload(body);
+    UsersValidator.validateUserPayload(req);
 
-    const { name, username, password } = body;
     const user = await registerUser(name, username, password);
 
     if (!user) {
