@@ -1,7 +1,7 @@
-import { prisma } from "@/app/lib/prismaClient";
+import { prisma } from "@/lib/prismaClient";
 import bcrypt from "bcryptjs";
 import InvariantError from "../../exceptions/InvariantError";
-import AuthenticationsError from "@/app/exceptions/AuthenticationsError";
+import AuthenticationsError from "@/exceptions/AuthenticationsError";
 import { nanoid } from "nanoid";
 export async function addUser(
   name: string,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { addUser } from "@/app/service/supabase/UsersService";
-import UsersValidator from "@/app/validator/users";
-import NotFoundError from "@/app/exceptions/NotFoundError";
+import { addUser } from "@/service/supabase/UsersService";
+import UsersValidator from "@/validator/users";
+import NotFoundError from "@/exceptions/NotFoundError";
 
 export async function POST(req: Request) {
   const { name, username, password, email, noHandphone } = await req.json();

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import AuthenticationsValidator from "@/app/validator/authentications";
-import { verifyUserCredential } from "@/app/service/supabase/UsersService";
-import TokenManager from "@/app/tokenize/TokenManager";
+import AuthenticationsValidator from "@/validator/authentications";
+import { verifyUserCredential } from "@/service/supabase/UsersService";
+import TokenManager from "@/tokenize/TokenManager";
 import {
   addRefreshToken,
   deleteRefreshToken,
   verifyRefreshToken,
-} from "@/app/service/supabase/AuthenticationsService";
+} from "@/service/supabase/AuthenticationsService";
 export async function POST(req: Request) {
   const { username, password } = await req.json();
   try {

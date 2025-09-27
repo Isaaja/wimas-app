@@ -1,5 +1,5 @@
-import InvariantError from "@/app/exceptions/InvariantError";
-import { prisma } from "@/app/lib/prismaClient";
+import InvariantError from "@/exceptions/InvariantError";
+import { prisma } from "@/lib/prismaClient";
 import { nanoid } from "nanoid";
 
 export async function addRefreshToken(token: string, userId: string) {
