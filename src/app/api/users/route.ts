@@ -4,13 +4,19 @@ import UsersValidator from "@/app/validator/users";
 import NotFoundError from "@/app/exceptions/NotFoundError";
 
 export async function POST(req: Request) {
-  const { name, username, password } = await req.json();
+  const { name, username, password, email, noHandphone } = await req.json();
 
   try {
     // Validation
-    UsersValidator.validateUserPayload({ name, username, password });
+    UsersValidator.validateUserPayload({
+      name,
+      username,
+      password,
+      email,
+      noHandphone,
+    });
 
-    const user = await addUser(name, username, password);
+    const user = await addUser(name, username, password, email, noHandphone);
 
     if (!user) {
       throw new NotFoundError("User Id tidak ditemukan");

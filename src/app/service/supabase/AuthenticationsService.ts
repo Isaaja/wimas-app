@@ -1,9 +1,11 @@
 import InvariantError from "@/app/exceptions/InvariantError";
 import { prisma } from "@/app/lib/prismaClient";
+import { nanoid } from "nanoid";
 
-export async function addRefreshToken(token: string, userId: number) {
+export async function addRefreshToken(token: string, userId: string) {
   const refreshToken = await prisma.authentication.create({
     data: {
+      id: `auth-${nanoid(16)}`,
       token,
       user: {
         connect: { user_id: userId },

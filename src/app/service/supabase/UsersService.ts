@@ -2,10 +2,13 @@ import { prisma } from "@/app/lib/prismaClient";
 import bcrypt from "bcryptjs";
 import InvariantError from "../../exceptions/InvariantError";
 import AuthenticationsError from "@/app/exceptions/AuthenticationsError";
+import { nanoid } from "nanoid";
 export async function addUser(
   name: string,
   username: string,
-  password?: string
+  password?: string,
+  email?: string,
+  noHandphone?: string
 ) {
   //check username
   await verifyUsername(username);
@@ -16,9 +19,12 @@ export async function addUser(
   const hashedPassword = await bcrypt.hash(defaultPassword, 10);
   const user = await prisma.user.create({
     data: {
+      user_id: `user-${nanoid(16)}`,
       name,
       username,
       password: hashedPassword,
+      email,
+      noHandphone,
     },
   });
 

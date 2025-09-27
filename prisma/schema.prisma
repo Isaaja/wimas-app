@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -12,6 +6,111 @@ datasource db {
  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
+}
+
+model User {
+  user_id        String           @id @db.VarChar(32)
+  name           String
+  username       String           @unique
+  password       String
+  role           Role             @default(BORROWER)
+  status         String?
+  email          String?
+  noHandphone    String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  authentications Authentication[]
+  loans            Loan[]          @relation("UserLoans")
+  reports          Report[]        @relation("UserReports")
+}
+
+model Category {
+  category_id   String     @id @db.VarChar(32)
+  category_name String
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  products      Product[]
+}
+
+model Product {
+  product_id    String      @id @db.VarChar(32)
+  product_name  String
+  product_code  String?     @unique
+  product_image String?
+  quantity      Int
+  condition     String?
+  category_id   String
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  category      Category    @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  loanDetails   LoanDetail[]
+}
+
+model Loan {
+  loan_id     String        @id @db.VarChar(32)
+  user_id     String
+  loan_date   DateTime      @default(now())
+  return_date DateTime?
+  status      LoanStatus    @default(REQUESTED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user        User          @relation("UserLoans", fields: [user_id], references: [user_id], onDelete: Cascade)
+  details     LoanDetail[]
+  histories   LoanHistory[]
+}
+
+model LoanDetail {
+  loan_detail_id String    @id @db.VarChar(32)
+  loan_id        String
+  product_id     String
+  quantity       Int
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  loan           Loan      @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  product        Product   @relation(fields: [product_id], references: [product_id])
+
+  @@index([loan_id])
+  @@index([product_id])
+}
+
+model LoanHistory {
+  history_id String    @id @db.VarChar(32)
+  loan_id    String
+  activity   String
+  timestamp  DateTime  @default(now())
+
+  loan       Loan      @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+
+  @@index([loan_id])
+}
+
+model Report {
+  report_id  String     @id @db.VarChar(32)
+  user_id    String?
+  file_path  String
+  start_date DateTime?
+  end_date   DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  user       User?      @relation("UserReports", fields: [user_id], references: [user_id])
+
+  @@index([user_id])
+}
+
+model Authentication {
+  id         String     @id @db.VarChar(32)
+  user_id    String
+  token      String     @unique
+  createdAt  DateTime   @default(now())
+
+  user       User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
 enum Role {
@@ -25,111 +124,4 @@ enum LoanStatus {
   APPROVED
   REJECTED
   RETURNED
-}
-
-model User {
-  user_id    Int     @id @default(autoincrement())
-  name       String
-  username   String  @unique
-  password   String
-  role       Role    @default(BORROWER)
-  status     String? // optional: e.g. active/inactive
-
-  loans      Loan[]      @relation("UserLoans")
-  reports    Report[]    @relation("UserReports")
-  authentications Authentication[]
-
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-}
-
-model Category {
-  category_id   Int    @id @default(autoincrement())
-  category_name String
-
-  products      Product[]
-
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model Product {
-  product_id   Int      @id @default(autoincrement())
-  product_name String
-  product_code String?  @unique
-  product_image String?
-  quantity     Int
-  condition    String?  // e.g. new/good/broken
-  category_id  Int
-  category     Category @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
-
-  loanDetails  LoanDetail[]
-
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model Loan {
-  loan_id      Int         @id @default(autoincrement())
-  user_id      Int
-  user         User        @relation("UserLoans", fields: [user_id], references: [user_id], onDelete: Cascade)
-  loan_date    DateTime    @default(now())
-  return_date  DateTime?   // nullable until returned
-  status       LoanStatus  @default(REQUESTED)
-
-  details      LoanDetail[]
-  histories    LoanHistory[]
-
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-}
-
-model LoanDetail {
-  loan_detail_id Int     @id @default(autoincrement())
-  loan_id        Int
-  product_id     Int
-  quantity       Int
-
-  loan           Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-  product        Product  @relation(fields: [product_id], references: [product_id], onDelete: Restrict)
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  @@index([loan_id])
-  @@index([product_id])
-}
-
-model LoanHistory {
-  history_id Int      @id @default(autoincrement())
-  loan_id    Int
-  activity   String
-  timestamp  DateTime @default(now())
-
-  loan       Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-
-  @@index([loan_id])
-}
-
-model Report {
-  report_id  Int      @id @default(autoincrement())
-  user_id    Int?
-  user       User?     @relation("UserReports", fields: [user_id], references: [user_id], onDelete: SetNull)
-  file_path  String
-  start_date DateTime?
-  end_date   DateTime?
-
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@index([user_id])
-}
-
-model Authentication {
-  id        Int      @id @default(autoincrement())
-  user_id   Int
-  token     String   @unique
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
-  
 }
