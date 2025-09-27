@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
+import TokenManager from "./tokenize/TokenManager";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -9,7 +9,8 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const authHeader = req.headers.get("authorization");
+  const authHeader = req.headers.get("Authorization");
+
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return NextResponse.json(
       { status: "fail", message: "Unauthorized - Token required" },
@@ -20,8 +21,7 @@ export function middleware(req: NextRequest) {
   const token = authHeader.split(" ")[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_KEY!);
-
+    const decoded = TokenManager.verifyAccessToken(token);
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-user", JSON.stringify(decoded));
 
@@ -30,9 +30,9 @@ export function middleware(req: NextRequest) {
         headers: requestHeaders,
       },
     });
-  } catch (err) {
+  } catch (err: any) {
     return NextResponse.json(
-      { status: "fail", message: "Invalid or expired token" },
+      { status: "fail", message: err.message || "Invalid or expired token" },
       { status: 401 }
     );
   }
@@ -40,4 +40,5 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: ["/api/:path*"],
+  runtime: "nodejs",
 };

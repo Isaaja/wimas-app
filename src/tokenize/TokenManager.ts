@@ -6,7 +6,7 @@ import { JwtPayload } from "@supabase/supabase-js";
 const TokenManager = {
   generateAccessToken: (payload: object) => {
     return jwt.sign(payload, process.env.ACCESS_TOKEN_KEY as string, {
-      expiresIn: "15m",
+      expiresIn: "2h",
     });
   },
 
@@ -14,6 +14,22 @@ const TokenManager = {
     return jwt.sign(payload, process.env.REFRESH_TOKEN_KEY as string, {
       expiresIn: "7d",
     });
+  },
+
+  verifyAccessToken: (accessToken: string): JwtPayload => {
+    try {
+      const payload = jwt.verify(
+        accessToken,
+        process.env.ACCESS_TOKEN_KEY as string
+      );
+
+      const { exp: _exp, iat: _iat, ...userPayload } = payload as JwtPayload;
+      return userPayload as JwtPayload;
+    } catch (error) {
+      throw new InvariantError(
+        "Access token tidak valid atau sudah kadaluarsa"
+      );
+    }
   },
 
   verifyRefreshToken: (refreshToken: string): JwtPayload => {

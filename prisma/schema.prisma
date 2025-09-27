@@ -3,51 +3,47 @@ generator client {
 }
 
 datasource db {
- provider  = "postgresql"
+  provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
 
 model User {
-  user_id        String           @id @db.VarChar(32)
-  name           String
-  username       String           @unique
-  password       String
-  role           Role             @default(BORROWER)
-  status         String?
-  email          String?
-  noHandphone    String?
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-
+  name            String
+  createdAt       DateTime         @default(now())
+  password        String
+  role            Role             @default(BORROWER)
+  status          String?
+  updatedAt       DateTime         @updatedAt
+  user_id         String           @id @db.VarChar(32)
+  username        String           @unique
+  email           String?
+  noHandphone     String?
   authentications Authentication[]
-  loans            Loan[]          @relation("UserLoans")
-  reports          Report[]        @relation("UserReports")
+  loans           Loan[]           @relation("UserLoans")
+  reports         Report[]         @relation("UserReports")
 }
 
 model Category {
-  category_id   String     @id @db.VarChar(32)
+  category_id   String    @id @db.VarChar(32)
   category_name String
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
   products      Product[]
 }
 
 model Product {
-  product_id    String      @id @db.VarChar(32)
-  product_name  String
-  product_code  String?     @unique
-  product_image String?
-  quantity      Int
-  condition     String?
-  category_id   String
-
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-
-  category      Category    @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
-  loanDetails   LoanDetail[]
+  product_id      String       @id @db.VarChar(32)
+  product_name    String
+  product_image   String?
+  quantity        Int
+  category_id     String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  product_avaible Int
+  status          String
+  loanDetails     LoanDetail[]
+  category        Category     @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
 }
 
 model Loan {
@@ -58,59 +54,54 @@ model Loan {
   status      LoanStatus    @default(REQUESTED)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
-
   user        User          @relation("UserLoans", fields: [user_id], references: [user_id], onDelete: Cascade)
   details     LoanDetail[]
   histories   LoanHistory[]
 }
 
 model LoanDetail {
-  loan_detail_id String    @id @db.VarChar(32)
+  loan_detail_id String   @id @db.VarChar(32)
   loan_id        String
   product_id     String
   quantity       Int
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  loan           Loan      @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-  product        Product   @relation(fields: [product_id], references: [product_id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  loan           Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  product        Product  @relation(fields: [product_id], references: [product_id])
 
   @@index([loan_id])
   @@index([product_id])
 }
 
 model LoanHistory {
-  history_id String    @id @db.VarChar(32)
+  history_id String   @id @db.VarChar(32)
   loan_id    String
   activity   String
-  timestamp  DateTime  @default(now())
-
-  loan       Loan      @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  timestamp  DateTime @default(now())
+  loan       Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
 
   @@index([loan_id])
 }
 
 model Report {
-  report_id  String     @id @db.VarChar(32)
+  report_id  String    @id @db.VarChar(32)
   user_id    String?
   file_path  String
   start_date DateTime?
   end_date   DateTime?
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
-
-  user       User?      @relation("UserReports", fields: [user_id], references: [user_id])
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User?     @relation("UserReports", fields: [user_id], references: [user_id])
 
   @@index([user_id])
 }
 
 model Authentication {
-  id         String     @id @db.VarChar(32)
-  user_id    String
-  token      String     @unique
-  createdAt  DateTime   @default(now())
-
-  user       User       @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  id        String   @id @db.VarChar(32)
+  user_id   String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
 enum Role {
