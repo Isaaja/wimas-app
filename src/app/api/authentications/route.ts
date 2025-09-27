@@ -51,7 +51,6 @@ export async function PUT(req: Request) {
     if (typeof decoded === "string") {
       throw new Error("Invalid token payload");
     }
-
     const accessToken = TokenManager.generateAccessToken(decoded);
 
     return NextResponse.json({

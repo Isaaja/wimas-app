@@ -8,7 +8,7 @@ export async function POST(req: Request) {
 
   try {
     // Validation
-    UsersValidator.validateUserPayload(req);
+    UsersValidator.validateUserPayload({ name, username, password });
 
     const user = await addUser(name, username, password);
 
