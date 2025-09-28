@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import jwt from "jsonwebtoken";
 import InvariantError from "../exceptions/InvariantError";
+import { JwtPayload } from "@supabase/supabase-js";
 
 const TokenManager = {
   generateAccessToken: (payload: object) => {
@@ -14,13 +16,14 @@ const TokenManager = {
     });
   },
 
-  verifyRefreshToken: (refreshToken: string) => {
+  verifyRefreshToken: (refreshToken: string): JwtPayload => {
     try {
       const payload = jwt.verify(
         refreshToken,
         process.env.REFRESH_TOKEN_KEY as string
       );
-      return payload;
+      const { exp: _exp, iat: _iat, ...userPayload } = payload as JwtPayload;
+      return userPayload as JwtPayload;
     } catch (error) {
       throw new InvariantError("Refresh token tidak valid");
     }

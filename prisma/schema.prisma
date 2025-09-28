@@ -15,15 +15,17 @@ model User {
   role            Role             @default(BORROWER)
   status          String?
   updatedAt       DateTime         @updatedAt
-  user_id         Int              @id @default(autoincrement())
+  user_id         String           @id @db.VarChar(32)
   username        String           @unique
+  email           String?
+  noHandphone     String?
   authentications Authentication[]
   loans           Loan[]           @relation("UserLoans")
   reports         Report[]         @relation("UserReports")
 }
 
 model Category {
-  category_id   Int       @id @default(autoincrement())
+  category_id   String    @id @db.VarChar(32)
   category_name String
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -31,22 +33,22 @@ model Category {
 }
 
 model Product {
-  product_id    Int          @id @default(autoincrement())
-  product_name  String
-  product_code  String?      @unique
-  product_image String?
-  quantity      Int
-  condition     String?
-  category_id   Int
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  loanDetails   LoanDetail[]
-  category      Category     @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  product_id      String       @id @db.VarChar(32)
+  product_name    String
+  product_image   String?
+  quantity        Int
+  category_id     String
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  product_avaible Int
+  status          String
+  loanDetails     LoanDetail[]
+  category        Category     @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
 }
 
 model Loan {
-  loan_id     Int           @id @default(autoincrement())
-  user_id     Int
+  loan_id     String        @id @db.VarChar(32)
+  user_id     String
   loan_date   DateTime      @default(now())
   return_date DateTime?
   status      LoanStatus    @default(REQUESTED)
@@ -58,9 +60,9 @@ model Loan {
 }
 
 model LoanDetail {
-  loan_detail_id Int      @id @default(autoincrement())
-  loan_id        Int
-  product_id     Int
+  loan_detail_id String   @id @db.VarChar(32)
+  loan_id        String
+  product_id     String
   quantity       Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -72,8 +74,8 @@ model LoanDetail {
 }
 
 model LoanHistory {
-  history_id Int      @id @default(autoincrement())
-  loan_id    Int
+  history_id String   @id @db.VarChar(32)
+  loan_id    String
   activity   String
   timestamp  DateTime @default(now())
   loan       Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
@@ -82,8 +84,8 @@ model LoanHistory {
 }
 
 model Report {
-  report_id  Int       @id @default(autoincrement())
-  user_id    Int?
+  report_id  String    @id @db.VarChar(32)
+  user_id    String?
   file_path  String
   start_date DateTime?
   end_date   DateTime?
@@ -95,8 +97,8 @@ model Report {
 }
 
 model Authentication {
-  id        Int      @id @default(autoincrement())
-  user_id   Int
+  id        String   @id @db.VarChar(32)
+  user_id   String
   token     String   @unique
   createdAt DateTime @default(now())
   user      User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)

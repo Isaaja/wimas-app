@@ -1,4 +1,4 @@
-import InvariantError from "@/app/exceptions/InvariantError";
+import InvariantError from "@/exceptions/InvariantError";
 import AuthenticationSchemas from "./schema";
 
 const AuthenticationsValidator = {
