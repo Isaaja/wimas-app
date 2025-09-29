@@ -7,7 +7,7 @@ import {
   deleteRefreshToken,
   verifyRefreshToken,
 } from "@/service/supabase/AuthenticationsService";
-export async function POST(req: Request) {
+export async function POST(req: Request, res) {
   const { username, password } = await req.json();
   try {
     AuthenticationsValidator.validatePostAuthenticationPayload({
@@ -18,7 +18,8 @@ export async function POST(req: Request) {
     const accessToken = TokenManager.generateAccessToken(user);
     const refreshToken = TokenManager.generateRefreshToken(user);
     await addRefreshToken(refreshToken, user.user_id);
-    return NextResponse.json(
+
+    const res = NextResponse.json(
       {
         status: "success",
         message: "Authentication berhasil ditambahkan",
@@ -31,6 +32,14 @@ export async function POST(req: Request) {
         status: 201,
       }
     );
+    res.cookies.set("accessToken", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/", 
+    });
+
+    return res;
   } catch (error: any) {
     const status = error.statusCode || 500;
     return NextResponse.json(
