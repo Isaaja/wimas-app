@@ -1,43 +1,40 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import jwt from "jsonwebtoken";
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import jwt from 'jsonwebtoken';
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  
+  const token = req.cookies.get('accessToken')?.value;
 
-  if (pathname.startsWith("/api/auth") || pathname.startsWith("/api/users")) {
-    return NextResponse.next();
+  const isAuthPage = pathname.startsWith('/auth');
+  
+  const isProtectedPage = pathname.startsWith('/dashboard') || pathname.startsWith('/admin') || pathname.startsWith('/peminjam');
+
+  if (isProtectedPage) {
+    if (!token) {
+      return NextResponse.redirect(new URL('/auth', req.url));
+    }
+
+    try {
+      jwt.verify(token, process.env.ACCESS_TOKEN_KEY as string);
+    } catch (e) {
+      return NextResponse.redirect(new URL('/auth', req.url));
+    }
+  } else if (isAuthPage) {
+    if (token) {
+      try {
+        jwt.verify(token, process.env.ACCESS_TOKEN_KEY as string);
+        return NextResponse.redirect(new URL('/dashboard', req.url));
+      } catch (e) {
+        return NextResponse.next();
+      }
+    }
   }
 
-  const authHeader = req.headers.get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return NextResponse.json(
-      { status: "fail", message: "Unauthorized - Token required" },
-      { status: 401 }
-    );
-  }
-
-  const token = authHeader.split(" ")[1];
-
-  try {
-    const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_KEY!);
-
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-user", JSON.stringify(decoded));
-
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
-  } catch (err) {
-    return NextResponse.json(
-      { status: "fail", message: "Invalid or expired token" },
-      { status: 401 }
-    );
-  }
+  return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ['/dashboard/:path*', '/admin/:path*', '/peminjam/:path*', '/auth/:path*'],
 };
