@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import TokenManager from "./tokenize/TokenManager";
-
+import TokenManager from "@/tokenize/TokenManager";
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
