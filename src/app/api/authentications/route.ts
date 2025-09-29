@@ -24,6 +24,10 @@ export async function POST(req: Request) {
         status: "success",
         message: "Authentication berhasil ditambahkan",
         data: {
+          include: {
+            userId: user.user_id,
+            role: user.role,
+          },
           accessToken,
           refreshToken,
         },
