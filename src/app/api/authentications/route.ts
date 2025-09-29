@@ -7,7 +7,7 @@ import {
   deleteRefreshToken,
   verifyRefreshToken,
 } from "@/service/supabase/AuthenticationsService";
-export async function POST(req: Request, res) {
+export async function POST(req: Request) {
   const { username, password } = await req.json();
   try {
     AuthenticationsValidator.validatePostAuthenticationPayload({
@@ -36,7 +36,14 @@ export async function POST(req: Request, res) {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      path: "/", 
+      path: "/",
+    });
+
+    res.cookies.set("refreshToken", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/",
     });
 
     return res;
@@ -86,10 +93,14 @@ export async function DELETE(req: Request) {
     await verifyRefreshToken(refreshToken);
     await deleteRefreshToken(refreshToken);
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       status: "success",
       message: "Berhasil menghapus token",
     });
+
+    res.cookies.delete("accessToken");
+    res.cookies.delete("refreshToken");
+    return res;
   } catch (error: any) {
     const status = error.statusCode || 500;
     return NextResponse.json(
