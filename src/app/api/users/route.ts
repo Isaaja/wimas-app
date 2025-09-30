@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { addUser } from "@/service/supabase/UsersService";
+import { addUser, getAllUser } from "@/service/supabase/UsersService";
 import UsersValidator from "@/validator/users";
 import NotFoundError from "@/exceptions/NotFoundError";
 
@@ -38,4 +38,15 @@ export async function POST(req: Request) {
       { status: error.statusCode || 400 }
     );
   }
+}
+
+export async function GET() {
+  const user = await getAllUser();
+  return NextResponse.json(
+    {
+      status: "success",
+      data: { user },
+    },
+    { status: 200 }
+  );
 }

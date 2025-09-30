@@ -1,3 +1,4 @@
+import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
 import { nanoid } from "nanoid";
 
@@ -6,6 +7,7 @@ export async function createLoan(
   items: { product_id: string; quantity: number }[]
 ) {
   const loanId = `loan-${nanoid(16)}`;
+
   return prisma.loan.create({
     data: {
       loan_id: loanId,
@@ -19,24 +21,28 @@ export async function createLoan(
         })),
       },
     },
-    include: { details: true },
+    include: {
+      details: true,
+      user: {
+        select: {
+          user_id: true,
+          username: true,
+        },
+      },
+    },
   });
 }
 
 export async function approveLoan(loanId: string) {
   return prisma.$transaction(
     async (tx) => {
-      // 1. Ambil loan + details
       const loan = await tx.loan.findUnique({
         where: { loan_id: loanId },
         include: { details: true },
       });
 
-      if (!loan) throw new Error("Loan not found");
-      if (loan.status !== "REQUESTED")
-        throw new Error("Loan is not in REQUESTED status");
+      if (!loan) throw new NotFoundError("Loan not found");
 
-      // 2. Ambil semua product terkait sekaligus
       const products = await tx.product.findMany({
         where: {
           product_id: { in: loan.details.map((d) => d.product_id) },
@@ -80,4 +86,92 @@ export async function approveLoan(loanId: string) {
       maxWait: 5000, // antre max 5 detik sebelum gagal
     }
   );
+}
+
+export async function checkUserLoan(userId: string) {
+  // cari loan terbaru user
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+    select: { role: true },
+  });
+  if (!user) {
+    return { canBorrow: false, reason: "User tidak ditemukan" };
+  }
+
+  if (user.role !== "BORROWER") {
+    return {
+      canBorrow: false,
+      reason: `Role ${user.role} tidak bisa meminjam`,
+    };
+  }
+
+  const latestLoan = await prisma.loan.findFirst({
+    where: { user_id: userId },
+    orderBy: { createdAt: "desc" },
+    select: { status: true },
+  });
+
+  if (!latestLoan) {
+    return { canBorrow: true, reason: "Belum ada pinjaman" };
+  }
+
+  if (latestLoan.status === "APPROVED" || latestLoan.status === "REQUESTED") {
+    return {
+      canBorrow: false,
+      reason: `Status terakhir: ${latestLoan.status}`,
+    };
+  }
+  return { canBorrow: true, reason: "Belum ada pinjaman" };
+}
+
+export async function getLoanedProducts() {
+  const loanDetails = await prisma.loanDetail.findMany({
+    select: {
+      quantity: true,
+      loan: {
+        select: {
+          loan_id: true,
+          loan_date: true,
+          return_date: true,
+          status: true,
+          user: {
+            select: {
+              user_id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      product: {
+        select: {
+          product_name: true,
+        },
+      },
+    },
+  });
+
+  const grouped = loanDetails.reduce((acc, item) => {
+    const loanId = item.loan.loan_id;
+
+    if (!acc[loanId]) {
+      acc[loanId] = {
+        loan_id: loanId,
+        loan_date: item.loan.loan_date,
+        return_date: item.loan.return_date,
+        status: item.loan.status,
+        user_id: item.loan.user.user_id,
+        name: item.loan.user.name,
+        products: [],
+      };
+    }
+
+    acc[loanId].products.push({
+      product_name: item.product.product_name,
+      quantity: item.quantity,
+    });
+
+    return acc;
+  }, {} as Record<string, any>);
+
+  return Object.values(grouped);
 }

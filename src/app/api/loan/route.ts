@@ -1,6 +1,11 @@
 // app/api/loans/route.ts
 import { NextResponse } from "next/server";
-import { createLoan } from "@/service/supabase/LoanService";
+import {
+  checkUserLoan,
+  createLoan,
+  getLoanedProducts,
+} from "@/service/supabase/LoanService";
+import NotFoundError from "@/exceptions/NotFoundError";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -13,13 +18,20 @@ export async function POST(req: Request) {
       );
     }
 
+    const CheckUserLoan = await checkUserLoan(userId);
+    if (!CheckUserLoan.canBorrow) {
+      return NextResponse.json(
+        { status: "fail", message: CheckUserLoan.reason },
+        { status: 403 }
+      );
+    }
     const loan = await createLoan(userId, items);
-
     return NextResponse.json(
       {
         status: "success",
         data: loan,
       },
+
       { status: 201 }
     );
   } catch (error: any) {
@@ -29,4 +41,17 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function GET() {
+  const result = await getLoanedProducts();
+  if (result.length <= 0) {
+    throw new NotFoundError("Loan Not Found");
+  }
+  return NextResponse.json({
+    status: "success",
+    data: {
+      result,
+    },
+  });
 }

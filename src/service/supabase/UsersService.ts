@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import InvariantError from "../../exceptions/InvariantError";
 import AuthenticationsError from "@/exceptions/AuthenticationsError";
 import { nanoid } from "nanoid";
+import NotFoundError from "@/exceptions/NotFoundError";
 export async function addUser(
   name: string,
   username: string,
@@ -60,4 +61,23 @@ export async function verifyUserCredential(username: string, password: string) {
 
   const { password: _, ...userSafe } = user;
   return userSafe;
+}
+
+export async function getAllUser() {
+  const result = await prisma.user.findMany({
+    select: {
+      user_id: true,
+      username: true,
+      name: true,
+      role: true,
+      email: true,
+      noHandphone: true,
+    },
+  });
+
+  if (result.length === 0) {
+    throw new NotFoundError("User Tidak ada");
+  }
+
+  return result;
 }

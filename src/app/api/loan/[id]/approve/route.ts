@@ -6,7 +6,8 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const loanId = await params.id;
+    const param = await params;
+    const loanId = param.id;
     const updatedLoan = await approveLoan(loanId);
 
     return NextResponse.json(
