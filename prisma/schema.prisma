@@ -34,7 +34,7 @@ model Category {
 
 model Product {
   product_id      String       @id @db.VarChar(32)
-  product_name    String
+  product_name    String       @unique
   product_image   String?
   quantity        Int
   category_id     String
