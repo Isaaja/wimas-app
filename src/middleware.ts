@@ -11,10 +11,7 @@ export function middleware(req: NextRequest) {
    * ============================= */
   if (pathname.startsWith("/api")) {
     // skip auth untuk endpoint tertentu
-    if (
-      pathname.startsWith("/api/auth") ||
-      (pathname.startsWith("/api/users") && req.method === "POST")
-    ) {
+    if (pathname.startsWith("/api/auth")) {
       return NextResponse.next();
     }
 

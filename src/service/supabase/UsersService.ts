@@ -81,3 +81,22 @@ export async function getAllUser() {
 
   return result;
 }
+
+export async function checkUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { user_id: userId },
+    select: {
+      user_id: true,
+      role: true,
+    },
+  });
+  if (!user) {
+    throw new NotFoundError("user tidak ditemukan");
+  }
+  if (user.role === "ADMIN") {
+    return {
+      canBorrow: false,
+      reason: `Role ${user.role} tidak bisa meminjam`,
+    };
+  }
+}
