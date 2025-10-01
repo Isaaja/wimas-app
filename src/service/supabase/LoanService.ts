@@ -89,22 +89,6 @@ export async function approveLoan(loanId: string) {
 }
 
 export async function checkUserLoan(userId: string) {
-  // cari loan terbaru user
-  const user = await prisma.user.findUnique({
-    where: { user_id: userId },
-    select: { role: true },
-  });
-  if (!user) {
-    return { canBorrow: false, reason: "User tidak ditemukan" };
-  }
-
-  if (user.role !== "BORROWER") {
-    return {
-      canBorrow: false,
-      reason: `Role ${user.role} tidak bisa meminjam`,
-    };
-  }
-
   const latestLoan = await prisma.loan.findFirst({
     where: { user_id: userId },
     orderBy: { createdAt: "desc" },
@@ -114,7 +98,6 @@ export async function checkUserLoan(userId: string) {
   if (!latestLoan) {
     return { canBorrow: true, reason: "Belum ada pinjaman" };
   }
-
   if (latestLoan.status === "APPROVED" || latestLoan.status === "REQUESTED") {
     return {
       canBorrow: false,

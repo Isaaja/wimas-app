@@ -1,11 +1,12 @@
 // app/api/loans/route.ts
 import { NextResponse } from "next/server";
 import {
-  checkUserLoan,
   createLoan,
   getLoanedProducts,
+  checkUserLoan,
 } from "@/service/supabase/LoanService";
 import NotFoundError from "@/exceptions/NotFoundError";
+import { checkAuth } from "@/app/utils/auth";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -17,7 +18,9 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-
+    // check Role Access
+    await checkAuth("BORROWER");
+    //check User Loan
     const CheckUserLoan = await checkUserLoan(userId);
     if (!CheckUserLoan.canBorrow) {
       return NextResponse.json(
@@ -25,6 +28,7 @@ export async function POST(req: Request) {
         { status: 403 }
       );
     }
+
     const loan = await createLoan(userId, items);
     return NextResponse.json(
       {

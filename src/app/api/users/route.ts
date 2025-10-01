@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import {
   addUser,
   getAllUser,
-  checkUser,
 } from "@/service/supabase/UsersService";
 import UsersValidator from "@/validator/users";
 import NotFoundError from "@/exceptions/NotFoundError";
