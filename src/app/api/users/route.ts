@@ -41,6 +41,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
+
   const user = await getAllUser();
   return NextResponse.json(
     {
