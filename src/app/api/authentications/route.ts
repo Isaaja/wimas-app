@@ -15,9 +15,17 @@ export async function POST(req: Request) {
       password,
     });
     const user = await verifyUserCredential(username, password);
+
     const accessToken = TokenManager.generateAccessToken(user);
     const refreshToken = TokenManager.generateRefreshToken(user);
     await addRefreshToken(refreshToken, user.user_id);
+
+    try {
+      const verified = TokenManager.verifyAccessToken(accessToken);
+      console.log("🔑 Immediate verification success:", verified);
+    } catch (e) {
+      console.error("🔑 Immediate verification FAILED:", e);
+    }
 
     const res = NextResponse.json(
       {
@@ -27,6 +35,7 @@ export async function POST(req: Request) {
           include: {
             userId: user.user_id,
             role: user.role,
+            name: user.name,
           },
           accessToken,
           refreshToken,
@@ -36,11 +45,13 @@ export async function POST(req: Request) {
         status: 201,
       }
     );
+
     res.cookies.set("accessToken", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
+      maxAge: 15 * 60, 
     });
 
     res.cookies.set("refreshToken", refreshToken, {
@@ -48,10 +59,12 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
       path: "/",
+      maxAge: 7 * 24 * 60 * 60, 
     });
 
     return res;
   } catch (error: any) {
+    console.error("🔑 Login error:", error);
     const status = error.statusCode || 500;
     return NextResponse.json(
       { status: "fail", message: error.message },
