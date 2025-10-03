@@ -158,3 +158,7 @@ export async function getLoanedProducts() {
 
   return Object.values(grouped);
 }
+
+// export async function rejectLoan(loanId: string) {
+
+// }

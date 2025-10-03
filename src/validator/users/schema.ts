@@ -10,4 +10,11 @@ const UserPayloadSchema = Joi.object({
     .optional(),
 });
 
-export default UserPayloadSchema;
+const UpdateUserSchema = Joi.object({
+  name: Joi.string().optional(),
+  username: Joi.string().optional(),
+  email: Joi.string().email().optional(),
+  noHandphone: Joi.string().optional(),
+});
+
+export { UserPayloadSchema, UpdateUserSchema };

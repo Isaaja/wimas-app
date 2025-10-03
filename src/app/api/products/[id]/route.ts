@@ -4,10 +4,11 @@ import { getProductById } from "@/service/supabase/ProductsService";
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const item = await getProductById(params.id);
+    const { id } = await context.params;
+    const item = await getProductById(id);
 
     return NextResponse.json({
       status: "success",
