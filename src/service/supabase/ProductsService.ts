@@ -71,6 +71,16 @@ export async function updateProductById(
 
     return updatedProduct;
   } catch (error: any) {
-    throw new Error(error.message || "Failed to update Product");
+    throw new InvariantError(error.message || "Failed to update Product");
+  }
+}
+export async function deleteProductById(id: string) {
+  try {
+    const result = await prisma.product.delete({
+      where: { product_id: id },
+    });
+    return result;
+  } catch (error: any) {
+    throw new InvariantError(error.message || "Failed to Delete Product");
   }
 }

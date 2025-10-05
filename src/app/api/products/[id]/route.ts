@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import {
   getProductById,
   updateProductById,
+  deleteProductById,
 } from "@/service/supabase/ProductsService";
 import ProductValidator from "@/validator/products";
 import { checkAuth } from "@/app/utils/auth";
@@ -53,6 +54,27 @@ export async function PUT(
     );
   } catch (error: any) {
     const statusCode = error.statusCode || 400;
+    return NextResponse.json(
+      { status: "fail", message: error.message || "Error updating product" },
+      { status: statusCode }
+    );
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    await checkAuth("ADMIN");
+    const { id } = await context.params;
+    await deleteProductById(id);
+    return NextResponse.json({
+      status: "success",
+      message: "Berhasil menghapus Product",
+    });
+  } catch (error: any) {
+    const statusCode = error.statusCode || 500;
     return NextResponse.json(
       { status: "fail", message: error.message || "Error updating product" },
       { status: statusCode }
