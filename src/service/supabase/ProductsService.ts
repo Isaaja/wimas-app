@@ -2,6 +2,7 @@ import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
 import { nanoid } from "nanoid";
+import { NextResponse } from "next/server";
 export async function getProductById(id: string) {
   const item = await prisma.product.findUnique({
     where: {
@@ -47,5 +48,29 @@ async function checkProduckName(product_name: string) {
   });
   if (existingProduct) {
     throw new InvariantError("Nama Produk sudah ada");
+  }
+}
+export async function updateProductById(
+  id: string,
+  data: {
+    product_name: string;
+    product_image?: string;
+    quantity: number;
+    category_id: string;
+    product_avaible: number;
+    status: string;
+  }
+) {
+  try {
+    await checkProduckName(data.product_name);
+
+    const updatedProduct = await prisma.product.update({
+      where: { product_id: id },
+      data,
+    });
+
+    return updatedProduct;
+  } catch (error: any) {
+    throw new Error(error.message || "Failed to update Product");
   }
 }
