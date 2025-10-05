@@ -6,23 +6,26 @@ export interface MenuItem {
 
 export const menuConfig: Record<string, MenuItem[]> = {
   admin: [
-    { label: "Dashboard", href: "/dashboard", icon: "📊" },
-    { label: "Kelola Barang", href: "/barang", icon: "📦" },
-    { label: "Kelola User", href: "/users", icon: "👥" },
-    { label: "Persetujuan", href: "/persetujuan", icon: "✅" },
-    { label: "Laporan", href: "/laporan", icon: "📈" },
-    { label: "Settings", href: "/settings", icon: "⚙️" },
+    { label: "Dashboard", href: "/dashboard", icon: "" },
+    { label: "User", href: "/user", icon: "" },
+    { label: "Kategori", href: "/kategori", icon: "" },
+    { label: "Alat dan Perangkat", href: "/alatperangkat", icon: "" },
+    { label: "Daftar Peminjam", href: "/peminjam", icon: "" },
+    { label: "Riwayat Peminjaman", href: "/riwayat", icon: "" },
+    { label: "Profil", href: "/profil", icon: "" },
   ],
   peminjam: [
-    { label: "Dashboard", href: "/peminjam/dashboard", icon: "📊" },
-    { label: "Peminjaman Saya", href: "/peminjam/peminjaman", icon: "📋" },
-    { label: "Riwayat", href: "/peminjam/riwayat", icon: "📜" },
-    { label: "Profile", href: "/peminjam/profile", icon: "👤" },
+    { label: "Dashboard", href: "/dashboard", icon: "" },
+    { label: "Peminjam", href: "/peminjaman", icon: "" },
+    { label: "Riwayat Peminjaman", href: "/riwayat", icon: "" },
+    { label: "Profil", href: "/profil", icon: "" },
   ],
-  petugas: [
-    { label: "Dashboard", href: "/petugas/dashboard", icon: "📊" },
-    { label: "Kelola Barang", href: "/petugas/barang", icon: "📦" },
-    { label: "Persetujuan", href: "/petugas/persetujuan", icon: "✅" },
-    { label: "Laporan", href: "/petugas/laporan", icon: "📈" },
+  superadmin: [
+    { label: "Dashboard", href: "/dashboard", icon: "" },
+    { label: "User", href: "/user", icon: "" },
+    { label: "Alat dan Perangkat", href: "/alatperangkat", icon: "" },
+    { label: "Daftar Peminjam", href: "/peminjam", icon: "" },
+    { label: "Riwayat Peminjaman", href: "/riwayat", icon: "" },
+    { label: "Profil", href: "/profil", icon: "" },
   ],
 };
