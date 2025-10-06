@@ -7,8 +7,11 @@ import {
 } from "@/service/supabase/LoanService";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { checkAuth } from "@/app/utils/auth";
+import { errorResponse, successResponse } from "@/app/utils/response";
 export async function POST(req: Request) {
   try {
+    // check Role Access
+    await checkAuth("BORROWER");
     const body = await req.json();
     const { userId, items } = body;
 
@@ -18,8 +21,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    // check Role Access
-    await checkAuth("BORROWER");
     //check User Loan
     const CheckUserLoan = await checkUserLoan(userId);
     if (!CheckUserLoan.canBorrow) {
@@ -30,20 +31,9 @@ export async function POST(req: Request) {
     }
 
     const loan = await createLoan(userId, items);
-    return NextResponse.json(
-      {
-        status: "success",
-        data: loan,
-      },
-
-      { status: 201 }
-    );
+    return successResponse(loan, "", 201);
   } catch (error: any) {
-    console.error("Error creating loan:", error);
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error creating loan" },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }
 

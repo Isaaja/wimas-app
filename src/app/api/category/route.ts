@@ -1,6 +1,9 @@
+import { checkAuth } from "@/app/utils/auth";
+import { errorResponse, successResponse } from "@/app/utils/response";
+import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
-import { getCategory } from "@/service/supabase/CategoryService";
-import { NextResponse } from "next/server";
+import { addCategory, getCategory } from "@/service/supabase/CategoryService";
+import CategoryValidator from "@/validator/category";
 
 export async function GET() {
   try {
@@ -8,15 +11,22 @@ export async function GET() {
     if (result.length <= 0) {
       throw new NotFoundError("Tidak ada kategori");
     }
-    return NextResponse.json({
-      status: "success",
-      result,
-    });
+    return successResponse(result);
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error updating product" },
-      { status: statusCode }
-    );
+    return errorResponse(error);
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    await checkAuth("ADMIN");
+    const body = await req.json();
+    const { category_name } = body;
+    await CategoryValidator.validateProductPayload(body);
+    const result = await addCategory(category_name);
+
+    return successResponse(result, "", 201);
+  } catch (error) {
+    return errorResponse(error, "Failed to Add Category2");
   }
 }
