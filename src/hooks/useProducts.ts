@@ -7,7 +7,6 @@ export interface Product {
   quantity: number;
   category_id: string;
   product_avaible: number;
-  status: string;
   category?: {
     category_id: string;
     category_name: string;
@@ -22,7 +21,6 @@ export interface CreateProductPayload {
   quantity: number;
   category_id: string;
   product_avaible: number;
-  status: string;
 }
 
 export interface ApiResponse<T> {

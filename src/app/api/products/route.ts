@@ -59,7 +59,6 @@ export async function POST(req: Request) {
       quantity,
       category_id,
       product_avaible,
-      status,
     } = await req.json();
     await checkAuth("ADMIN");
     await ProductValidator.validateProductPayload({
@@ -68,7 +67,6 @@ export async function POST(req: Request) {
       quantity,
       category_id,
       product_avaible,
-      status,
     });
     const result = await addProduct(
       product_name,
@@ -76,7 +74,6 @@ export async function POST(req: Request) {
       quantity,
       category_id,
       product_avaible,
-      status
     );
     if (!result) {
       throw new InvariantError("Gagal menambahkan barang");

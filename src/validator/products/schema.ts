@@ -6,7 +6,6 @@ const ProductSchemaPayload = Joi.object({
   quantity: Joi.number().required(),
   category_id: Joi.string().required(),
   product_avaible: Joi.number().required(),
-  status: Joi.string().required(),
 });
 
 export default ProductSchemaPayload;

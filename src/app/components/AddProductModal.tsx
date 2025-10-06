@@ -19,7 +19,6 @@ export default function AddProductModal({
     quantity: 0,
     category_id: "",
     product_avaible: 1,
-    status: "AVAILABLE",
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,7 +33,6 @@ export default function AddProductModal({
           quantity: 0,
           category_id: "",
           product_avaible: 1,
-          status: "AVAILABLE",
         });
         onClose();
       },
@@ -163,23 +161,6 @@ export default function AddProductModal({
                   placeholder="Masukkan ID kategori"
                   required
                 />
-              </div>
-
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-semibold text-gray-700">
-                    Status
-                  </span>
-                </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleChange}
-                  className="select select-bordered w-full bg-white border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                >
-                  <option value="AVAILABLE">Available</option>
-                  <option value="UNAVAILABLE">Unavailable</option>
-                </select>
               </div>
             </div>
           </div>
