@@ -1,26 +1,46 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useProducts, Product } from "@/hooks/useProducts";
 import ProductTable from "../../components/ProductsTable";
 import AddProductModal from "@/app/components/AddProductModal";
+import debounce from "lodash.debounce";
 
 export default function ProductsPage() {
   const { data: products, isLoading, isError, error } = useProducts();
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const itemsPerPage = 6;
+
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      setSearchTerm(term.toLowerCase());
+      setCurrentPage(1);
+    }, 300),
+    []
+  );
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    debouncedSearch(e.target.value);
+  };
 
   const { paginatedProducts, totalPages } = useMemo(() => {
     if (!products) return { paginatedProducts: [], totalPages: 0 };
 
-    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const filtered = searchTerm
+      ? products.filter((p) =>
+          p.product_name.toLowerCase().includes(searchTerm)
+        )
+      : products;
+
+    const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const paginatedProducts = products.slice(startIndex, endIndex);
+    const paginatedProducts = filtered.slice(startIndex, endIndex);
 
     return { paginatedProducts, totalPages };
-  }, [products, currentPage]);
+  }, [products, currentPage, searchTerm]);
 
   const handleEdit = (product: Product) => {
     console.log("Edit:", product);
@@ -54,7 +74,13 @@ export default function ProductsPage() {
 
   return (
     <div className="mt-4 p-5 flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <input
+          type="text"
+          placeholder="Cari produk..."
+          className="input input-info bg-white"
+          onChange={handleSearchChange}
+        />
         <button
           className="btn btn-outline btn-info"
           onClick={() => setIsModalOpen(true)}
@@ -62,6 +88,7 @@ export default function ProductsPage() {
           Tambah Perangkat
         </button>
       </div>
+
       {!products || products.length === 0 ? (
         <div className="alert alert-info">
           <span>Tidak ada data produk.</span>
@@ -76,6 +103,7 @@ export default function ProductsPage() {
           onPageChange={handlePageChange}
         />
       )}
+
       <AddProductModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
