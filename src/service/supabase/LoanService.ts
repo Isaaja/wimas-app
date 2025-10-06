@@ -159,6 +159,35 @@ export async function getLoanedProducts() {
   return Object.values(grouped);
 }
 
-// export async function rejectLoan(loanId: string) {
+export async function rejectLoan(loanId: string) {
+  return prisma.$transaction(
+    async (tx) => {
+      // 1. Cek apakah loan ada
+      const loan = await tx.loan.findUnique({
+        where: { loan_id: loanId },
+        include: { details: true },
+      });
 
-// }
+      if (!loan) throw new NotFoundError("Loan not found");
+
+      // 2. Cek apakah status sudah bukan rejected/approved
+      if (loan.status === "REJECTED") {
+        throw new Error("Loan already rejected");
+      }
+      if (loan.status === "APPROVED") {
+        throw new Error("Loan already approved");
+      }
+
+      // 3. Update status loan menjadi REJECTED
+      return tx.loan.update({
+        where: { loan_id: loanId },
+        data: { status: "REJECTED" },
+        include: { details: true },
+      });
+    },
+    {
+      timeout: 15000, // transaksi boleh jalan max 15 detik
+      maxWait: 5000, // antre max 5 detik sebelum gagal
+    }
+  );
+}

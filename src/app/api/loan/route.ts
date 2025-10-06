@@ -10,6 +10,8 @@ import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
 export async function POST(req: Request) {
   try {
+    // check Role Access
+    await checkAuth("BORROWER");
     const body = await req.json();
     const { userId, items } = body;
 
@@ -19,8 +21,6 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    // check Role Access
-    await checkAuth("BORROWER");
     //check User Loan
     const CheckUserLoan = await checkUserLoan(userId);
     if (!CheckUserLoan.canBorrow) {
