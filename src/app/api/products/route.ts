@@ -68,15 +68,13 @@ export async function POST(req: Request) {
       quantity,
       category_id,
       product_avaible,
-      status,
     });
     const result = await addProduct(
       product_name,
       product_image,
       quantity,
       category_id,
-      product_avaible,
-      status
+      product_avaible
     );
     if (!result) {
       throw new InvariantError("Gagal menambahkan barang");

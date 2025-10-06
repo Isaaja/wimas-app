@@ -23,7 +23,6 @@ export async function addProduct(
   quantity: number,
   category_id: string,
   product_avaible: number,
-  status: string
 ) {
   await checkProduckName(product_name);
   const product_id = `product-${nanoid(16)}`;
@@ -35,7 +34,6 @@ export async function addProduct(
       quantity,
       category_id,
       product_avaible,
-      status,
     },
   });
 
@@ -58,7 +56,6 @@ export async function updateProductById(
     quantity: number;
     category_id: string;
     product_avaible: number;
-    status: string;
   }
 ) {
   try {
