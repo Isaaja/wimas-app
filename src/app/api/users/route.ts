@@ -35,3 +35,5 @@ export async function GET() {
   const user = await getAllUser();
   return successResponse(user);
 }
+
+

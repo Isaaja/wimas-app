@@ -14,7 +14,7 @@ export async function GET(
   try {
     const { id } = await context.params;
     const result = await getCategoryById(id);
-    return successResponse(result, "success", 200);
+    return successResponse(result, "", 200);
   } catch (error: any) {
     return errorResponse(error);
   }

@@ -1,6 +1,7 @@
 import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
+import { nanoid } from "nanoid";
 
 export async function getCategory() {
   const result = await prisma.category.findMany();
@@ -57,5 +58,22 @@ export async function deleteCategoryById(id: string) {
     return result;
   } catch (error: any) {
     throw new InvariantError(error.message || "Failed to Delete Category");
+  }
+}
+
+export async function addCategory(category_name: string) {
+  try {
+    await checkCategoryName(category_name);
+    const id = `Category-${nanoid(16)}`;
+    const result = await prisma.category.create({
+      data: {
+        category_id: id,
+        category_name,
+      },
+    });
+
+    return result;
+  } catch (error: any) {
+    throw new InvariantError(error.message || "Failed to Add Category");
   }
 }
