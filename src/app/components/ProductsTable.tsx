@@ -19,7 +19,7 @@ export default function ProductsTable({
   onPageChange,
 }: ProductTableProps) {
   return (
-    <div className="p-5">
+    <>
       <div className="overflow-x-auto rounded-box border border-black/30">
         <table className="table">
           <thead>
@@ -159,6 +159,6 @@ export default function ProductsTable({
           </button>
         </div>
       </div>
-    </div>
+    </>
   );
 }

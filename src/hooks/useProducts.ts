@@ -31,6 +31,12 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+export interface GetProductsParams {
+  product_name?: string;
+  sort?: string;
+  order?: "asc" | "desc";
+}
+
 const getAccessToken = (): string => {
   const token = localStorage.getItem("accessToken");
 
@@ -45,10 +51,21 @@ const getAccessToken = (): string => {
   return token;
 };
 
-const fetchProducts = async (): Promise<Product[]> => {
+const fetchProducts = async (
+  params?: GetProductsParams
+): Promise<Product[]> => {
   const token = getAccessToken();
 
-  const response = await fetch("/api/products", {
+  const queryParams = new URLSearchParams();
+  if (params?.product_name)
+    queryParams.append("product_name", params.product_name);
+  if (params?.sort) queryParams.append("sort", params.sort);
+  if (params?.order) queryParams.append("order", params.order);
+
+  const queryString = queryParams.toString();
+  const url = `/api/products${queryString ? `?${queryString}` : ""}`;
+
+  const response = await fetch(url, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -69,10 +86,13 @@ const fetchProducts = async (): Promise<Product[]> => {
 const createProduct = async (
   payload: CreateProductPayload
 ): Promise<Product> => {
+  const token = getAccessToken();
+
   const response = await fetch("/api/products", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
     },
     credentials: "include",
     body: JSON.stringify(payload),
@@ -87,10 +107,10 @@ const createProduct = async (
   return result.data.result;
 };
 
-export const useProducts = () => {
+export const useProducts = (params?: GetProductsParams) => {
   return useQuery({
-    queryKey: ["products"],
-    queryFn: fetchProducts,
+    queryKey: ["products", params],
+    queryFn: () => fetchProducts(params),
     staleTime: 5 * 60 * 1000,
     retry: 2,
   });
@@ -103,7 +123,6 @@ export const useCreateProduct = () => {
     mutationFn: createProduct,
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-
       console.log("✅ Produk berhasil ditambahkan:", newProduct);
     },
     onError: (error: Error) => {

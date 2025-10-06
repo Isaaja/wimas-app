@@ -43,7 +43,7 @@ export async function addProduct(
 }
 
 async function checkProduckName(product_name: string) {
-  const existingProduct = await prisma.product.findUnique({
+  const existingProduct = await prisma.product.findFirst({
     where: { product_name },
   });
   if (existingProduct) {

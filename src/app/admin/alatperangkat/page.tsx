@@ -3,10 +3,12 @@
 import { useState, useMemo } from "react";
 import { useProducts, Product } from "@/hooks/useProducts";
 import ProductTable from "../../components/ProductsTable";
+import AddProductModal from "@/app/components/AddProductModal";
 
 export default function ProductsPage() {
   const { data: products, isLoading, isError, error } = useProducts();
   const [currentPage, setCurrentPage] = useState(1);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const itemsPerPage = 6;
 
   const { paginatedProducts, totalPages } = useMemo(() => {
@@ -50,23 +52,33 @@ export default function ProductsPage() {
     );
   }
 
-  if (!products || products.length === 0) {
-    return (
-      <div className="alert alert-info">
-        <span>Tidak ada data produk.</span>
-      </div>
-    );
-  }
-
   return (
-    <div className="mt-4">
-      <ProductTable
-        products={paginatedProducts}
-        currentPage={currentPage}
-        totalPages={totalPages}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onPageChange={handlePageChange}
+    <div className="mt-4 p-5 flex flex-col gap-4">
+      <div className="flex justify-end">
+        <button
+          className="btn btn-outline btn-info"
+          onClick={() => setIsModalOpen(true)}
+        >
+          Tambah Perangkat
+        </button>
+      </div>
+      {!products || products.length === 0 ? (
+        <div className="alert alert-info">
+          <span>Tidak ada data produk.</span>
+        </div>
+      ) : (
+        <ProductTable
+          products={paginatedProducts}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onPageChange={handlePageChange}
+        />
+      )}
+      <AddProductModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
       />
     </div>
   );
