@@ -81,3 +81,56 @@ export async function getAllUser() {
 
   return result;
 }
+
+export async function updateUserById(
+  id: string,
+  data: {
+    name: string;
+    username: string;
+    password: string;
+    email: string;
+    noHandphone: string;
+  }
+) {
+  try {
+    await checkUserAvalible(id);
+    const updatedUser = await prisma.user.update({
+      where: { user_id: id },
+      data,
+    });
+
+    return {
+      status: "success",
+      data: updatedUser,
+    };
+  } catch (error: any) {
+    return {
+      status: "error",
+      message: error.message || "Failed to update user",
+    };
+  }
+}
+
+export async function deleteUserById(id: string) {
+  try {
+    await checkUserAvalible(id);
+    const deleteUser = await prisma.user.delete({
+      where: { user_id: id },
+    });
+    return deleteUser;
+  } catch (error: any) {
+    return {
+      status: "error",
+      message: error.message || "Failed to delete user",
+    };
+  }
+}
+
+async function checkUserAvalible(id: string) {
+  const user = await prisma.user.findUnique({
+    where: { user_id: id },
+  });
+  if (!user) {
+    throw new NotFoundError("User tidak ditemukan");
+  }
+}

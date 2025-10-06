@@ -3,13 +3,12 @@ import { approveLoan } from "@/service/supabase/LoanService";
 import { checkAuth } from "@/app/utils/auth";
 export async function PATCH(
   req: Request,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const param = await params;
-    const loanId = param.id;
+    const { id } = await context.params;
     await checkAuth("ADMIN");
-    const updatedLoan = await approveLoan(loanId);
+    const updatedLoan = await approveLoan(id);
 
     return NextResponse.json(
       { status: "success", data: updatedLoan },
@@ -23,3 +22,10 @@ export async function PATCH(
     );
   }
 }
+
+// export async function DELETE(context: { params: Promise<{ id: string }> }) {
+//   try {
+//     const { id } = await context.params;
+
+//   } catch (error) {}
+// }
