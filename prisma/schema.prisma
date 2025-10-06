@@ -41,7 +41,6 @@ model Product {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   product_avaible Int
-  status          String
   loanDetails     LoanDetail[]
   category        Category     @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
 }
