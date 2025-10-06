@@ -1,10 +1,11 @@
 import { prisma } from "@/lib/prismaClient";
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import ProductValidator from "@/validator/products";
 import { addProduct } from "@/service/supabase/ProductsService";
 import InvariantError from "@/exceptions/InvariantError";
 import { checkAuth } from "@/app/utils/auth";
 import { Prisma } from "@prisma/client";
+import { errorResponse, successResponse } from "@/app/utils/response";
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,51 +25,32 @@ export async function GET(req: NextRequest) {
 
     const products = await prisma.product.findMany({
       where,
-      include: {
-        category: true,
-      },
-      orderBy: {
-        [sort]: order === "asc" ? "asc" : "desc",
-      },
+      include: { category: true },
+      orderBy: { [sort]: order === "asc" ? "asc" : "desc" },
     });
 
-    return NextResponse.json(
-      {
-        status: "success",
-        data: products,
-      },
-      { status: 200 }
-    );
+    return successResponse(products, "Successfully fetched products");
   } catch (error) {
     console.error("Error fetching products:", error);
-    return NextResponse.json(
-      {
-        status: "error",
-        message: "Internal Server Error",
-      },
-      { status: 500 }
-    );
+    return errorResponse("Internal Server Error");
   }
 }
 
 export async function POST(req: Request) {
   try {
+    await checkAuth("ADMIN");
+
+    const body = await req.json();
+    await ProductValidator.validateProductPayload(body);
+
     const {
       product_name,
       product_image,
       quantity,
       category_id,
       product_avaible,
-      status,
-    } = await req.json();
-    await checkAuth("ADMIN");
-    await ProductValidator.validateProductPayload({
-      product_name,
-      product_image,
-      quantity,
-      category_id,
-      product_avaible,
-    });
+    } = body;
+
     const result = await addProduct(
       product_name,
       product_image,
@@ -76,25 +58,14 @@ export async function POST(req: Request) {
       category_id,
       product_avaible
     );
-    if (!result) {
-      throw new InvariantError("Gagal menambahkan barang");
-    }
-    return NextResponse.json(
-      {
-        status: "success",
-        data: {
-          result,
-        },
-      },
-      { status: 201 }
-    );
+
+    if (!result) throw new InvariantError("Failed to add product");
+
+    return successResponse(result, "Product added successfully", 201);
   } catch (error: any) {
-    return NextResponse.json(
-      {
-        status: "fail",
-        message: error.message || "Terjadi kesalahan",
-      },
-      { status: error.statusCode || 400 }
+    return errorResponse(
+      error.message || "An error occurred",
+      error.statusCode || 400
     );
   }
 }

@@ -9,7 +9,7 @@ interface CustomJwtPayload {
 const TokenManager = {
   generateAccessToken: (payload: object) => {
     return jwt.sign(payload, process.env.ACCESS_TOKEN_KEY as string, {
-      expiresIn: "1h",
+      expiresIn: "10h",
     });
   },
 

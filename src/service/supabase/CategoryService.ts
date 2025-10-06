@@ -49,3 +49,13 @@ export async function updateCategoryById(
     throw new InvariantError(error.message || "Failed to update Category");
   }
 }
+export async function deleteCategoryById(id: string) {
+  try {
+    const result = await prisma.category.delete({
+      where: { category_id: id },
+    });
+    return result;
+  } catch (error: any) {
+    throw new InvariantError(error.message || "Failed to Delete Category");
+  }
+}

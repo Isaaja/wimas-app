@@ -1,10 +1,12 @@
 import { checkAuth } from "@/app/utils/auth";
+import InvariantError from "@/exceptions/InvariantError";
 import {
+  deleteCategoryById,
   getCategoryById,
   updateCategoryById,
 } from "@/service/supabase/CategoryService";
 import CategoryValidator from "@/validator/category";
-import { NextResponse } from "next/server";
+import { errorResponse, successResponse } from "@/app/utils/response";
 export async function GET(
   req: Request,
   context: { params: Promise<{ id: string }> }
@@ -12,18 +14,9 @@ export async function GET(
   try {
     const { id } = await context.params;
     const result = await getCategoryById(id);
-    return NextResponse.json({
-      status: "success",
-      data: {
-        result,
-      },
-    });
+    return successResponse(result, "success", 200);
   } catch (error: any) {
-    const statusCode = error.statusCode || 400;
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error updating product" },
-      { status: statusCode }
-    );
+    return errorResponse(error);
   }
 }
 export async function PUT(
@@ -35,21 +28,26 @@ export async function PUT(
     const { id } = await context.params;
     const body = await req.json();
     await CategoryValidator.validateProductPayload(body);
-    const result = await updateCategoryById(id, body);
-    return NextResponse.json(
-      {
-        status: "success",
-        data: {
-          result,
-        },
-      },
-      { status: 200 }
-    );
+    await updateCategoryById(id, body);
+    return successResponse("", "Berhasil memperbarui Category");
   } catch (error: any) {
-    const statusCode = error.statusCode || 400;
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error updating product" },
-      { status: statusCode }
-    );
+    return errorResponse(error);
+  }
+}
+
+export async function DELETE(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    await checkAuth("ADMIN");
+    const { id } = await context.params;
+    const result = await deleteCategoryById(id);
+    if (!result) {
+      throw new InvariantError("Gagal menghapus Category");
+    }
+    return successResponse("", "Berhasil menghapus Category");
+  } catch (error: any) {
+    return errorResponse(error);
   }
 }

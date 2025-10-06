@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
   getProductById,
   updateProductById,
@@ -6,6 +5,7 @@ import {
 } from "@/service/supabase/ProductsService";
 import ProductValidator from "@/validator/products";
 import { checkAuth } from "@/app/utils/auth";
+import { successResponse, errorResponse } from "@/app/utils/response";
 
 export async function GET(
   req: Request,
@@ -15,16 +15,9 @@ export async function GET(
     const { id } = await context.params;
     const item = await getProductById(id);
 
-    return NextResponse.json({
-      status: "success",
-      data: { item },
-    });
+    return successResponse(item, "Successfully retrieved product");
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error retrieving item" },
-      { status: statusCode }
-    );
+    return errorResponse(error, "Failed to retrieve product");
   }
 }
 
@@ -39,24 +32,11 @@ export async function PUT(
     await ProductValidator.validateProductPayload(body);
 
     const { id } = await context.params;
-
     const result = await updateProductById(id, body);
 
-    return NextResponse.json(
-      {
-        status: "success",
-        data: {
-          result,
-        },
-      },
-      { status: 201 }
-    );
+    return successResponse(result, "Product updated successfully", 201);
   } catch (error: any) {
-    const statusCode = error.statusCode || 400;
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error updating product" },
-      { status: statusCode }
-    );
+    return errorResponse(error, "Failed to update product");
   }
 }
 
@@ -66,17 +46,12 @@ export async function DELETE(
 ) {
   try {
     await checkAuth("ADMIN");
+
     const { id } = await context.params;
     await deleteProductById(id);
-    return NextResponse.json({
-      status: "success",
-      message: "Berhasil menghapus Product",
-    });
+
+    return successResponse(undefined, "Product deleted successfully");
   } catch (error: any) {
-    const statusCode = error.statusCode || 500;
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error updating product" },
-      { status: statusCode }
-    );
+    return errorResponse(error, "Failed to delete product");
   }
 }
