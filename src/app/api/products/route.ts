@@ -73,7 +73,7 @@ export async function POST(req: Request) {
       product_image,
       quantity,
       category_id,
-      product_avaible,
+      product_avaible
     );
     if (!result) {
       throw new InvariantError("Gagal menambahkan barang");

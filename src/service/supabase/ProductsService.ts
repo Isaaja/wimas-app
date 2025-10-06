@@ -59,7 +59,7 @@ export async function updateProductById(
   }
 ) {
   try {
-    await checkProduckName(data.product_name);
+    // await checkProduckName(data.product_name);
 
     const updatedProduct = await prisma.product.update({
       where: { product_id: id },

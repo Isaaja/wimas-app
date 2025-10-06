@@ -2,6 +2,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import Image from "next/image";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
 const page = () => {
   const [email, setEmail] = useState("");
@@ -12,7 +13,29 @@ const page = () => {
 
   const handleLogin = (e: any) => {
     e.preventDefault();
-    login.mutate({ username: email, password });
+    login.mutate(
+      { username: email, password },
+      {
+        onSuccess: (res) => {
+          toast.success(`Login berhasil! Selamat datang 👋`, {
+            position: "top-right",
+            autoClose: 3000,
+          });
+          setEmail("");
+          setPassword("");
+        },
+        onError: (error: any) => {
+          toast.error(
+            error?.response?.data?.message ||
+              "Gagal login, periksa username & password.",
+            {
+              position: "top-right",
+              autoClose: 3000,
+            }
+          );
+        },
+      }
+    );
   };
 
   return (
@@ -27,11 +50,11 @@ const page = () => {
             <form onSubmit={handleLogin}>
               <div className="card-body">
                 <fieldset className="fieldset">
-                  <label className="label">Email</label>
+                  <label className="label">Username</label>
                   <input
                     type="text"
                     className="input w-full bg-white"
-                    placeholder="Email"
+                    placeholder="Username"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
