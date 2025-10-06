@@ -1,6 +1,5 @@
 import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
-import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { addCategory, getCategory } from "@/service/supabase/CategoryService";
 import CategoryValidator from "@/validator/category";
