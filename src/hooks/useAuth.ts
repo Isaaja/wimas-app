@@ -1,6 +1,7 @@
 import { useAuthContext } from "@/app/contexts/AuthContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface LoginCredentials {
   username: string;
@@ -105,20 +106,15 @@ export const useAuth = () => {
   const logoutMutation = useMutation({
     mutationFn: logoutUser,
     onSuccess: (data) => {
-      console.log("✅ Logout berhasil:", data.message);
-
       clearUser();
 
       queryClient.clear();
+      toast.success("Berhasil logout 👋", { autoClose: 2500 });
 
       router.push("/auth");
       router.refresh();
     },
     onError: (error: LogoutError) => {
-      console.error("❌ Logout API error:", error.message);
-
-      console.log("🔄 Melakukan fallback logout...");
-
       clearUser();
       queryClient.clear();
 
@@ -127,6 +123,9 @@ export const useAuth = () => {
       document.cookie =
         "refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict";
 
+      toast.error(error?.message || "Logout gagal, tetapi sesi telah dihapus", {
+        autoClose: 3000,
+      });
       router.push("/auth");
       router.refresh();
     },
