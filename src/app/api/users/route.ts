@@ -6,10 +6,8 @@ import { errorResponse, successResponse } from "@/app/utils/response";
 
 export async function POST(req: Request) {
   try {
-    // Ambil body request
     const { name, username, password, email, noHandphone } = await req.json();
 
-    // Validasi payload
     UsersValidator.validateUserPayload({
       name,
       username,
@@ -18,7 +16,7 @@ export async function POST(req: Request) {
       noHandphone,
     });
 
-    await checkAuth("ADMIN");
+    await checkAuth("SUPERADMIN");
 
     const user = await addUser(name, username, password, email, noHandphone);
 
