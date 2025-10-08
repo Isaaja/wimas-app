@@ -49,7 +49,7 @@ export async function POST(req: Request) {
       quantity,
       category_id,
       product_avaible,
-    } = await req.json();
+    } = body;
     await checkAuth("ADMIN");
     await ProductValidator.validateProductPayload({
       product_name,

@@ -38,7 +38,7 @@ const fetchCategories = async (): Promise<Category[]> => {
   }
 
   const data = await res.json();
-  return data.result;
+  return data.result ?? data;;
 };
 
 export function useCategories() {
