@@ -2,7 +2,6 @@ import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
 import { nanoid } from "nanoid";
-import { NextResponse } from "next/server";
 export async function getProductById(id: string) {
   const item = await prisma.product.findUnique({
     where: {

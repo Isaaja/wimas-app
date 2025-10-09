@@ -17,6 +17,7 @@
     "joi": "^18.0.1",
     "jsonwebtoken": "^9.0.2",
     "lodash.debounce": "^4.0.8",
+    "lucide-react": "^0.545.0",
     "nanoid": "^5.1.6",
     "next": "15.5.4",
     "react": "19.1.0",

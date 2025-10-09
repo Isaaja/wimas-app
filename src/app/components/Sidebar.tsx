@@ -32,6 +32,19 @@ const roleColors: Record<
   },
 };
 
+const roleMap: Record<string, string> = {
+  borrower: "peminjam",
+  admin: "admin",
+  superadmin: "superadmin",
+};
+
+// 🏷️ Label role untuk tampilan UI (display text)
+const displayRoleMap: Record<string, string> = {
+  peminjam: "Peminjam",
+  admin: "Admin",
+  superadmin: "Super Admin",
+};
+
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { logout } = useAuth();
@@ -39,9 +52,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   if (!user) return null;
 
-  const role = user.role.toLowerCase();
-  const menuItems = menuConfig[role] || menuConfig.peminjam;
-  const colors = roleColors[role] || roleColors.peminjam;
+  // 🔄 Mapping role dari token
+  const mappedRole =
+    roleMap[user.role.toLowerCase()] || user.role.toLowerCase();
+  const displayRole = displayRoleMap[mappedRole] || mappedRole;
+  const menuItems = menuConfig[mappedRole] || menuConfig.peminjam;
+  const colors = roleColors[mappedRole] || roleColors.peminjam;
 
   const handleLogout = () => {
     logout.mutate();
@@ -71,7 +87,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <div className="flex-1">
               <p className="font-semibold text-sm truncate">{user.name}</p>
               <span className="inline-block text-xs bg-white/20 px-2 py-1 rounded-full capitalize mt-1">
-                {user.role}
+                {displayRole}
               </span>
             </div>
           </div>
@@ -80,7 +96,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <nav className="flex-1 overflow-y-auto p-4 h-[calc(100vh-300px)]">
           <ul className="space-y-2">
             {menuItems.map((item, index) => {
-              const rolePath = `/${role}`;
+              const rolePath = `/${mappedRole}`;
               const fullPath = `${rolePath}${item.href}`;
               const isActive = pathname === fullPath;
 
@@ -102,7 +118,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-white/20 absolute bottom-0 left-0 right-0 bg-gradient-to-b ${colors.bg}">
+        <div
+          className={`p-4 border-t border-white/20 absolute bottom-0 left-0 right-0 bg-gradient-to-b ${colors.bg}`}
+        >
           <button
             onClick={handleLogout}
             disabled={logout.isPending}

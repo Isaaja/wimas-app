@@ -6,6 +6,7 @@ import { errorResponse, successResponse } from "@/app/utils/response";
 
 export async function POST(req: Request) {
   try {
+    await checkAuth("SUPERADMIN");
     const { name, username, password, email, noHandphone } = await req.json();
 
     UsersValidator.validateUserPayload({
@@ -33,5 +34,3 @@ export async function GET() {
   const user = await getAllUser();
   return successResponse(user);
 }
-
-
