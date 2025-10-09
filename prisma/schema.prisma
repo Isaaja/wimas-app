@@ -21,7 +21,6 @@ model User {
   noHandphone     String?
   authentications Authentication[]
   loans           Loan[]           @relation("UserLoans")
-  reports         Report[]         @relation("UserReports")
 }
 
 model Category {
@@ -80,19 +79,6 @@ model LoanHistory {
   loan       Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
 
   @@index([loan_id])
-}
-
-model Report {
-  report_id  String    @id @db.VarChar(32)
-  user_id    String?
-  file_path  String
-  start_date DateTime?
-  end_date   DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  user       User?     @relation("UserReports", fields: [user_id], references: [user_id])
-
-  @@index([user_id])
 }
 
 model Authentication {
