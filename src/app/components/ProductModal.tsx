@@ -62,7 +62,7 @@ export default function ProductModal({
         { id: productToEdit.product_id, payload: formData },
         {
           onSuccess: () => {
-            toast.success("Produk berhasil diperbarui!")
+            toast.success("Produk berhasil diperbarui!");
             onClose();
           },
           onError: (error) => {
@@ -80,7 +80,7 @@ export default function ProductModal({
             quantity: 0,
             product_avaible: 1,
           });
-          toast.success("Produk berhasil ditambahkan!")
+          toast.success("Produk berhasil ditambahkan!");
           onClose();
         },
         onError: (error) => {
@@ -95,10 +95,44 @@ export default function ProductModal({
   ) => {
     const { name, value, type } = e.target;
 
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === "number" ? parseInt(value) || 0 : value,
-    }));
+    setFormData((prev) => {
+      let parsedValue: number | string = value;
+
+      if (type === "number") {
+        parsedValue = Number(value);
+        if (isNaN(parsedValue)) parsedValue = 0;
+      }
+
+      let newData = { ...prev, [name]: parsedValue };
+
+      const toastId = "product-availability-warning";
+
+      if (name === "product_avaible") {
+        const product_avaible = parsedValue as number;
+        const quantity = prev.quantity;
+
+        if (product_avaible > quantity) {
+          if (!toast.isActive(toastId)) {
+            toast.warning("Ketersediaan tidak boleh melebihi jumlah stok!", {
+              toastId,
+              autoClose: 2000,
+            });
+          }
+          newData.product_avaible = quantity;
+        }
+
+        if (product_avaible === 0) {
+          if (!toast.isActive("product-unavailable")) {
+            toast.info("Produk menjadi tidak tersedia.", {
+              toastId: "product-unavailable",
+              autoClose: 2000,
+            });
+          }
+        }
+      }
+
+      return newData;
+    });
   };
 
   if (!isOpen) return null;
@@ -242,7 +276,7 @@ export default function ProductModal({
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
             <button
               type="button"
-              className="btn btn-ghost hover:bg-gray-100"
+              className="btn btn-ghost hover:bg-gray-100 hover:text-black"
               onClick={onClose}
               disabled={createProduct.isPending || updateProduct.isPending}
             >

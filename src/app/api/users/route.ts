@@ -10,7 +10,6 @@ export async function POST(req: Request) {
     // Ambil body request
     const { name, username, password, email, noHandphone } = await req.json();
 
-    // Validasi payload
     UsersValidator.validateUserPayload({
       name,
       username,
