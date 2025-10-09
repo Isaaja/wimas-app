@@ -16,7 +16,8 @@ export const menuConfig: Record<string, MenuItem[]> = {
   ],
   peminjam: [
     { label: "Dashboard", href: "/dashboard", icon: "" },
-    { label: "Peminjam", href: "/peminjaman", icon: "" },
+    { label: "Alat dan Perangkat", href: "/alatperangkat", icon: "" },
+    { label: "Peminjaman", href: "/peminjaman", icon: "" },
     { label: "Riwayat Peminjaman", href: "/riwayat", icon: "" },
     { label: "Profil", href: "/profil", icon: "" },
   ],

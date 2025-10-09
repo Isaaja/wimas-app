@@ -113,10 +113,7 @@ export default function ProductModal({
 
         if (product_avaible > quantity) {
           if (!toast.isActive(toastId)) {
-            toast.warning("Ketersediaan tidak boleh melebihi jumlah stok!", {
-              toastId,
-              autoClose: 2000,
-            });
+            toast.warning("Ketersediaan tidak boleh melebihi jumlah stok!");
           }
           newData.product_avaible = quantity;
         }
