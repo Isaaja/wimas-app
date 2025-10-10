@@ -7,43 +7,41 @@ import {
 } from "@/service/supabase/LoanService";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { checkAuth } from "@/app/utils/auth";
+import { errorResponse, successResponse } from "@/app/utils/response";
+import { handleFileUpload } from "@/lib/uploads";
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { userId, items } = body;
+    // 🔒 Cek role user
+    const user = await checkAuth("BORROWER");
+    const userId = user.user_id;
+    const formData = await req.formData();
+    const userRaw = formData.get("user") as string;
+    const itemsRaw = formData.get("items") as string;
+    const image = formData.get("image") as File | null;
 
-    if (!userId || !items || !Array.isArray(items) || items.length === 0) {
+    const userInvited = JSON.parse(userRaw);
+    const items = JSON.parse(itemsRaw);
+
+    const image_path = image ? await handleFileUpload(image) : null;
+
+    const check = await checkUserLoan(userId);
+    if (!check.canBorrow) {
       return NextResponse.json(
-        { status: "fail", message: "Invalid request payload" },
-        { status: 400 }
-      );
-    }
-    // check Role Access
-    await checkAuth("BORROWER");
-    //check User Loan
-    const CheckUserLoan = await checkUserLoan(userId);
-    if (!CheckUserLoan.canBorrow) {
-      return NextResponse.json(
-        { status: "fail", message: CheckUserLoan.reason },
+        { status: "fail", message: check.reason },
         { status: 403 }
       );
     }
 
-    const loan = await createLoan(userId, items);
-    return NextResponse.json(
-      {
-        status: "success",
-        data: loan,
-      },
+    const loan = await createLoan({
+      userId,
+      image_path: image_path ?? "",
+      user: userInvited,
+      items,
+    });
 
-      { status: 201 }
-    );
+    return successResponse(loan, "Loan created successfully", 201);
   } catch (error: any) {
-    console.error("Error creating loan:", error);
-    return NextResponse.json(
-      { status: "fail", message: error.message || "Error creating loan" },
-      { status: 500 }
-    );
+    return errorResponse(error);
   }
 }
 
@@ -52,10 +50,5 @@ export async function GET() {
   if (result.length <= 0) {
     throw new NotFoundError("Loan Not Found");
   }
-  return NextResponse.json({
-    status: "success",
-    data: {
-      result,
-    },
-  });
+  return successResponse(result);
 }

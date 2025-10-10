@@ -2,33 +2,35 @@ import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
 import { nanoid } from "nanoid";
 
-export async function createLoan(
-  userId: string,
-  items: { product_id: string; quantity: number }[]
-) {
+export async function createLoan(payload: {
+  userId: string;
+  image_path: string;
+  user: string[];
+  items: { product_id: string; quantity: number }[];
+}) {
+  const { userId, image_path, user, items } = payload;
   const loanId = `loan-${nanoid(16)}`;
+
+  const loanDetails = user.flatMap((borrowerId) =>
+    items.map((item) => ({
+      loan_detail_id: `ld-${nanoid(16)}`,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      image_path,
+      borrower_id: borrowerId,
+    }))
+  );
 
   return prisma.loan.create({
     data: {
       loan_id: loanId,
       user_id: userId,
       status: "REQUESTED",
-      details: {
-        create: items.map((item) => ({
-          loan_detail_id: `ld-${nanoid(16)}`,
-          product_id: item.product_id,
-          quantity: item.quantity,
-        })),
-      },
+      details: { create: loanDetails },
     },
     include: {
       details: true,
-      user: {
-        select: {
-          user_id: true,
-          username: true,
-        },
-      },
+      user: { select: { user_id: true, username: true } },
     },
   });
 }
@@ -111,22 +113,31 @@ export async function getLoanedProducts() {
   const loanDetails = await prisma.loanDetail.findMany({
     select: {
       quantity: true,
+      borrower: {
+        select: {
+          user_id: true,
+          name: true,
+          username: true,
+        },
+      },
       loan: {
         select: {
           loan_id: true,
+          user_id: true,
+          status: true,
           loan_date: true,
           return_date: true,
-          status: true,
           user: {
             select: {
-              user_id: true,
               name: true,
+              username: true,
             },
           },
         },
       },
       product: {
         select: {
+          product_id: true,
           product_name: true,
         },
       },
@@ -139,19 +150,31 @@ export async function getLoanedProducts() {
     if (!acc[loanId]) {
       acc[loanId] = {
         loan_id: loanId,
+        user_id: item.loan.user_id,
+        name: item.loan.user.name,
+        status: item.loan.status,
         loan_date: item.loan.loan_date,
         return_date: item.loan.return_date,
-        status: item.loan.status,
-        user_id: item.loan.user.user_id,
-        name: item.loan.user.name,
+        invited_users: [],
         products: [],
       };
     }
 
+    // ✅ Tambahkan produk
     acc[loanId].products.push({
+      product_id: item.product.product_id,
       product_name: item.product.product_name,
       quantity: item.quantity,
     });
+
+    // ✅ Null-safe borrower
+    if (item.borrower) {
+      acc[loanId].invited_users.push({
+        borrower_id: item.borrower.user_id,
+        borrower_name: item.borrower.name,
+        borrower_username: item.borrower.username,
+      });
+    }
 
     return acc;
   }, {} as Record<string, any>);
@@ -159,6 +182,102 @@ export async function getLoanedProducts() {
   return Object.values(grouped);
 }
 
-// export async function rejectLoan(loanId: string) {
+export async function rejectLoan(loanId: string) {
+  return prisma.$transaction(
+    async (tx) => {
+      // 1. Cek apakah loan ada
+      const loan = await tx.loan.findUnique({
+        where: { loan_id: loanId },
+        include: { details: true },
+      });
 
-// }
+      if (!loan) throw new NotFoundError("Loan not found");
+
+      // 2. Cek apakah status sudah bukan rejected/approved
+      if (loan.status === "REJECTED") {
+        throw new Error("Loan already rejected");
+      }
+      if (loan.status === "APPROVED") {
+        throw new Error("Loan already approved");
+      }
+
+      // 3. Update status loan menjadi REJECTED
+      return tx.loan.update({
+        where: { loan_id: loanId },
+        data: { status: "REJECTED" },
+        include: { details: true },
+      });
+    },
+    {
+      timeout: 15000, // transaksi boleh jalan max 15 detik
+      maxWait: 5000, // antre max 5 detik sebelum gagal
+    }
+  );
+}
+
+export async function getLoanbyId(loanId: string) {
+  const loanDetails = await prisma.loanDetail.findMany({
+    where: { loan_id: loanId },
+    select: {
+      quantity: true,
+      borrower: {
+        select: {
+          user_id: true,
+          name: true,
+          username: true,
+        },
+      },
+      loan: {
+        select: {
+          loan_id: true,
+          user_id: true,
+          user: true,
+          status: true,
+          loan_date: true,
+          return_date: true,
+        },
+      },
+      product: {
+        select: {
+          product_id: true,
+          product_name: true,
+        },
+      },
+    },
+  });
+
+  if (loanDetails.length === 0) {
+    throw new NotFoundError("Loan not Found");
+  }
+
+  const loan = loanDetails[0].loan;
+
+  const response = {
+    loan_id: loan.loan_id,
+    user_id: loan.user_id,
+    name: loan.user.name,
+    status: loan.status,
+    loan_date: loan.loan_date,
+    return_date: loan.return_date,
+    invited_users: [] as any[],
+    products: [] as any[],
+  };
+
+  for (const item of loanDetails) {
+    response.products.push({
+      product_id: item.product.product_id,
+      product_name: item.product.product_name,
+      quantity: item.quantity,
+    });
+
+    if (item.borrower) {
+      response.invited_users.push({
+        borrower_id: item.borrower.user_id,
+        borrower_name: item.borrower.name,
+        borrower_username: item.borrower.username,
+      });
+    }
+  }
+
+  return response;
+}

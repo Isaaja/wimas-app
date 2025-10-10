@@ -105,6 +105,69 @@ const createProduct = async (
   return result.data.result;
 };
 
+export const fetchProductById = async (id: string): Promise<Product> => {
+  const token = getAccessToken();
+  const res = await fetch(`/api/products/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "Gagal memuat produk");
+  }
+
+  const data = await res.json();
+  return data.data.item;
+};
+
+export const updateProduct = async ({
+  id,
+  payload,
+}: {
+  id: string;
+  payload: Partial<Product>;
+}) => {
+  const token = getAccessToken();
+
+  const res = await fetch(`/api/products/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Gagal memperbarui produk");
+  }
+
+  return data.data.result;
+};
+
+export const deleteProduct = async (id: string) => {
+  const token = getAccessToken();
+
+  const res = await fetch(`/api/products/${id}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Gagal menghapus produk");
+  }
+
+  return data.message;
+};
+
 export const useProducts = (params?: GetProductsParams) => {
   return useQuery({
     queryKey: ["products", params],
@@ -121,10 +184,38 @@ export const useCreateProduct = () => {
     mutationFn: createProduct,
     onSuccess: (newProduct) => {
       queryClient.invalidateQueries({ queryKey: ["products"] });
-      console.log("✅ Produk berhasil ditambahkan:", newProduct);
+      console.log(newProduct);
     },
     onError: (error: Error) => {
-      console.error("❌ Gagal menambahkan produk:", error.message);
+      console.error(error.message);
     },
   });
 };
+
+export function useProductById(id: string) {
+  return useQuery({
+    queryKey: ["product", id],
+    queryFn: () => fetchProductById(id),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: updateProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
