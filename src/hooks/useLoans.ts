@@ -19,6 +19,7 @@ export interface InvitedUser {
 export interface Loan {
   loan_id: string;
   user_id: string;
+  name: string;
   status: string;
   loan_date: string;
   return_date: string | null;
