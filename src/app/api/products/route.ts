@@ -41,8 +41,6 @@ export async function POST(req: Request) {
     await checkAuth("ADMIN");
 
     const body = await req.json();
-    await ProductValidator.validateProductPayload(body);
-
     const {
       product_name,
       product_image,
@@ -50,14 +48,7 @@ export async function POST(req: Request) {
       category_id,
       product_avaible,
     } = body;
-    await checkAuth("ADMIN");
-    await ProductValidator.validateProductPayload({
-      product_name,
-      product_image,
-      quantity,
-      category_id,
-      product_avaible,
-    });
+    ProductValidator.validateProductPayload(body);
     const result = await addProduct(
       product_name,
       product_image,

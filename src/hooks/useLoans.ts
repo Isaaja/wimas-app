@@ -5,17 +5,24 @@ import { useAuthContext } from "@/app/contexts/AuthContext";
 
 // 🧩 Types
 export interface LoanProduct {
+  product_id: string;
   product_name: string;
   quantity: number;
 }
 
+export interface InvitedUser {
+  borrower_id: string;
+  borrower_name: string;
+  borrower_username: string;
+}
+
 export interface Loan {
   loan_id: string;
+  user_id: string;
+  status: string;
   loan_date: string;
   return_date: string | null;
-  status: string;
-  user_id: string;
-  name: string;
+  invited_users: InvitedUser[];
   products: LoanProduct[];
 }
 
@@ -64,8 +71,8 @@ const fetchLoans = async (): Promise<Loan[]> => {
   if (!response.ok)
     throw new Error(result?.message || "Gagal memuat data pinjaman");
 
-  // pastikan struktur yang dikembalikan sesuai
-  return result?.data?.result || [];
+  // sesuai payload baru → result.data langsung berupa array
+  return result?.data || [];
 };
 
 // ✨ Buat pinjaman baru
@@ -91,10 +98,11 @@ const createLoan = async (payload: {
   if (!response.ok)
     throw new Error(result?.message || "Gagal membuat pinjaman");
 
-  return result?.data?.result as Loan;
+  // respons dari POST masih bisa berupa objek tunggal
+  return result?.data as Loan;
 };
 
-// 🔥 Gabungan useLoans
+// 🔥 Hook utama
 export function useLoans() {
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
@@ -127,6 +135,7 @@ export function useLoans() {
       },
     });
 
+  // 🔹 Ekspor hook
   return {
     loans,
     isLoading,

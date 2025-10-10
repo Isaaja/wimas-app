@@ -21,7 +21,7 @@ model User {
   noHandphone     String?
   authentications Authentication[]
   loans           Loan[]           @relation("UserLoans")
-  reports         Report[]         @relation("UserReports")
+  loanDetails     LoanDetail[]     @relation("BorrowerDetails")
 }
 
 model Category {
@@ -65,11 +65,15 @@ model LoanDetail {
   quantity       Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+  borrower_id    String
+  image_path     String
+  borrower       User     @relation("BorrowerDetails", fields: [borrower_id], references: [user_id], onDelete: Cascade)
   loan           Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
   product        Product  @relation(fields: [product_id], references: [product_id])
 
   @@index([loan_id])
   @@index([product_id])
+  @@index([borrower_id])
 }
 
 model LoanHistory {
@@ -80,19 +84,6 @@ model LoanHistory {
   loan       Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
 
   @@index([loan_id])
-}
-
-model Report {
-  report_id  String    @id @db.VarChar(32)
-  user_id    String?
-  file_path  String
-  start_date DateTime?
-  end_date   DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  user       User?     @relation("UserReports", fields: [user_id], references: [user_id])
-
-  @@index([user_id])
 }
 
 model Authentication {

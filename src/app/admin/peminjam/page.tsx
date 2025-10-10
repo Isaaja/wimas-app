@@ -47,6 +47,7 @@ export default function AdminPeminjamanPage() {
               <th>Tanggal Dikembalikan</th>
               <th>Status</th>
               <th>Daftar Barang</th>
+              <th>Tim</th>
               <th>Aksi</th>
             </tr>
           </thead>
@@ -55,8 +56,12 @@ export default function AdminPeminjamanPage() {
               <tr key={loan.loan_id} className="hover">
                 <td className="border-t border-black/10">{index + 1}</td>
                 <td className="border-t border-black/10">{loan.name}</td>
-                <td className="border-t border-black/10">{formatDate(loan.loan_date)}</td>
-                <td className="border-t border-black/10">{formatDate(loan.return_date)}</td>
+                <td className="border-t border-black/10">
+                  {formatDate(loan.loan_date)}
+                </td>
+                <td className="border-t border-black/10">
+                  {formatDate(loan.return_date)}
+                </td>
                 <td className="border-t border-black/10">
                   <span
                     className={`badge ${
@@ -80,6 +85,19 @@ export default function AdminPeminjamanPage() {
                             ({p.quantity} unit)
                           </span>
                         </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <span className="text-gray-500 italic">
+                      Tidak ada barang tercatat
+                    </span>
+                  )}
+                </td>
+                <td className="border-t border-black/10">
+                  {loan.invited_users && loan.invited_users.length > 0 ? (
+                    <ul className="list-disc list-inside">
+                      {loan.invited_users.map((p, i) => (
+                        <li key={i}>{p.borrower_name}</li>
                       ))}
                     </ul>
                   ) : (
