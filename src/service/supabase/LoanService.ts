@@ -2,33 +2,35 @@ import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
 import { nanoid } from "nanoid";
 
-export async function createLoan(
-  userId: string,
-  items: { product_id: string; quantity: number }[]
-) {
+export async function createLoan(payload: {
+  userId: string;
+  image_path: string;
+  user: string[];
+  items: { product_id: string; quantity: number }[];
+}) {
+  const { userId, image_path, user, items } = payload;
   const loanId = `loan-${nanoid(16)}`;
+
+  const loanDetails = user.flatMap((borrowerId) =>
+    items.map((item) => ({
+      loan_detail_id: `ld-${nanoid(16)}`,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      image_path,
+      borrower_id: borrowerId,
+    }))
+  );
 
   return prisma.loan.create({
     data: {
       loan_id: loanId,
       user_id: userId,
       status: "REQUESTED",
-      details: {
-        create: items.map((item) => ({
-          loan_detail_id: `ld-${nanoid(16)}`,
-          product_id: item.product_id,
-          quantity: item.quantity,
-        })),
-      },
+      details: { create: loanDetails },
     },
     include: {
       details: true,
-      user: {
-        select: {
-          user_id: true,
-          username: true,
-        },
-      },
+      user: { select: { user_id: true, username: true } },
     },
   });
 }
