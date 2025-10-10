@@ -9,8 +9,6 @@ import NotFoundError from "@/exceptions/NotFoundError";
 import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
 import { handleFileUpload } from "@/lib/uploads";
-import LoanValidator from "@/validator/loans";
-import InvariantError from "@/exceptions/InvariantError";
 export async function POST(req: Request) {
   try {
     // 🔒 Cek role user
@@ -27,13 +25,6 @@ export async function POST(req: Request) {
 
     const image_path = image ? await handleFileUpload(image) : null;
 
-    // const payload = { userId, image_path, user, items };
-
-    // LoanValidator.validateLoanPayload(payload);
-    // if (!LoanValidator) {
-    //   throw new InvariantError("Payload anda salah");
-    // }
-
     const check = await checkUserLoan(userId);
     if (!check.canBorrow) {
       return NextResponse.json(
@@ -42,7 +33,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 💾 Buat loan baru
     const loan = await createLoan({
       userId,
       image_path: image_path ?? "",
@@ -61,10 +51,5 @@ export async function GET() {
   if (result.length <= 0) {
     throw new NotFoundError("Loan Not Found");
   }
-  return NextResponse.json({
-    status: "success",
-    data: {
-      result,
-    },
-  });
+  return successResponse(result);
 }

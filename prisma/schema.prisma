@@ -65,8 +65,8 @@ model LoanDetail {
   quantity       Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
-  borrower_id    String
   image_path     String
+  borrower_id    String
   borrower       User     @relation("BorrowerDetails", fields: [borrower_id], references: [user_id], onDelete: Cascade)
   loan           Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
   product        Product  @relation(fields: [product_id], references: [product_id])
