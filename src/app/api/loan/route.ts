@@ -12,15 +12,14 @@ import { handleFileUpload } from "@/lib/uploads";
 export async function POST(req: Request) {
   try {
     // 🔒 Cek role user
-    await checkAuth("BORROWER");
-
+    const user = await checkAuth("BORROWER");
+    const userId = user.user_id;
     const formData = await req.formData();
-    const userId = formData.get("userId") as string;
     const userRaw = formData.get("user") as string;
     const itemsRaw = formData.get("items") as string;
     const image = formData.get("image") as File | null;
 
-    const user = JSON.parse(userRaw);
+    const userInvited = JSON.parse(userRaw);
     const items = JSON.parse(itemsRaw);
 
     const image_path = image ? await handleFileUpload(image) : null;
@@ -36,7 +35,7 @@ export async function POST(req: Request) {
     const loan = await createLoan({
       userId,
       image_path: image_path ?? "",
-      user,
+      user: userInvited,
       items,
     });
 
