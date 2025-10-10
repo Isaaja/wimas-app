@@ -4,16 +4,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthContext } from "@/app/contexts/AuthContext";
 
 // 🧩 Types
-export interface LoanItem {
-  product_id: string;
+export interface LoanProduct {
+  product_name: string;
   quantity: number;
 }
 
 export interface Loan {
   loan_id: string;
+  loan_date: string;
+  return_date: string | null;
+  status: string;
   user_id: string;
-  created_at: string;
-  items: LoanItem[];
+  name: string;
+  products: LoanProduct[];
+}
+
+export interface LoanItem {
+  product_id: string;
+  quantity: number;
 }
 
 export interface ApiResponse<T> {
@@ -56,7 +64,8 @@ const fetchLoans = async (): Promise<Loan[]> => {
   if (!response.ok)
     throw new Error(result?.message || "Gagal memuat data pinjaman");
 
-  return result.data?.result || [];
+  // pastikan struktur yang dikembalikan sesuai
+  return result?.data?.result || [];
 };
 
 // ✨ Buat pinjaman baru
@@ -82,7 +91,7 @@ const createLoan = async (payload: {
   if (!response.ok)
     throw new Error(result?.message || "Gagal membuat pinjaman");
 
-  return result.data?.result as Loan;
+  return result?.data?.result as Loan;
 };
 
 // 🔥 Gabungan useLoans
@@ -118,7 +127,6 @@ export function useLoans() {
       },
     });
 
-  // 🔹 Ekspor API hook-nya
   return {
     loans,
     isLoading,

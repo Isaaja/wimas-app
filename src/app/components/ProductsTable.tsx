@@ -24,34 +24,28 @@ export default function ProductsTable({
 
   return (
     <>
-      <div className="overflow-x-auto rounded-box border border-black/30">
-        <table className="table">
-          <thead>
+      <div className="bg-white rounded-lg shadow">
+        <table className="table text-gray-700">
+          <thead className="bg-gray-200 text-gray-700">
             <tr className="text-black">
-              <th className="border-b border-black/30 text-center">#</th>
-              <th className="border-b border-black/30 text-center">Gambar</th>
-              <th className="border-b border-black/30 text-center">
-                Nama Produk
-              </th>
-              <th className="border-b border-black/30 text-center">Kategori</th>
-              <th className="border-b border-black/30 text-center">Jumlah</th>
-              <th className="border-b border-black/30 text-center">
-                Ketersediaan
-              </th>
-              <th className="border-b border-black/30 text-center">Status</th>
-              {!isSuperadmin && (
-                <th className="border-b border-black/30 text-center">Aksi</th>
-              )}
+              <th className="text-center">No.</th>
+              <th className="text-center">Gambar</th>
+              <th className="text-center">Nama Produk</th>
+              <th className="text-center">Kategori</th>
+              <th className="text-center">Jumlah</th>
+              <th className="text-center">Ketersediaan</th>
+              <th className="text-center">Status</th>
+              {!isSuperadmin && <th className="text-center">Aksi</th>}
             </tr>
           </thead>
 
           <tbody>
             {products.map((product: Product, index: number) => (
               <tr key={product.product_id} className="hover">
-                <td className="border-b border-black/30 text-center">
+                <td className="border-t border-black/10 text-center">
                   {index + 1}
                 </td>
-                <td className="border-b border-black/30 text-center">
+                <td className="border-t border-black/10 text-center">
                   <div className="avatar">
                     <div className="mask w-24 h-24 rounded-md">
                       {product.product_image ? (
@@ -69,21 +63,21 @@ export default function ProductsTable({
                     </div>
                   </div>
                 </td>
-                <td className="border-b border-black/30 text-center">
+                <td className="border-t border-black/10 text-center">
                   <div className="font-bold">{product.product_name}</div>
                 </td>
-                <td className="border-b border-black/30 text-center">
+                <td className="border-t border-black/10 text-center">
                   {product.category?.category_name || "-"}
                 </td>
-                <td className="border-b border-black/30 text-center">
+                <td className="border-t border-black/10 text-center">
                   <span className="badge badge-ghost">{product.quantity}</span>
                 </td>
-                <td className="border-b border-black/30 text-center">
+                <td className="border-t border-black/10 text-center">
                   <span className="badge badge-ghost">
                     {product.product_avaible}
                   </span>
                 </td>
-                <td className="border-b border-black/30 text-center">
+                <td className="border-t border-black/10 text-center">
                   <span
                     className={`badge ${
                       product.product_avaible === 0
@@ -97,7 +91,7 @@ export default function ProductsTable({
                   </span>
                 </td>
                 {!isSuperadmin && (
-                  <td className="border-b border-black/30 text-center">
+                  <td className="border-t border-black/10 text-center">
                     <div className="flex gap-2 justify-center">
                       <button
                         className="btn btn-ghost btn-xs"

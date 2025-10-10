@@ -11,6 +11,7 @@ import {
 } from "@/hooks/useCategories";
 import CategoryModal from "@/app/components/CategoryModal";
 import CategoryTable from "@/app/components/CategoryTable";
+import Loading from "@/app/components/Loading";
 
 export default function CategoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,20 +59,19 @@ export default function CategoryPage() {
     }
   };
 
+  if (isLoading) {
+    return <Loading />;
+  }
+
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-3xl font-bold">Manajemen Kategori</h1>
+        <h1 className="text-2xl font-bold">Manajemen Kategori</h1>
         <button className="btn btn-primary" onClick={handleAddClick}>
           Tambah Kategori Baru
         </button>
       </div>
 
-      {isLoading && (
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg"></span>
-        </div>
-      )}
       {isError && (
         <div className="alert alert-error">
           <svg

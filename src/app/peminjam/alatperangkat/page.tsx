@@ -10,9 +10,10 @@ import { ShoppingBag } from "lucide-react";
 import CartSummary from "@/app/components/CartSummary";
 import debounce from "lodash.debounce";
 
-export default function PeminjamanPage() {
+export default function AlatPerangkatPage() {
   const { data: products = [], isLoading, isError, error } = useProducts();
-  const { cart, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { cart, addToCart, removeFromCart, updateQuantity, clearCart } =
+    useCart();
   const { createLoan, isCreating } = useLoans();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -58,6 +59,10 @@ export default function PeminjamanPage() {
     }
   };
 
+  const totalItems = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
+
   if (isLoading)
     return (
       <div className="flex justify-center items-center p-10">
@@ -81,12 +86,18 @@ export default function PeminjamanPage() {
           className="input input-bordered input-info bg-white w-full max-w-md"
           onChange={handleSearchChange}
         />
+
         <button
-          className="btn btn-accent text-black ml-4"
+          className="relative btn btn-accent text-black"
           onClick={() => setIsModalOpen(true)}
         >
-          <ShoppingBag />
-          Pinjam Sekarang
+          <ShoppingBag className="w-5 h-5" />
+          <span className="">Pinjam Sekarang</span>
+          {totalItems > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+              {totalItems}
+            </span>
+          )}
         </button>
       </div>
 

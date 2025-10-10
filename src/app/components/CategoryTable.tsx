@@ -16,27 +16,25 @@ export default function CategoryTable({
   isDeleting,
 }: CategoryTableProps) {
   return (
-    <div className="overflow-x-auto rounded-box border border-black/30">
-      <table className="table">
+    <div className="bg-white rounded-lg shadow">
+      <table className="table text-gray-700">
         <thead>
-          <tr className="text-black">
-            <th className="border-b border-black/30 text-center">#</th>
-            <th className="border-b border-black/30 text-center">
-              Nama Kategori
-            </th>
-            <th className="border-b border-black/30 text-center">Aksi</th>
+          <tr className="bg-gray-200 text-gray-700">
+            <th className="text-center">No.</th>
+            <th className="text-center">Nama Kategori</th>
+            <th className="text-center">Aksi</th>
           </tr>
         </thead>
         <tbody>
           {categories.map((category, index) => (
             <tr key={category.category_id} className="hover">
-              <td className="border-b border-black/30 text-center">
+              <td className="border-t border-black/10 text-center">
                 {index + 1}
               </td>
-              <td className="border-b border-black/30 text-center">
+              <td className="border-t border-black/10 text-center">
                 <div className="font-bold">{category.category_name}</div>
               </td>
-              <td className="border-b border-black/30 text-center">
+              <td className="border-t border-black/10 text-center">
                 <div className="flex gap-2 justify-center">
                   <button
                     className="btn btn-ghost btn-xs"
