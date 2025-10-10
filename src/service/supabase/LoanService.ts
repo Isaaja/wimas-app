@@ -151,6 +151,7 @@ export async function getLoanedProducts() {
       acc[loanId] = {
         loan_id: loanId,
         user_id: item.loan.user_id,
+        name: item.loan.user.name,
         status: item.loan.status,
         loan_date: item.loan.loan_date,
         return_date: item.loan.return_date,
@@ -230,6 +231,7 @@ export async function getLoanbyId(loanId: string) {
         select: {
           loan_id: true,
           user_id: true,
+          user: true,
           status: true,
           loan_date: true,
           return_date: true,
@@ -253,6 +255,7 @@ export async function getLoanbyId(loanId: string) {
   const response = {
     loan_id: loan.loan_id,
     user_id: loan.user_id,
+    name: loan.user.name,
     status: loan.status,
     loan_date: loan.loan_date,
     return_date: loan.return_date,
