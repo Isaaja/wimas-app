@@ -1,7 +1,7 @@
 import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
 import AuthenticationError from "@/exceptions/AuthenticationsError";
-import { getLoanbyId } from "@/service/supabase/LoanService";
+import { getLoanById } from "@/service/supabase/LoanService";
 
 export async function GET(
   req: Request,
@@ -10,9 +10,9 @@ export async function GET(
   try {
     const user = checkAuth();
     const { id } = await context.params;
-    const result = await getLoanbyId(id);
+    const result = await getLoanById(id);
     if (
-      result.user_id !== (await user).user_id &&
+      result.borrower_id !== (await user).user_id &&
       (await user).role !== "ADMIN" &&
       (await user).role !== "SUPERADMIN"
     ) {
