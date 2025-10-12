@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
 import ProductCard from "@/app/components/ProductCard";
-import { useLoans } from "@/hooks/useLoans";
+import { useLoans, InvitedUser, LoanItem } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
 import { ShoppingBag } from "lucide-react";
 import CartSummary from "@/app/components/CartSummary";
@@ -38,24 +38,32 @@ export default function AlatPerangkatPage() {
     );
   }, [products, searchTerm]);
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (
+    invitedUsers: InvitedUser[],
+    image?: File | null
+  ) => {
     if (cart.length === 0) {
       toast.warning("Keranjang masih kosong!");
       return;
     }
 
-    const items = cart.map((c) => ({
+    const items: LoanItem[] = cart.map((c) => ({
       product_id: c.product_id,
       quantity: c.quantity,
     }));
 
     try {
-      await createLoan(items);
-      toast.success("Peminjaman berhasil dibuat!");
+      await createLoan({
+        users: invitedUsers,
+        items: items,
+        image: image,
+      });
+      // Success toast sudah ada di hook useLoans
       clearCart();
+      setIsModalOpen(false);
     } catch (error: any) {
       console.error(error);
-      toast.error(error.message || "Gagal memproses peminjaman");
+      // Error toast sudah ada di hook useLoans
     }
   };
 
