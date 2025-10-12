@@ -10,16 +10,14 @@ export async function createLoan(payload: {
 }) {
   const { userId, image_path, user, items } = payload;
   const loanId = `loan-${nanoid(16)}`;
-
-  const loanDetails = user.flatMap((borrowerId) =>
-    items.map((item) => ({
-      loan_detail_id: `ld-${nanoid(16)}`,
-      product_id: item.product_id,
-      quantity: item.quantity,
-      image_path,
-      borrower_id: borrowerId,
-    }))
-  );
+  const borrowerId = user[0];
+  const loanDetails = items.map((item) => ({
+    loan_detail_id: `ld-${nanoid(16)}`,
+    product_id: item.product_id,
+    quantity: item.quantity,
+    image_path,
+    borrower_id: borrowerId,
+  }));
 
   return prisma.loan.create({
     data: {
