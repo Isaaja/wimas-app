@@ -16,7 +16,6 @@ const LoanItemSchema = Joi.object({
 });
 
 const LoanSchemaPayload = Joi.object({
-  userId: Joi.string().required(),
   user: Joi.array().items(Joi.string()).min(1).required(),
   items: Joi.array().items(LoanItemSchema).min(1).required(),
   image: FileSchema.required(),
