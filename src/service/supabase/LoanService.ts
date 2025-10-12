@@ -205,8 +205,8 @@ export async function rejectLoan(loanId: string) {
       });
     },
     {
-      timeout: 15000, // transaksi boleh jalan max 15 detik
-      maxWait: 6000, // antre max 6 detik sebelum gagal
+      timeout: 15000,
+      maxWait: 5000,
     }
   );
 }

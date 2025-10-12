@@ -15,12 +15,12 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const userRaw = formData.get("user") as string;
     const itemsRaw = formData.get("items") as string;
-    const image = formData.get("image") as File | null;
+    const docs = formData.get("docs") as File | null;
 
     const userInvited = JSON.parse(userRaw);
     const items = JSON.parse(itemsRaw);
 
-    const spt_letter = image ? await handleFileUpload(image) : null;
+    const spt_letter = docs ? await handleFileUpload(docs) : null;
 
     const loanCheck = await checkUserLoan(userId);
     if (!loanCheck.canBorrow) {
@@ -30,11 +30,11 @@ export async function POST(req: Request) {
     LoanValidator.validateLoanPayload({
       user: userInvited,
       items,
-      image: image
+      docs: docs
         ? {
-            originalname: image.name,
-            mimetype: image.type,
-            size: image.size,
+            originalname: docs.name,
+            mimetype: docs.type,
+            size: docs.size,
           }
         : null,
     });
