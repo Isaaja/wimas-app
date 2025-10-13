@@ -234,3 +234,11 @@ export async function getLoanById(loanId: string) {
 
   return formatLoanResponse(loan);
 }
+
+export async function getHistoryLoan(){
+  try {
+    
+  } catch (error) {
+    
+  }
+}
