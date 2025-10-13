@@ -5,6 +5,7 @@ import { CartItem } from "@/hooks/useCart";
 import { useUsers } from "@/hooks/useUsers";
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useAuthContext } from "@/app/contexts/AuthContext";
 
 interface CartSummaryProps {
   cart: CartItem[];
@@ -35,11 +36,14 @@ export default function CartSummary({
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: users = [], isLoading: isLoadingUsers } = useUsers();
+  const { user: currentUser } = useAuthContext();
   const router = useRouter();
 
   const borrowers = useMemo(() => {
-    return users.filter((user) => user.role === "BORROWER");
-  }, [users]);
+    return users.filter(
+      (user) => user.role === "BORROWER" && user.user_id !== currentUser?.userId
+    );
+  }, [users, currentUser]);
 
   const filteredBorrowers = useMemo(() => {
     if (!searchTerm) return borrowers;
@@ -236,7 +240,7 @@ export default function CartSummary({
         {/* STEP 3 - PILIH ANGGOTA TIM (BORROWERS) */}
         {step === 3 && (
           <div className="space-y-4">
-            {/* Info Alert */}
+            {/* Info Alert dengan info peminjam */}
             <div className="alert alert-info">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -251,10 +255,15 @@ export default function CartSummary({
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 ></path>
               </svg>
-              <span className="text-sm">
-                Pilih anggota tim yang akan ikut menggunakan perangkat
-                (Opsional)
-              </span>
+              <div className="text-sm">
+                <p className="font-semibold">Pilih anggota tim tambahan</p>
+                <p className="mt-1">
+                  <strong>Peminjam:</strong> {currentUser?.name}
+                </p>
+                <p className="text-xs mt-1">
+                  Anda otomatis termasuk sebagai peminjam utama
+                </p>
+              </div>
             </div>
 
             {/* Selected Users */}
@@ -294,44 +303,54 @@ export default function CartSummary({
               />
             </div>
 
-            {/* User List */}
+            {/* User List - Hilangkan current user dan user yang sudah dipilih */}
             <div className="border rounded-lg max-h-[40vh] overflow-y-auto">
               {isLoadingUsers ? (
                 <div className="flex justify-center items-center p-4">
                   <span className="loading loading-spinner loading-md"></span>
                 </div>
-              ) : filteredBorrowers.length === 0 ? (
-                <p className="text-center text-gray-500 p-4">
-                  {searchTerm
-                    ? "Tidak ada user yang sesuai pencarian"
-                    : "Tidak ada borrower tersedia"}
-                </p>
+              ) : filteredBorrowers.filter(
+                  (user) => !isUserSelected(user.user_id)
+                ).length === 0 ? (
+                <div className="text-center p-4">
+                  <p className="text-gray-500 mb-2">
+                    {selectedUsers.length > 0
+                      ? "Semua user sudah dipilih"
+                      : "Tidak ada borrower tersedia untuk ditambahkan"}
+                  </p>
+                  {selectedUsers.length > 0 && (
+                    <p className="text-sm text-gray-400">
+                      Hapus beberapa user dari daftar terpilih untuk memilih
+                      yang lain
+                    </p>
+                  )}
+                </div>
               ) : (
                 <div className="divide-y">
-                  {filteredBorrowers.map((user) => (
-                    <div
-                      key={user.user_id}
-                      className={`p-3 hover:bg-gray-50 cursor-pointer transition ${
-                        isUserSelected(user.user_id) ? "bg-blue-50" : ""
-                      }`}
-                      onClick={() => handleToggleUser(user)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-gray-500">
-                            @{user.username}
-                          </p>
+                  {filteredBorrowers
+                    .filter((user) => !isUserSelected(user.user_id))
+                    .map((user) => (
+                      <div
+                        key={user.user_id}
+                        className="p-3 hover:bg-gray-50 cursor-pointer transition"
+                        onClick={() => handleToggleUser(user)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-gray-500">
+                              @{user.username}
+                            </p>
+                          </div>
+                          <input
+                            type="checkbox"
+                            className="checkbox checkbox-primary"
+                            checked={false}
+                            onChange={() => {}}
+                          />
                         </div>
-                        <input
-                          type="checkbox"
-                          className="checkbox checkbox-primary"
-                          checked={isUserSelected(user.user_id)}
-                          onChange={() => {}}
-                        />
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               )}
             </div>
