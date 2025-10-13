@@ -7,6 +7,7 @@ import {
   deleteRefreshToken,
   verifyRefreshToken,
 } from "@/service/supabase/AuthenticationsService";
+import { checkAuth } from "@/app/utils/auth";
 export async function POST(req: Request) {
   const { username, password } = await req.json();
   try {
@@ -121,6 +122,22 @@ export async function DELETE(req: Request) {
     return NextResponse.json(
       { status: "fail", message: error.message },
       { status }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const user = await checkAuth();
+
+    return NextResponse.json({
+      message: "Berhasil mendapatkan data user",
+      user,
+    });
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || "Unauthorized" },
+      { status: 401 }
     );
   }
 }

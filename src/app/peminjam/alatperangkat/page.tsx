@@ -12,7 +12,8 @@ import debounce from "lodash.debounce";
 
 export default function PeminjamanPage() {
   const { data: products = [], isLoading, isError, error } = useProducts();
-  const { cart, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { cart, addToCart, removeFromCart, updateQuantity, clearCart } =
+    useCart();
   const { createLoan, isCreating } = useLoans();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -81,6 +82,7 @@ export default function PeminjamanPage() {
           className="input input-bordered input-info bg-white w-full max-w-md"
           onChange={handleSearchChange}
         />
+
         <button
           className="btn btn-accent text-black ml-4"
           onClick={() => setIsModalOpen(true)}
