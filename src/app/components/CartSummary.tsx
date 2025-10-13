@@ -2,17 +2,23 @@
 
 import { useState, useMemo } from "react";
 import { CartItem } from "@/hooks/useCart";
-import { InvitedUser } from "@/hooks/useLoans";
 import { useUsers } from "@/hooks/useUsers";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface CartSummaryProps {
   cart: CartItem[];
   onRemove: (id: string) => void;
   onUpdateQty: (id: string, qty: number) => void;
-  onCheckout: (invitedUsers: InvitedUser[], image?: File | null) => void;
+  onCheckout: (invitedUserIds: string[], docsFile?: File | null) => void;
   onClose: () => void;
   isLoading?: boolean;
+}
+
+interface SelectedUser {
+  user_id: string;
+  name: string;
+  username: string;
 }
 
 export default function CartSummary({
@@ -24,11 +30,12 @@ export default function CartSummary({
   isLoading,
 }: CartSummaryProps) {
   const [step, setStep] = useState(1);
-  const [image, setImage] = useState<File | null>(null);
-  const [selectedUsers, setSelectedUsers] = useState<InvitedUser[]>([]);
+  const [docsFile, setDocsFile] = useState<File | null>(null);
+  const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: users = [], isLoading: isLoadingUsers } = useUsers();
+  const router = useRouter();
 
   const borrowers = useMemo(() => {
     return users.filter((user) => user.role === "BORROWER");
@@ -52,36 +59,56 @@ export default function CartSummary({
     name: string;
     username: string;
   }) => {
-    const exists = selectedUsers.find((u) => u.borrower_id === user.user_id);
+    const exists = selectedUsers.find((u) => u.user_id === user.user_id);
 
     if (exists) {
       setSelectedUsers((prev) =>
-        prev.filter((u) => u.borrower_id !== user.user_id)
+        prev.filter((u) => u.user_id !== user.user_id)
       );
     } else {
       setSelectedUsers((prev) => [
         ...prev,
         {
-          borrower_id: user.user_id,
-          borrower_name: user.name,
-          borrower_username: user.username,
+          user_id: user.user_id,
+          name: user.name,
+          username: user.username,
         },
       ]);
     }
   };
 
-  const handleRemoveUser = (borrowerId: string) => {
-    setSelectedUsers((prev) =>
-      prev.filter((u) => u.borrower_id !== borrowerId)
-    );
+  const handleRemoveUser = (userId: string) => {
+    setSelectedUsers((prev) => prev.filter((u) => u.user_id !== userId));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+
+    if (file) {
+      if (file.type !== "application/pdf") {
+        alert("Hanya file PDF yang diperbolehkan");
+        e.target.value = "";
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File terlalu besar. Maksimal 5MB");
+        e.target.value = "";
+        return;
+      }
+
+      setDocsFile(file);
+    }
   };
 
   const handleSubmit = () => {
-    onCheckout(selectedUsers, image);
+    const userIds = selectedUsers.map((u) => u.user_id);
+    onCheckout(userIds, docsFile);
+    router.push("/peminjam/peminjaman");
   };
 
   const isUserSelected = (userId: string): boolean => {
-    return selectedUsers.some((u) => u.borrower_id === userId);
+    return selectedUsers.some((u) => u.user_id === userId);
   };
 
   return (
@@ -89,7 +116,7 @@ export default function CartSummary({
       <div className="modal-box w-11/12 max-w-2xl bg-white">
         <h3 className="font-bold text-lg border-b pb-2 mb-3">
           {step === 1 && "1️⃣ Pilih Perangkat"}
-          {step === 2 && "2️⃣ Upload SPT"}
+          {step === 2 && "2️⃣ Upload Dokumen SPT"}
           {step === 3 && "3️⃣ Pilih Anggota Tim"}
         </h3>
 
@@ -112,6 +139,9 @@ export default function CartSummary({
                       <p className="text-sm text-gray-500">
                         Jumlah: {item.quantity}
                       </p>
+                      <p className="text-xs text-gray-400">
+                        Stock tersedia: {item.product_avaible}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -122,6 +152,7 @@ export default function CartSummary({
                             Math.max(item.quantity - 1, 1)
                           )
                         }
+                        disabled={item.quantity <= 1}
                       >
                         -
                       </button>
@@ -131,6 +162,7 @@ export default function CartSummary({
                         onClick={() =>
                           onUpdateQty(item.product_id, item.quantity + 1)
                         }
+                        disabled={item.quantity >= item.product_avaible}
                       >
                         +
                       </button>
@@ -148,29 +180,83 @@ export default function CartSummary({
           </>
         )}
 
-        {/* STEP 2 - UPLOAD SPT */}
+        {/* STEP 2 - UPLOAD DOKUMEN SPT */}
         {step === 2 && (
           <div className="space-y-4">
             <p className="text-gray-600">
-              Upload dokumen SPT (PDF / JPG / PNG)
+              Upload dokumen SPT (Opsional - PDF Only, Max 5MB)
             </p>
             <input
               type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              className="file-input file-input-bordered w-full"
-              onChange={(e) => setImage(e.target.files?.[0] || null)}
+              accept=".pdf,application/pdf"
+              className="file-input file-input-bordered w-full bg-white border-gray-400 border-2"
+              onChange={handleFileChange}
             />
-            {image && (
-              <p className="text-sm text-green-600">
-                ✅ File terpilih: {image.name}
-              </p>
+            {docsFile && (
+              <div className="bg-green-50 p-3 rounded-lg">
+                <p className="text-sm text-green-700 font-medium">
+                  ✅ File terpilih: {docsFile.name}
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Ukuran: {(docsFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                <button
+                  className="btn btn-xs btn-error mt-2"
+                  onClick={() => setDocsFile(null)}
+                >
+                  Hapus File
+                </button>
+              </div>
             )}
+            <div className="alert alert-info">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                className="stroke-current shrink-0 w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <div className="text-sm">
+                <p className="font-semibold">Catatan:</p>
+                <ul className="list-disc list-inside mt-1">
+                  <li>Hanya file PDF yang diperbolehkan</li>
+                  <li>Ukuran maksimal 5MB</li>
+                </ul>
+              </div>
+            </div>
           </div>
         )}
 
         {/* STEP 3 - PILIH ANGGOTA TIM (BORROWERS) */}
         {step === 3 && (
           <div className="space-y-4">
+            {/* Info Alert */}
+            <div className="alert alert-info">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                className="stroke-current shrink-0 w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <span className="text-sm">
+                Pilih anggota tim yang akan ikut menggunakan perangkat
+                (Opsional)
+              </span>
+            </div>
+
             {/* Selected Users */}
             {selectedUsers.length > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg">
@@ -180,13 +266,13 @@ export default function CartSummary({
                 <div className="flex flex-wrap gap-2">
                   {selectedUsers.map((user) => (
                     <div
-                      key={user.borrower_id}
+                      key={user.user_id}
                       className="badge badge-lg badge-primary gap-2"
                     >
-                      <span>{user.borrower_name}</span>
+                      <span>{user.name}</span>
                       <button
                         className="btn btn-xs btn-circle btn-ghost"
-                        onClick={() => handleRemoveUser(user.borrower_id)}
+                        onClick={() => handleRemoveUser(user.user_id)}
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -254,13 +340,17 @@ export default function CartSummary({
 
         {/* FOOTER */}
         <div className="modal-action flex justify-between items-center">
-          <button className="btn" onClick={onClose}>
+          <button className="btn" onClick={onClose} disabled={isLoading}>
             Tutup
           </button>
 
           <div className="flex gap-2">
             {step > 1 && (
-              <button className="btn btn-outline" onClick={prevStep}>
+              <button
+                className="btn btn-outline"
+                onClick={prevStep}
+                disabled={isLoading}
+              >
                 ⬅ Prev
               </button>
             )}
@@ -277,9 +367,7 @@ export default function CartSummary({
               <button
                 className="btn btn-success text-white"
                 onClick={handleSubmit}
-                disabled={
-                  isLoading || cart.length === 0 || selectedUsers.length === 0
-                }
+                disabled={isLoading || cart.length === 0}
               >
                 {isLoading ? (
                   <span className="loading loading-spinner loading-sm"></span>
@@ -293,7 +381,9 @@ export default function CartSummary({
       </div>
 
       <form method="dialog" className="modal-backdrop">
-        <button onClick={onClose}>close</button>
+        <button onClick={onClose} disabled={isLoading}>
+          close
+        </button>
       </form>
     </dialog>
   );

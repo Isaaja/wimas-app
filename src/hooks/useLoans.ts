@@ -4,26 +4,29 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthContext } from "@/app/contexts/AuthContext";
 import { toast } from "react-toastify";
 
-/* -------------------- Interfaces -------------------- */
 export interface LoanProduct {
   product_id: string;
   product_name: string;
   quantity: number;
 }
 
-export interface InvitedUser {
-  borrower_id: string;
-  borrower_name: string;
-  borrower_username: string;
+export interface LoanUser {
+  user_id: string;
+  name: string;
+  username: string;
 }
 
 export interface Loan {
   loan_id: string;
-  user_id: string;
-  status: string;
-  loan_date: string;
-  return_date: string | null;
-  invited_users: InvitedUser[];
+  borrower_id: string;
+  borrower_name: string;
+  borrower_username: string;
+  status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
+  spt_file: string | null;
+  created_at: string;
+  updated_at: string;
+  owner: LoanUser;
+  invited_users: LoanUser[];
   products: LoanProduct[];
 }
 
@@ -32,13 +35,17 @@ export interface LoanItem {
   quantity: number;
 }
 
+export interface CheckUserLoanResponse {
+  canBorrow: boolean;
+  reason: string;
+}
+
 export interface ApiResponse<T> {
   status: string;
   data: T;
   message?: string;
 }
 
-/* -------------------- Token Helper -------------------- */
 const getAccessToken = (): string | null => {
   if (typeof window === "undefined") return null;
 
@@ -53,7 +60,6 @@ const getAccessToken = (): string | null => {
   return cookieToken || null;
 };
 
-/* -------------------- Fetch All Loans -------------------- */
 const fetchLoans = async (): Promise<Loan[]> => {
   const token = getAccessToken();
   if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
@@ -74,7 +80,50 @@ const fetchLoans = async (): Promise<Loan[]> => {
   return Array.isArray(result?.data) ? result.data : [];
 };
 
-const createLoan = async (formData: FormData) => {
+//kecuali return
+const fetchLoanById = async (loanId: string): Promise<Loan> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch(`/api/loan/${loanId}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok)
+    throw new Error(result?.message || "Gagal memuat detail peminjaman");
+
+  return Array.isArray(result?.data)
+    ? result.data.filter((loan: Loan) => loan.status !== "RETURNED")
+    : [];
+};
+
+const checkUserLoan = async (): Promise<CheckUserLoanResponse> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch("/api/loan/check", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok)
+    throw new Error(result?.message || "Gagal memeriksa status peminjaman");
+
+  return result?.data;
+};
+
+const createLoan = async (formData: FormData): Promise<Loan> => {
   const token = getAccessToken();
   if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
 
@@ -100,8 +149,91 @@ const createLoan = async (formData: FormData) => {
   return result?.data as Loan;
 };
 
-/* -------------------- Custom Hook -------------------- */
-export function useLoans() {
+const approveLoan = async (loanId: string): Promise<Loan> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch(`/api/loan/${loanId}/approve`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok)
+    throw new Error(result?.message || "Gagal menyetujui peminjaman");
+
+  return result?.data;
+};
+
+const rejectLoan = async (loanId: string): Promise<Loan> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch(`/api/loan/${loanId}/reject`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok)
+    throw new Error(result?.message || "Gagal menolak peminjaman");
+
+  return result?.data;
+};
+
+const returnLoan = async (loanId: string): Promise<Loan> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch(`/api/loan/${loanId}/return`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok)
+    throw new Error(result?.message || "Gagal mengembalikan peminjaman");
+
+  return result?.data;
+};
+
+const deleteLoan = async (loanId: string): Promise<void> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch(`/api/loan/${loanId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok)
+    throw new Error(result?.message || "Gagal menghapus peminjaman");
+};
+
+/* -------------------- Custom Hooks -------------------- */
+
+export function useLoans(filter?: "active" | "history") {
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
 
@@ -110,35 +242,53 @@ export function useLoans() {
     isLoading,
     isError,
     error,
+    refetch,
   } = useQuery({
-    queryKey: ["loans"],
+    queryKey: ["loans", filter],
     queryFn: fetchLoans,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     retry: 1,
+    select: (data) => {
+      if (!filter) return data;
+
+      if (filter === "active") {
+        // tampilkan hanya REQUESTED & APPROVED
+        return data.filter(
+          (loan) => loan.status === "REQUESTED" || loan.status === "APPROVED"
+        );
+      }
+
+      if (filter === "history") {
+        // tampilkan hanya REJECTED & RETURNED
+        return data.filter(
+          (loan) => loan.status === "REJECTED" || loan.status === "RETURNED"
+        );
+      }
+
+      return data;
+    },
   });
 
-  // ✅ Hapus debounce, biarkan React Query handle request
   const { mutateAsync: createLoanMutation, isPending: isCreating } =
     useMutation({
       mutationFn: async (params: {
-        users: InvitedUser[];
+        users: string[]; // Array of user IDs
         items: LoanItem[];
-        image?: File | null;
+        docs?: File | null;
       }) => {
         if (!user) throw new Error("User not authenticated");
 
         const formData = new FormData();
-        const borrowerIds = params.users.map((u) => u.borrower_id);
-        formData.append("user", JSON.stringify(borrowerIds));
+        formData.append("user", JSON.stringify(params.users));
         formData.append("items", JSON.stringify(params.items));
-        if (params.image) {
-          formData.append("image", params.image);
+        if (params.docs) {
+          formData.append("docs", params.docs);
         }
 
         console.log("📤 Sending loan request:", {
           users: params.users,
           items: params.items,
-          hasImage: !!params.image,
+          hasDocs: !!params.docs,
         });
 
         const data = await createLoan(formData);
@@ -147,6 +297,7 @@ export function useLoans() {
       onSuccess: (data) => {
         toast.success("Peminjaman berhasil dibuat!");
         queryClient.invalidateQueries({ queryKey: ["loans"] });
+        queryClient.invalidateQueries({ queryKey: ["loans", "check"] });
         console.log("✅ Loan created:", data);
       },
       onError: (err: Error) => {
@@ -160,7 +311,112 @@ export function useLoans() {
     isLoading,
     isError,
     error,
+    refetch,
     createLoan: createLoanMutation,
     isCreating,
   };
+}
+
+/**
+ * Hook untuk mendapatkan detail peminjaman berdasarkan ID
+ */
+export function useLoanById(loanId: string) {
+  return useQuery({
+    queryKey: ["loans", loanId],
+    queryFn: () => fetchLoanById(loanId),
+    enabled: !!loanId,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: 1,
+  });
+}
+
+/**
+ * Hook untuk mengecek apakah user bisa membuat pinjaman baru
+ */
+export function useCheckUserLoan() {
+  return useQuery({
+    queryKey: ["loans", "check"],
+    queryFn: checkUserLoan,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    retry: 1,
+  });
+}
+
+/**
+ * Hook untuk approve peminjaman
+ */
+export function useApproveLoan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: approveLoan,
+    onSuccess: (data) => {
+      toast.success("Peminjaman berhasil disetujui!");
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gagal menyetujui peminjaman");
+      console.error("❌ Failed to approve loan:", err.message);
+    },
+  });
+}
+
+/**
+ * Hook untuk reject peminjaman
+ */
+export function useRejectLoan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: rejectLoan,
+    onSuccess: (data) => {
+      toast.success("Peminjaman berhasil ditolak!");
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gagal menolak peminjaman");
+      console.error("❌ Failed to reject loan:", err.message);
+    },
+  });
+}
+
+/**
+ * Hook untuk return/mengembalikan peminjaman
+ */
+export function useReturnLoan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: returnLoan,
+    onSuccess: (data) => {
+      toast.success("Peminjaman berhasil dikembalikan!");
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gagal mengembalikan peminjaman");
+      console.error("❌ Failed to return loan:", err.message);
+    },
+  });
+}
+
+/**
+ * Hook untuk delete peminjaman
+ */
+export function useDeleteLoan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: deleteLoan,
+    onSuccess: () => {
+      toast.success("Peminjaman berhasil dihapus!");
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gagal menghapus peminjaman");
+      console.error("❌ Failed to delete loan:", err.message);
+    },
+  });
 }

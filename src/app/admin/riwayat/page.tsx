@@ -7,8 +7,8 @@ import { id } from "date-fns/locale";
 import { Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 
-export default function AdminPeminjamanPage() {
-  const { loans, isLoading, isError, error } = useLoans();
+export default function RiwayatPeminjamanPage() {
+  const { loans, isLoading, isError, error } = useLoans("history");
   const { mutate: approveLoan, isPending: isApproving } = useApproveLoan();
   const { mutate: rejectLoan, isPending: isRejecting } = useRejectLoan();
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);

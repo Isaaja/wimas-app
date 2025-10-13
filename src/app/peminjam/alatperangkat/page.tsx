@@ -4,7 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
 import ProductCard from "@/app/components/ProductCard";
-import { useLoans, InvitedUser, LoanItem } from "@/hooks/useLoans";
+import { useLoans, type LoanItem } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
 import { ShoppingBag } from "lucide-react";
 import CartSummary from "@/app/components/CartSummary";
@@ -39,8 +39,8 @@ export default function AlatPerangkatPage() {
   }, [products, searchTerm]);
 
   const handleCheckout = async (
-    invitedUsers: InvitedUser[],
-    image?: File | null
+    invitedUserIds: string[], // Array of user IDs
+    docsFile?: File | null
   ) => {
     if (cart.length === 0) {
       toast.warning("Keranjang masih kosong!");
@@ -54,22 +54,29 @@ export default function AlatPerangkatPage() {
 
     try {
       await createLoan({
-        users: invitedUsers,
+        users: invitedUserIds,
         items: items,
-        image: image,
+        docs: docsFile,
       });
-      // Success toast sudah ada di hook useLoans
       clearCart();
       setIsModalOpen(false);
     } catch (error: any) {
-      console.error(error);
-      // Error toast sudah ada di hook useLoans
+      console.error("Checkout error:", error);
     }
   };
 
   const totalItems = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
+
+  const handleOpenModal = () => {
+    if (cart.length === 0) {
+      toast.warning("Keranjang masih kosong!");
+      return;
+    }
+
+    setIsModalOpen(true);
+  };
 
   if (isLoading)
     return (
@@ -87,6 +94,7 @@ export default function AlatPerangkatPage() {
 
   return (
     <div className="flex flex-col max-h-screen bg-gray-200 mt-6 rounded-md shadow-xl p-4">
+      {/* Header Section */}
       <div className="flex justify-between items-center mb-4 px-4">
         <input
           type="text"
@@ -97,10 +105,10 @@ export default function AlatPerangkatPage() {
 
         <button
           className="relative btn btn-accent text-black"
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleOpenModal}
         >
           <ShoppingBag className="w-5 h-5" />
-          <span className="">Pinjam Sekarang</span>
+          <span>Pinjam Sekarang</span>
           {totalItems > 0 && (
             <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
               {totalItems}
