@@ -196,6 +196,7 @@ export async function getLoanedProducts() {
           user: { select: { user_id: true, name: true, username: true } },
         },
       },
+      report: true,
       items: {
         include: {
           product: { select: { product_id: true, product_name: true } },
