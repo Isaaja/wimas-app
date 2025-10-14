@@ -11,8 +11,10 @@ export async function GET(
     const user = checkAuth();
     const { id } = await context.params;
     const result = await getLoanById(id);
+    console.log(result?.borrower.user_id);
+    console.log((await user).user_id);
     if (
-      result.borrower_id !== (await user).user_id &&
+      result?.borrower.user_id !== (await user).user_id &&
       (await user).role !== "ADMIN" &&
       (await user).role !== "SUPERADMIN"
     ) {
