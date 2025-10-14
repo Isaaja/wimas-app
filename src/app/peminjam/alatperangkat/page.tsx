@@ -46,7 +46,8 @@ export default function AlatPerangkatPage() {
 
   const handleCheckout = async (
     invitedUserIds: string[],
-    docsFile?: File | null
+    docsFile?: File | null,
+    reportData?: any
   ) => {
     if (cart.length === 0) {
       toast.warning("Keranjang masih kosong!");
@@ -68,6 +69,7 @@ export default function AlatPerangkatPage() {
         users: invitedUserIds,
         items: items,
         docs: docsFile,
+        report: reportData,
       });
       clearCart();
       setIsModalOpen(false);

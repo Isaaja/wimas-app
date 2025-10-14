@@ -9,17 +9,16 @@ datasource db {
 }
 
 model User {
-  user_id     String   @id @db.VarChar(32)
-  username    String   @unique
-  password    String
-  name        String
-  role        Role     @default(BORROWER)
-  status      String?
-  email       String?
-  noHandphone String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
+  name             String
+  createdAt        DateTime          @default(now())
+  password         String
+  role             Role              @default(BORROWER)
+  status           String?
+  updatedAt        DateTime          @updatedAt
+  user_id          String            @id @db.VarChar(32)
+  username         String            @unique
+  email            String?
+  noHandphone      String?
   loans            Loan[]            @relation("UserLoans")
   loanParticipants LoanParticipant[]
 }
@@ -70,8 +69,8 @@ model LoanParticipant {
   id         String          @id @db.VarChar(32)
   loan_id    String
   user_id    String
-  role       ParticipantRole
   created_at DateTime        @default(now())
+  role       ParticipantRole
   loan       Loan            @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
   user       User            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
@@ -89,8 +88,7 @@ model Report {
   end_date           DateTime
   created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
-
-  loan Loan @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  loan               Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
 }
 
 enum Role {

@@ -46,6 +46,23 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+// ✅ PERBAIKAN: Interface untuk Report Data yang lengkap
+export interface LoanReport {
+  spt_number: string;
+  destination: string;
+  place_of_execution: string;
+  start_date: string;
+  end_date: string;
+  spt_file?: string | null; // Opsional, karena sudah dihandle terpisah
+}
+
+export interface CreateLoanParams {
+  users: string[];
+  items: LoanItem[];
+  docs?: File | null;
+  report?: LoanReport;
+}
+
 // ==================== LOAN HISTORY INTERFACES ====================
 export interface LoanHistoryProduct {
   product_id: string;
@@ -64,6 +81,7 @@ export interface LoanHistoryParticipant {
   role: string;
 }
 
+// ✅ PERBAIKAN: Interface untuk Loan History yang lengkap
 export interface LoanHistory {
   loan_id: string;
   borrower_id: string;
@@ -76,11 +94,25 @@ export interface LoanHistory {
   participants: LoanHistoryParticipant[];
   userRole: string;
   participantId: string;
+  spt_number?: string;
+  destination?: string;
+  place_of_execution?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 export interface LoanHistoryResponse {
   loans: LoanHistory[];
   total: number;
+}
+// ==================== END LOAN HISTORY INTERFACES ====================
+
+interface AuthUser {
+  user_id: string;
+  name: string;
+  username: string;
+  email: string;
+  role: string;
 }
 // ==================== END LOAN HISTORY INTERFACES ====================
 
@@ -137,7 +169,9 @@ const fetchLoanById = async (loanId: string): Promise<Loan> => {
     throw new Error(result?.message || "Gagal memuat detail peminjaman");
 
   if (Array.isArray(result?.data)) {
-    const filtered = result.data.filter((loan: Loan) => loan.status !== "RETURNED");
+    const filtered = result.data.filter(
+      (loan: Loan) => loan.status !== "RETURNED"
+    );
     if (filtered.length === 0) {
       throw new Error("Loan not found or already returned");
     }
@@ -166,9 +200,34 @@ const checkUserLoan = async (): Promise<CheckUserLoanResponse> => {
   return result?.data;
 };
 
-const createLoan = async (formData: FormData): Promise<Loan> => {
+const createLoan = async (params: {
+  users: string[];
+  items: LoanItem[];
+  docs?: File | null;
+  report?: any;
+}): Promise<Loan> => {
   const token = getAccessToken();
   if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const formData = new FormData();
+  formData.append("user", JSON.stringify(params.users));
+  formData.append("items", JSON.stringify(params.items));
+
+  // Tambahkan report jika ada
+  if (params.report) {
+    formData.append("report", JSON.stringify(params.report));
+  }
+
+  if (params.docs) {
+    formData.append("docs", params.docs);
+  }
+
+  console.log("📤 Sending loan request:", {
+    users: params.users,
+    items: params.items,
+    hasDocs: !!params.docs,
+    hasReport: !!params.report,
+  });
 
   const response = await fetch("/api/loan", {
     method: "POST",
@@ -318,14 +377,12 @@ export function useLoans(filter?: "active" | "history") {
       if (!filter) return data;
 
       if (filter === "active") {
-        // tampilkan hanya REQUESTED & APPROVED
         return data.filter(
           (loan) => loan.status === "REQUESTED" || loan.status === "APPROVED"
         );
       }
 
       if (filter === "history") {
-        // tampilkan hanya REJECTED & RETURNED
         return data.filter(
           (loan) => loan.status === "REJECTED" || loan.status === "RETURNED"
         );
@@ -341,30 +398,25 @@ export function useLoans(filter?: "active" | "history") {
         users: string[]; // Array of user IDs
         items: LoanItem[];
         docs?: File | null;
+        report?: any; // Tambahkan report parameter
       }) => {
         if (!user) throw new Error("User not authenticated");
-
-        const formData = new FormData();
-        formData.append("user", JSON.stringify(params.users));
-        formData.append("items", JSON.stringify(params.items));
-        if (params.docs) {
-          formData.append("docs", params.docs);
-        }
 
         console.log("📤 Sending loan request:", {
           users: params.users,
           items: params.items,
           hasDocs: !!params.docs,
+          hasReport: !!params.report,
         });
 
-        const data = await createLoan(formData);
+        const data = await createLoan(params);
         return data;
       },
       onSuccess: (data) => {
         toast.success("Peminjaman berhasil dibuat!");
         queryClient.invalidateQueries({ queryKey: ["loans"] });
         queryClient.invalidateQueries({ queryKey: ["loans", "check"] });
-        queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
+        queryClient.invalidateQueries({ queryKey: ["loanHistory"] });
         console.log("✅ Loan created:", data);
       },
       onError: (err: Error) => {

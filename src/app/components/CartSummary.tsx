@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { CartItem } from "@/hooks/useCart";
 import { useUsers } from "@/hooks/useUsers";
-import { X } from "lucide-react";
+import { X, Calendar, MapPin, FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/app/contexts/AuthContext";
 
@@ -11,7 +11,11 @@ interface CartSummaryProps {
   cart: CartItem[];
   onRemove: (id: string) => void;
   onUpdateQty: (id: string, qty: number) => void;
-  onCheckout: (invitedUserIds: string[], docsFile?: File | null) => void;
+  onCheckout: (
+    invitedUserIds: string[],
+    docsFile?: File | null,
+    reportData?: any
+  ) => void;
   onClose: () => void;
   isLoading?: boolean;
 }
@@ -20,6 +24,14 @@ interface SelectedUser {
   user_id: string;
   name: string;
   username: string;
+}
+
+interface ReportData {
+  spt_number: string;
+  destination: string;
+  place_of_execution: string;
+  start_date: string;
+  end_date: string;
 }
 
 export default function CartSummary({
@@ -34,6 +46,13 @@ export default function CartSummary({
   const [docsFile, setDocsFile] = useState<File | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [reportData, setReportData] = useState<ReportData>({
+    spt_number: "",
+    destination: "",
+    place_of_execution: "",
+    start_date: "",
+    end_date: "",
+  });
 
   const { data: users = [], isLoading: isLoadingUsers } = useUsers();
   const { user: currentUser } = useAuthContext();
@@ -55,7 +74,7 @@ export default function CartSummary({
     );
   }, [borrowers, searchTerm]);
 
-  const nextStep = () => setStep((prev) => Math.min(prev + 1, 3));
+  const nextStep = () => setStep((prev) => Math.min(prev + 1, 4));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
 
   const handleToggleUser = (user: {
@@ -105,9 +124,19 @@ export default function CartSummary({
     }
   };
 
+  const handleReportChange = (field: keyof ReportData, value: string) => {
+    setReportData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
   const handleSubmit = () => {
     const userIds = selectedUsers.map((u) => u.user_id);
-    onCheckout(userIds, docsFile);
+
+    // ✅ PERBAIKAN: Hanya kirim data report tanpa spt_file
+    // spt_file sudah dihandle terpisah melalui formData docs
+    onCheckout(userIds, docsFile, reportData); // ✅ Hanya kirim reportData tanpa spt_file
     router.push("/peminjam/peminjaman");
   };
 
@@ -115,13 +144,25 @@ export default function CartSummary({
     return selectedUsers.some((u) => u.user_id === userId);
   };
 
+  const isReportValid = useMemo(() => {
+    return (
+      reportData.spt_number.trim() !== "" &&
+      reportData.destination.trim() !== "" &&
+      reportData.place_of_execution.trim() !== "" &&
+      reportData.start_date !== "" &&
+      reportData.end_date !== "" &&
+      new Date(reportData.start_date) < new Date(reportData.end_date)
+    );
+  }, [reportData]);
+
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box w-11/12 max-w-2xl bg-white">
-        <h3 className="font-bold text-lg border-b pb-2 mb-3">
+      <div className="modal-box w-11/12 max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
+        <h3 className="font-bold text-lg border-b pb-2 mb-3 sticky top-0 bg-white">
           {step === 1 && "1️⃣ Pilih Perangkat"}
           {step === 2 && "2️⃣ Upload Dokumen SPT"}
-          {step === 3 && "3️⃣ Pilih Anggota Tim"}
+          {step === 3 && "3️⃣ Data SPT & Kegiatan"}
+          {step === 4 && "4️⃣ Pilih Anggota Tim"}
         </h3>
 
         {/* STEP 1 - PERANGKAT */}
@@ -132,7 +173,7 @@ export default function CartSummary({
                 Keranjang masih kosong.
               </p>
             ) : (
-              <div className="overflow-y-auto max-h-[55vh] space-y-3">
+              <div className="overflow-y-auto space-y-3">
                 {cart.map((item) => (
                   <div
                     key={item.product_id}
@@ -231,14 +272,173 @@ export default function CartSummary({
                 <ul className="list-disc list-inside mt-1">
                   <li>Hanya file PDF yang diperbolehkan</li>
                   <li>Ukuran maksimal 5MB</li>
+                  <li>Data SPT akan diisi manual di step berikutnya</li>
                 </ul>
               </div>
             </div>
           </div>
         )}
 
-        {/* STEP 3 - PILIH ANGGOTA TIM (BORROWERS) */}
+        {/* STEP 3 - FORM DATA SPT & KEGIATAN */}
         {step === 3 && (
+          <div className="space-y-4">
+            <div className="alert alert-info">
+              <FileText className="w-5 h-5" />
+              <div>
+                <h3 className="font-bold">Data SPT & Kegiatan</h3>
+                <p className="text-sm">Isi informasi SPT dan detail kegiatan</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Nomor SPT */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">Nomor SPT *</span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered bg-white"
+                  placeholder="Contoh: 001/SPT/IT/2024"
+                  value={reportData.spt_number}
+                  onChange={(e) =>
+                    handleReportChange("spt_number", e.target.value)
+                  }
+                  required
+                />
+              </div>
+
+              {/* Tujuan Kegiatan */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">
+                    Tujuan Kegiatan *
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered bg-white"
+                  placeholder="Contoh: Maintenance Server"
+                  value={reportData.destination}
+                  onChange={(e) =>
+                    handleReportChange("destination", e.target.value)
+                  }
+                  required
+                />
+              </div>
+
+              {/* Tempat Pelaksanaan */}
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text font-medium">
+                    Tempat Pelaksanaan *
+                  </span>
+                </label>
+                <input
+                  type="text"
+                  className="input input-bordered bg-white"
+                  placeholder="Contoh: Kantor Pusat"
+                  value={reportData.place_of_execution}
+                  onChange={(e) =>
+                    handleReportChange("place_of_execution", e.target.value)
+                  }
+                  required
+                />
+              </div>
+
+              {/* Tanggal Mulai & Selesai */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Tanggal Mulai *
+                    </span>
+                  </label>
+                  <input
+                    type="date"
+                    className="input input-bordered bg-white"
+                    value={reportData.start_date}
+                    onChange={(e) =>
+                      handleReportChange("start_date", e.target.value)
+                    }
+                    min={new Date().toISOString().split("T")[0]}
+                    required
+                  />
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text font-medium flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      Tanggal Selesai *
+                    </span>
+                  </label>
+                  <input
+                    type="date"
+                    className="input input-bordered bg-white"
+                    value={reportData.end_date}
+                    onChange={(e) =>
+                      handleReportChange("end_date", e.target.value)
+                    }
+                    min={
+                      reportData.start_date ||
+                      new Date().toISOString().split("T")[0]
+                    }
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Preview Data */}
+              {(reportData.spt_number ||
+                reportData.destination ||
+                reportData.place_of_execution) && (
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <h4 className="font-medium text-blue-800 mb-2">
+                    Preview Data SPT:
+                  </h4>
+                  <div className="text-sm text-blue-700 space-y-1">
+                    {reportData.spt_number && (
+                      <p>📄 No. SPT: {reportData.spt_number}</p>
+                    )}
+                    {reportData.destination && (
+                      <p>🎯 Tujuan: {reportData.destination}</p>
+                    )}
+                    {reportData.place_of_execution && (
+                      <p>📍 Tempat: {reportData.place_of_execution}</p>
+                    )}
+                    {reportData.start_date && reportData.end_date && (
+                      <p>
+                        📅 Periode:{" "}
+                        {new Date(reportData.start_date).toLocaleDateString(
+                          "id-ID"
+                        )}{" "}
+                        -{" "}
+                        {new Date(reportData.end_date).toLocaleDateString(
+                          "id-ID"
+                        )}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Validation Error */}
+              {reportData.start_date &&
+                reportData.end_date &&
+                new Date(reportData.start_date) >=
+                  new Date(reportData.end_date) && (
+                  <div className="alert alert-warning">
+                    <span>⚠️ Tanggal selesai harus setelah tanggal mulai</span>
+                  </div>
+                )}
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4 - PILIH ANGGOTA TIM (BORROWERS) */}
+        {step === 4 && (
           <div className="space-y-4">
             <div className="alert alert-info">
               <svg
@@ -353,7 +553,7 @@ export default function CartSummary({
         )}
 
         {/* FOOTER */}
-        <div className="modal-action flex justify-between items-center">
+        <div className="modal-action flex justify-between items-center sticky bottom-0 bg-white pt-4 border-t">
           <button className="btn" onClick={onClose} disabled={isLoading}>
             Tutup
           </button>
@@ -369,13 +569,16 @@ export default function CartSummary({
               </button>
             )}
 
-            {step < 3 ? (
+            {step < 4 ? (
               <button
                 className="btn btn-accent text-black"
                 onClick={nextStep}
-                disabled={step === 1 && cart.length === 0}
+                disabled={
+                  (step === 1 && cart.length === 0) ||
+                  (step === 3 && !isReportValid)
+                }
               >
-                Next ➡
+                {step === 3 ? "Lanjut ke Anggota Tim ➡" : "Next ➡"}
               </button>
             ) : (
               <button
