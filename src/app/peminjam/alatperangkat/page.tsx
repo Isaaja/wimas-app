@@ -5,16 +5,19 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
 import ProductCard from "@/app/components/ProductCard";
 import { useLoans, type LoanItem } from "@/hooks/useLoans";
+import { useCheckUserLoan } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
-import { ShoppingBag } from "lucide-react";
+import { MessageSquareWarning, ShoppingBag } from "lucide-react";
 import CartSummary from "@/app/components/CartSummary";
 import debounce from "lodash.debounce";
+import Loading from "@/app/components/Loading";
 
 export default function AlatPerangkatPage() {
   const { data: products = [], isLoading, isError, error } = useProducts();
   const { cart, addToCart, removeFromCart, updateQuantity, clearCart } =
     useCart();
   const { createLoan, isCreating } = useLoans();
+  const { data: checkResult, isLoading: isLoadingCheck } = useCheckUserLoan();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,12 +41,20 @@ export default function AlatPerangkatPage() {
     );
   }, [products, searchTerm]);
 
+  const canBorrow = checkResult?.canBorrow ?? true;
+  const reason = checkResult?.reason || "";
+
   const handleCheckout = async (
-    invitedUserIds: string[], // Array of user IDs
+    invitedUserIds: string[],
     docsFile?: File | null
   ) => {
     if (cart.length === 0) {
       toast.warning("Keranjang masih kosong!");
+      return;
+    }
+
+    if (!canBorrow) {
+      toast.error(`Tidak dapat meminjam: ${reason}`);
       return;
     }
 
@@ -75,15 +86,19 @@ export default function AlatPerangkatPage() {
       return;
     }
 
+    if (!canBorrow) {
+      toast.error(`Tidak dapat meminjam: ${reason}`);
+      return;
+    }
+
     setIsModalOpen(true);
   };
 
-  if (isLoading)
-    return (
-      <div className="flex justify-center items-center p-10">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    );
+  if (isLoadingCheck) {
+    return <Loading />;
+  }
+
+  if (isLoading) return <Loading />;
 
   if (isError)
     return (
@@ -94,33 +109,50 @@ export default function AlatPerangkatPage() {
 
   return (
     <div className="flex flex-col max-h-screen bg-gray-200 mt-6 rounded-md shadow-xl p-4">
-      {/* Header Section */}
-      <div className="flex justify-between items-center mb-4 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 px-4 gap-4">
         <input
           type="text"
           placeholder="Cari perangkat..."
-          className="input input-bordered input-info bg-white w-full max-w-md"
+          className="input input-bordered input-info bg-white w-full md:max-w-md"
           onChange={handleSearchChange}
         />
 
-        <button
-          className="relative btn btn-accent text-black"
-          onClick={handleOpenModal}
-        >
-          <ShoppingBag className="w-5 h-5" />
-          <span>Pinjam Sekarang</span>
-          {totalItems > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-              {totalItems}
-            </span>
-          )}
-        </button>
+        {canBorrow && (
+          <button
+            className="relative btn btn-accent text-black w-full md:w-auto"
+            onClick={handleOpenModal}
+            disabled={cart.length === 0}
+          >
+            <ShoppingBag className="w-5 h-5" />
+            <span>Pinjam Sekarang</span>
+            {totalItems > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                {totalItems}
+              </span>
+            )}
+          </button>
+        )}
       </div>
+
+      {!canBorrow && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mx-4 mb-4">
+          <p className="text-sm text-red-800 text-center">
+            ⚠️ Anda tidak dapat membuat pinjaman baru karena memiliki pinjaman
+            aktif. Selesaikan atau tunggu hingga pinjaman saat ini selesai
+            terlebih dahulu.
+          </p>
+        </div>
+      )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto w-full max-h-[73vh] rounded-md px-4 pb-4">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((p) => (
-            <ProductCard key={p.product_id} product={p} onAdd={addToCart} />
+            <ProductCard
+              key={p.product_id}
+              product={p}
+              onAdd={addToCart}
+              canBorrow={canBorrow}
+            />
           ))
         ) : (
           <p className="text-center text-gray-500 col-span-full">

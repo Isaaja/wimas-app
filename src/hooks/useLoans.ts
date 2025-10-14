@@ -46,6 +46,44 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
+// ==================== LOAN HISTORY INTERFACES ====================
+export interface LoanHistoryProduct {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+}
+
+export interface LoanHistoryUser {
+  user_id: string;
+  name: string;
+  username: string;
+}
+
+export interface LoanHistoryParticipant {
+  user: LoanHistoryUser;
+  role: string;
+}
+
+export interface LoanHistory {
+  loan_id: string;
+  borrower_id: string;
+  status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
+  spt_file: string | null;
+  created_at: string;
+  updated_at: string;
+  borrower: LoanHistoryUser;
+  items: LoanHistoryProduct[];
+  participants: LoanHistoryParticipant[];
+  userRole: string;
+  participantId: string;
+}
+
+export interface LoanHistoryResponse {
+  loans: LoanHistory[];
+  total: number;
+}
+// ==================== END LOAN HISTORY INTERFACES ====================
+
 const getAccessToken = (): string | null => {
   if (typeof window === "undefined") return null;
 
@@ -231,6 +269,29 @@ const deleteLoan = async (loanId: string): Promise<void> => {
     throw new Error(result?.message || "Gagal menghapus peminjaman");
 };
 
+// ==================== LOAN HISTORY FUNCTIONS ====================
+const fetchLoanHistory = async (): Promise<LoanHistoryResponse> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch("/api/loan/history", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result?.message || "Gagal memuat riwayat peminjaman");
+  }
+
+  return result?.data as LoanHistoryResponse;
+};
+// ==================== END LOAN HISTORY FUNCTIONS ====================
+
 /* -------------------- Custom Hooks -------------------- */
 
 export function useLoans(filter?: "active" | "history") {
@@ -298,6 +359,7 @@ export function useLoans(filter?: "active" | "history") {
         toast.success("Peminjaman berhasil dibuat!");
         queryClient.invalidateQueries({ queryKey: ["loans"] });
         queryClient.invalidateQueries({ queryKey: ["loans", "check"] });
+        queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
         console.log("✅ Loan created:", data);
       },
       onError: (err: Error) => {
@@ -329,19 +391,6 @@ export function useLoanById(loanId: string) {
     retry: 1,
   });
 }
-
-/**
- * Hook untuk mengecek apakah user bisa membuat pinjaman baru
- */
-export function useCheckUserLoan() {
-  return useQuery({
-    queryKey: ["loans", "check"],
-    queryFn: checkUserLoan,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    retry: 1,
-  });
-}
-
 /**
  * Hook untuk approve peminjaman
  */
@@ -354,6 +403,7 @@ export function useApproveLoan() {
       toast.success("Peminjaman berhasil disetujui!");
       queryClient.invalidateQueries({ queryKey: ["loans"] });
       queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
+      queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal menyetujui peminjaman");
@@ -374,6 +424,7 @@ export function useRejectLoan() {
       toast.success("Peminjaman berhasil ditolak!");
       queryClient.invalidateQueries({ queryKey: ["loans"] });
       queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
+      queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal menolak peminjaman");
@@ -394,6 +445,7 @@ export function useReturnLoan() {
       toast.success("Peminjaman berhasil dikembalikan!");
       queryClient.invalidateQueries({ queryKey: ["loans"] });
       queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
+      queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal mengembalikan peminjaman");
@@ -413,10 +465,87 @@ export function useDeleteLoan() {
     onSuccess: () => {
       toast.success("Peminjaman berhasil dihapus!");
       queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["loanHistory"] });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal menghapus peminjaman");
       console.error("❌ Failed to delete loan:", err.message);
     },
+  });
+}
+
+export function useLoanHistory() {
+  return useQuery({
+    queryKey: ["loanHistory"],
+    queryFn: fetchLoanHistory,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useFilteredLoanHistory(filter?: "active" | "completed") {
+  const { data, isLoading, isError, error } = useLoanHistory();
+
+  const filteredLoans = data?.loans.filter((loan) => {
+    if (!filter) return true;
+
+    if (filter === "active") {
+      return loan.status === "REQUESTED" || loan.status === "APPROVED";
+    }
+
+    if (filter === "completed") {
+      return loan.status === "REJECTED" || loan.status === "RETURNED";
+    }
+
+    return true;
+  });
+
+  return {
+    loans: filteredLoans || [],
+    total: filteredLoans?.length || 0,
+    isLoading,
+    isError,
+    error,
+    originalData: data,
+  };
+}
+
+export function useLoanHistoryById(loanId: string) {
+  const { data, isLoading, isError, error } = useLoanHistory();
+
+  const loan = data?.loans.find((loan) => loan.loan_id === loanId);
+
+  return {
+    loan,
+    isLoading,
+    isError,
+    error,
+  };
+}
+
+export function useLoanHistoryByRole(role?: "OWNER" | "INVITED") {
+  const { data, isLoading, isError, error } = useLoanHistory();
+
+  const loansByRole = role
+    ? data?.loans.filter((loan) => loan.userRole === role)
+    : data?.loans;
+
+  return {
+    loans: loansByRole || [],
+    total: loansByRole?.length || 0,
+    isLoading,
+    isError,
+    error,
+  };
+}
+
+export function useCheckUserLoan() {
+  const { user } = useAuthContext();
+
+  return useQuery({
+    queryKey: ["loans", "check", user?.userId],
+    queryFn: checkUserLoan,
+    enabled: !!user?.userId,
+    staleTime: 2 * 60 * 1000,
+    retry: 1,
   });
 }

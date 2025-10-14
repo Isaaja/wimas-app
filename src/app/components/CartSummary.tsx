@@ -240,7 +240,6 @@ export default function CartSummary({
         {/* STEP 3 - PILIH ANGGOTA TIM (BORROWERS) */}
         {step === 3 && (
           <div className="space-y-4">
-            {/* Info Alert dengan info peminjam */}
             <div className="alert alert-info">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -266,7 +265,6 @@ export default function CartSummary({
               </div>
             </div>
 
-            {/* Selected Users */}
             {selectedUsers.length > 0 && (
               <div className="bg-blue-50 p-3 rounded-lg">
                 <p className="font-medium mb-2 text-sm">
@@ -291,7 +289,6 @@ export default function CartSummary({
               </div>
             )}
 
-            {/* Search Input */}
             <div>
               <label className="block font-medium mb-1">Cari Anggota Tim</label>
               <input
@@ -303,8 +300,7 @@ export default function CartSummary({
               />
             </div>
 
-            {/* User List - Hilangkan current user dan user yang sudah dipilih */}
-            <div className="border rounded-lg max-h-[40vh] overflow-y-auto">
+            <div className="border rounded-lg max-h-[20vh] overflow-y-auto">
               {isLoadingUsers ? (
                 <div className="flex justify-center items-center p-4">
                   <span className="loading loading-spinner loading-md"></span>
@@ -345,7 +341,6 @@ export default function CartSummary({
                           <input
                             type="checkbox"
                             className="checkbox checkbox-primary"
-                            checked={false}
                             onChange={() => {}}
                           />
                         </div>
