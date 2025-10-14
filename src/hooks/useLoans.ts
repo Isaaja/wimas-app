@@ -8,26 +8,35 @@ export interface LoanProduct {
   product_id: string;
   product_name: string;
   quantity: number;
+  loan_item_id?: string;
 }
 
 export interface LoanUser {
   user_id: string;
-  name: string;
+  name?: string;
   username: string;
+}
+
+export interface LoanReport {
+  report_id: string;
+  spt_file: string | null;
+  spt_number: string;
+  destination: string;
+  place_of_execution: string;
+  start_date: string;
+  end_date: string;
 }
 
 export interface Loan {
   loan_id: string;
-  borrower_id: string;
-  borrower_name: string;
-  borrower_username: string;
   status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
-  spt_file: string | null;
   created_at: string;
   updated_at: string;
+  borrower: LoanUser;
   owner: LoanUser;
   invited_users: LoanUser[];
-  products: LoanProduct[];
+  items: LoanProduct[];
+  report?: LoanReport;
 }
 
 export interface LoanItem {
@@ -46,21 +55,11 @@ export interface ApiResponse<T> {
   message?: string;
 }
 
-// ✅ PERBAIKAN: Interface untuk Report Data yang lengkap
-export interface LoanReport {
-  spt_number: string;
-  destination: string;
-  place_of_execution: string;
-  start_date: string;
-  end_date: string;
-  spt_file?: string | null; // Opsional, karena sudah dihandle terpisah
-}
-
 export interface CreateLoanParams {
   users: string[];
   items: LoanItem[];
   docs?: File | null;
-  report?: LoanReport;
+  report?: Omit<LoanReport, "report_id" | "spt_file">;
 }
 
 // ==================== LOAN HISTORY INTERFACES ====================
@@ -72,47 +71,50 @@ export interface LoanHistoryProduct {
 
 export interface LoanHistoryUser {
   user_id: string;
-  name: string;
   username: string;
+  name: string;
 }
 
 export interface LoanHistoryParticipant {
-  user: LoanHistoryUser;
-  role: string;
+  id: string; 
+  loan_id: string; 
+  user_id: string; 
+  created_at: string; 
+  role: "OWNER" | "INVITED"; 
+  user: LoanHistoryUser; 
 }
 
-// ✅ PERBAIKAN: Interface untuk Loan History yang lengkap
+export interface LoanHistoryReport {
+  report_id: string;
+  loan_id: string; 
+  spt_file: string | null;
+  spt_number: string;
+  destination: string;
+  place_of_execution: string;
+  start_date: string;
+  end_date: string;
+  created_at: string; 
+  updated_at: string; 
+}
+
 export interface LoanHistory {
   loan_id: string;
-  borrower_id: string;
+  borrower_id: string; 
   status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
-  spt_file: string | null;
+  spt_file?: string | null; 
   created_at: string;
   updated_at: string;
   borrower: LoanHistoryUser;
   items: LoanHistoryProduct[];
   participants: LoanHistoryParticipant[];
-  userRole: string;
-  participantId: string;
-  spt_number?: string;
-  destination?: string;
-  place_of_execution?: string;
-  start_date?: string;
-  end_date?: string;
+  userRole: "OWNER" | "INVITED";
+  participantId: string; 
+  report?: LoanHistoryReport; 
 }
 
 export interface LoanHistoryResponse {
   loans: LoanHistory[];
   total: number;
-}
-// ==================== END LOAN HISTORY INTERFACES ====================
-
-interface AuthUser {
-  user_id: string;
-  name: string;
-  username: string;
-  email: string;
-  role: string;
 }
 // ==================== END LOAN HISTORY INTERFACES ====================
 

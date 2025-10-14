@@ -302,6 +302,7 @@ export async function getHistoryLoan() {
               },
             },
           },
+          report: true,
         },
       },
     },

@@ -8,6 +8,7 @@ export function formatLoanResponse(loan: any) {
     ?.map((p: any) => ({
       user_id: p.user.user_id,
       username: p.user.username,
+      name: p.user.name,
     }));
 
   // ✅ Format items
