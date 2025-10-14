@@ -136,9 +136,14 @@ const fetchLoanById = async (loanId: string): Promise<Loan> => {
   if (!response.ok)
     throw new Error(result?.message || "Gagal memuat detail peminjaman");
 
-  return Array.isArray(result?.data)
-    ? result.data.filter((loan: Loan) => loan.status !== "RETURNED")
-    : [];
+  if (Array.isArray(result?.data)) {
+    const filtered = result.data.filter((loan: Loan) => loan.status !== "RETURNED");
+    if (filtered.length === 0) {
+      throw new Error("Loan not found or already returned");
+    }
+    return filtered[0];
+  }
+  return result?.data as Loan;
 };
 
 const checkUserLoan = async (): Promise<CheckUserLoanResponse> => {

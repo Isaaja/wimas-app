@@ -49,7 +49,6 @@ model Loan {
   loan_id      String            @id @db.VarChar(32)
   borrower_id  String
   created_at   DateTime          @default(now())
-  spt_file     String?
   updated_at   DateTime          @updatedAt
   status       LoanStatus        @default(REQUESTED)
   borrower     User              @relation("UserLoans", fields: [borrower_id], references: [user_id], onDelete: Cascade)
