@@ -20,9 +20,8 @@ model User {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  authentications  Authentication[]
-  loans            Loan[]            @relation("UserLoans") // loan utama (borrower)
-  loanParticipants LoanParticipant[] // loan di mana user jadi participant
+  loans            Loan[]            @relation("UserLoans")
+  loanParticipants LoanParticipant[]
 }
 
 model Category {
@@ -58,7 +57,7 @@ model Loan {
   borrower     User              @relation("UserLoans", fields: [borrower_id], references: [user_id], onDelete: Cascade)
   items        LoanItem[]
   participants LoanParticipant[]
-  histories    LoanHistory[]
+  report       Report?
 }
 
 model LoanItem {
@@ -75,7 +74,7 @@ model LoanParticipant {
   id         String          @id @db.VarChar(32)
   loan_id    String
   user_id    String
-  role       ParticipantRole // enum baru: OWNER atau INVITED
+  role       ParticipantRole
   created_at DateTime        @default(now())
 
   loan Loan @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
@@ -84,22 +83,19 @@ model LoanParticipant {
   @@unique([loan_id, user_id])
 }
 
-model LoanHistory {
-  history_id String   @id @db.VarChar(32)
-  loan_id    String
-  activity   String
-  timestamp  DateTime @default(now())
+model Report {
+  report_id          String   @id @db.VarChar(32)
+  loan_id            String   @unique
+  spt_file           String?
+  spt_number         String
+  destination        String
+  place_of_execution String
+  start_date         DateTime
+  end_date           DateTime
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
 
   loan Loan @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-}
-
-model Authentication {
-  id        String   @id @db.VarChar(32)
-  user_id   String
-  token     String   @unique
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 }
 
 enum Role {
