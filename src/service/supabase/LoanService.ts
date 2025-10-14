@@ -1,45 +1,75 @@
+import { authenticate } from "@/app/utils/auth";
 import { formatLoanResponse } from "@/app/utils/formatLoanResponse";
 import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
+import { ParticipantRole } from "@prisma/client";
 import { nanoid } from "nanoid";
 
 export async function createLoan({
   userId,
   invitedUsers = [],
   items,
-  spt_file,
-}: any) {
+  report,
+}: {
+  userId: string;
+  invitedUsers: string[];
+  items: { product_id: string; quantity: number }[];
+  report: {
+    spt_file: string | null;
+    spt_number: string;
+    destination: string;
+    place_of_execution: string;
+    start_date: string;
+    end_date: string;
+  };
+}) {
   const loanId = `loan-${nanoid(16)}`;
 
   const loan = await prisma.$transaction(
     async (tx) => {
-      const loan = await tx.loan.create({
+      const newLoan = await tx.loan.create({
         data: {
           loan_id: loanId,
           borrower_id: userId,
-          spt_file,
           status: "REQUESTED",
+
+          // ✅ Buat item pinjaman
           items: {
-            create: items.map((item: any) => ({
+            create: items.map((item) => ({
               loan_item_id: `li-${nanoid(16)}`,
               product_id: item.product_id,
               quantity: item.quantity,
             })),
           },
+
+          // ✅ Buat peserta pinjaman
           participants: {
             create: [
               {
                 id: `lp-${nanoid(16)}`,
                 user_id: userId,
-                role: "OWNER",
+                role: "OWNER" as ParticipantRole,
               },
-              ...invitedUsers.map((uid: any) => ({
+              ...invitedUsers.map((uid) => ({
                 id: `lp-${nanoid(16)}`,
                 user_id: uid,
-                role: "INVITED",
+                role: "INVITED" as ParticipantRole,
               })),
             ],
+          },
+
+          // ✅ Buat report (spt_file di dalamnya)
+          report: {
+            create: {
+              report_id: `rep-${nanoid(16)}`,
+              spt_file: report.spt_file,
+              spt_number: report.spt_number,
+              destination: report.destination,
+              place_of_execution: report.place_of_execution,
+              start_date: new Date(report.start_date),
+              end_date: new Date(report.end_date),
+            },
           },
         },
         include: {
@@ -53,19 +83,13 @@ export async function createLoan({
               product: { select: { product_id: true, product_name: true } },
             },
           },
+          report: true,
         },
       });
 
-      return {
-        data: {
-          loan,
-        },
-      };
+      return { data: newLoan };
     },
-    {
-      timeout: 15000,
-      maxWait: 5000,
-    }
+    { timeout: 15000, maxWait: 5000 }
   );
 
   return loan;
@@ -235,10 +259,66 @@ export async function getLoanById(loanId: string) {
   return formatLoanResponse(loan);
 }
 
-export async function getHistoryLoan(){
-  try {
-    
-  } catch (error) {
-    
-  }
+export async function getHistoryLoan() {
+  // 1. Authenticate user
+  const { user, error } = await authenticate();
+  if (error) return error;
+
+  // 2. Query loan history
+  const userLoans = await prisma.loanParticipant.findMany({
+    where: {
+      user_id: user!.user_id,
+    },
+    include: {
+      loan: {
+        include: {
+          borrower: {
+            select: {
+              user_id: true,
+              username: true,
+              name: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  product_id: true,
+                  product_name: true,
+                  quantity: true,
+                },
+              },
+            },
+          },
+          participants: {
+            include: {
+              user: {
+                select: {
+                  user_id: true,
+                  username: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      created_at: "desc",
+    },
+  });
+
+  // 3. Transform data
+  const loans = userLoans.map((lp) => ({
+    ...lp.loan,
+    items: lp.loan.items.map((item) => ({
+      product_id: item.product_id,
+      product_name: item.product.product_name,
+      quantity: item.quantity,
+    })),
+    userRole: lp.role,
+    participantId: lp.id,
+  }));
+  return loans;
 }

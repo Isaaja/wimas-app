@@ -12,15 +12,20 @@ export async function POST(req: Request) {
   try {
     const user = await checkAuth("BORROWER");
     const userId = user.user_id;
+
     const formData = await req.formData();
+
     const userRaw = formData.get("user") as string;
     const itemsRaw = formData.get("items") as string;
     const docs = formData.get("docs") as File | null;
+    const reportRaw = formData.get("report") as string;
 
-    const userInvited = JSON.parse(userRaw);
-    const items = JSON.parse(itemsRaw);
+    const invitedUsers = userRaw ? JSON.parse(userRaw) : [];
+    const items = itemsRaw ? JSON.parse(itemsRaw) : [];
+    const report = reportRaw ? JSON.parse(reportRaw) : null;
 
-    const spt_letter = docs ? await handleFileUpload(docs) : null;
+    // ✅ Upload dokumen dan simpan URL ke dalam report
+    const spt_file = docs ? await handleFileUpload(docs) : null;
 
     const loanCheck = await checkUserLoan(userId);
     if (!loanCheck.canBorrow) {
@@ -28,7 +33,7 @@ export async function POST(req: Request) {
     }
 
     LoanValidator.validateLoanPayload({
-      user: userInvited,
+      user: invitedUsers,
       items,
       docs: docs
         ? {
@@ -37,13 +42,17 @@ export async function POST(req: Request) {
             size: docs.size,
           }
         : null,
+      report,
     });
 
     const loan = await createLoan({
       userId,
-      invitedUsers: userInvited,
+      invitedUsers,
       items,
-      spt_file: spt_letter,
+      report: {
+        ...report,
+        spt_file,
+      },
     });
 
     return successResponse(loan, "Loan created successfully", 201);
