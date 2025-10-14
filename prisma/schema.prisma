@@ -53,7 +53,6 @@ model Loan {
   updated_at   DateTime          @updatedAt
   status       LoanStatus        @default(REQUESTED)
   borrower     User              @relation("UserLoans", fields: [borrower_id], references: [user_id], onDelete: Cascade)
-  histories    LoanHistory[]
   items        LoanItem[]
   participants LoanParticipant[]
   report       Report?
@@ -74,7 +73,6 @@ model LoanParticipant {
   user_id    String
   role       ParticipantRole
   created_at DateTime        @default(now())
-  role       ParticipantRole
   loan       Loan            @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
   user       User            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
