@@ -6,12 +6,12 @@ import { useLoans, useApproveLoan, useRejectLoan } from "@/hooks/useLoans";
 import AdminLoanTable from "@/app/components/AdminLoanTable";
 
 export default function AdminPeminjamanPage() {
-  const { loans, isLoading, isError, error } = useLoans("active");
+  const { loans, isLoading, isError, error } = useLoans("history");
   const { mutate: approveLoan, isPending: isApproving } = useApproveLoan();
   const { mutate: rejectLoan, isPending: isRejecting } = useRejectLoan();
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(2);
 
   const handleApprove = (loanId: string) => {
     if (confirm("Apakah Anda yakin ingin menyetujui peminjaman ini?")) {

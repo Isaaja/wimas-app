@@ -9,19 +9,18 @@ datasource db {
 }
 
 model User {
-  name            String
-  createdAt       DateTime         @default(now())
-  password        String
-  role            Role             @default(BORROWER)
-  status          String?
-  updatedAt       DateTime         @updatedAt
-  user_id         String           @id @db.VarChar(32)
-  username        String           @unique
-  email           String?
-  noHandphone     String?
-  authentications Authentication[]
-  loans           Loan[]           @relation("UserLoans")
-  loanDetails     LoanDetail[]     @relation("BorrowerDetails")
+  name             String
+  createdAt        DateTime          @default(now())
+  password         String
+  role             Role              @default(BORROWER)
+  status           String?
+  updatedAt        DateTime          @updatedAt
+  user_id          String            @id @db.VarChar(32)
+  username         String            @unique
+  email            String?
+  noHandphone      String?
+  loans            Loan[]            @relation("UserLoans")
+  loanParticipants LoanParticipant[]
 }
 
 model Category {
@@ -33,65 +32,63 @@ model Category {
 }
 
 model Product {
-  product_id      String       @id @db.VarChar(32)
-  product_name    String       @unique
+  product_id      String     @id @db.VarChar(32)
+  product_name    String     @unique
   product_image   String?
   quantity        Int
   category_id     String
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
   product_avaible Int
-  loanDetails     LoanDetail[]
-  category        Category     @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  loanItems       LoanItem[]
+  category        Category   @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
 }
 
 model Loan {
-  loan_id     String        @id @db.VarChar(32)
-  user_id     String
-  loan_date   DateTime      @default(now())
-  return_date DateTime?
-  status      LoanStatus    @default(REQUESTED)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  user        User          @relation("UserLoans", fields: [user_id], references: [user_id], onDelete: Cascade)
-  details     LoanDetail[]
-  histories   LoanHistory[]
+  loan_id      String            @id @db.VarChar(32)
+  borrower_id  String
+  created_at   DateTime          @default(now())
+  updated_at   DateTime          @updatedAt
+  status       LoanStatus        @default(REQUESTED)
+  borrower     User              @relation("UserLoans", fields: [borrower_id], references: [user_id], onDelete: Cascade)
+  items        LoanItem[]
+  participants LoanParticipant[]
+  report       Report?
 }
 
-model LoanDetail {
-  loan_detail_id String   @id @db.VarChar(32)
-  loan_id        String
-  product_id     String
-  quantity       Int
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  borrower_id    String
-  image_path     String
-  borrower       User     @relation("BorrowerDetails", fields: [borrower_id], references: [user_id], onDelete: Cascade)
-  loan           Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-  product        Product  @relation(fields: [product_id], references: [product_id])
-
-  @@index([loan_id])
-  @@index([product_id])
-  @@index([borrower_id])
+model LoanItem {
+  loan_item_id String  @id @db.VarChar(32)
+  product_id   String
+  quantity     Int
+  loan_id      String
+  loan         Loan    @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  product      Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
 }
 
-model LoanHistory {
-  history_id String   @id @db.VarChar(32)
+model LoanParticipant {
+  id         String          @id @db.VarChar(32)
   loan_id    String
-  activity   String
-  timestamp  DateTime @default(now())
-  loan       Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  user_id    String
+  created_at DateTime        @default(now())
+  role       ParticipantRole
+  loan       Loan            @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  user       User            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([loan_id])
+  @@unique([loan_id, user_id])
 }
 
-model Authentication {
-  id        String   @id @db.VarChar(32)
-  user_id   String
-  token     String   @unique
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+model Report {
+  report_id          String   @id @db.VarChar(32)
+  loan_id            String   @unique
+  spt_file           String?
+  spt_number         String
+  destination        String
+  place_of_execution String
+  start_date         DateTime
+  end_date           DateTime
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+  loan               Loan     @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
 }
 
 enum Role {
@@ -105,4 +102,9 @@ enum LoanStatus {
   APPROVED
   REJECTED
   RETURNED
+}
+
+enum ParticipantRole {
+  OWNER
+  INVITED
 }

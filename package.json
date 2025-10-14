@@ -39,7 +39,7 @@
     "daisyui": "^5.1.23",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
-    "prisma": "^6.16.2",
+    "prisma": "^6.17.1",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"

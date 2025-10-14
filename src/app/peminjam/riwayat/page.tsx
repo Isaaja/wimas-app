@@ -5,10 +5,10 @@ import Loading from "@/app/components/Loading";
 import { useFilteredLoanHistory } from "@/hooks/useLoans";
 import LoanTable from "@/app/components/LoanTable";
 
-export default function PeminjamanPage() {
-  const { loans, isLoading, isError, error } = useFilteredLoanHistory("active");
+export default function RiwayatPeminjamanPage() {
+  const { loans, isLoading, isError, error } = useFilteredLoanHistory("completed");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
+  const [itemsPerPage] = useState(4); 
 
   if (isLoading) return <Loading />;
 
@@ -22,7 +22,7 @@ export default function PeminjamanPage() {
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-gray-700">
-        Daftar Peminjaman Aktif
+        Riwayat Peminjaman 
       </h1>
 
       <LoanTable

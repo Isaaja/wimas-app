@@ -1,5 +1,3 @@
-// app/api/loans/route.ts
-import { NextResponse } from "next/server";
 import {
   createLoan,
   getLoanedProducts,
@@ -9,34 +7,52 @@ import NotFoundError from "@/exceptions/NotFoundError";
 import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
 import { handleFileUpload } from "@/lib/uploads";
+import LoanValidator from "@/validator/loans";
 export async function POST(req: Request) {
   try {
-    // 🔒 Cek role user
     const user = await checkAuth("BORROWER");
     const userId = user.user_id;
+
     const formData = await req.formData();
+
     const userRaw = formData.get("user") as string;
     const itemsRaw = formData.get("items") as string;
-    const image = formData.get("image") as File | null;
+    const docs = formData.get("docs") as File | null;
+    const reportRaw = formData.get("report") as string;
 
-    const userInvited = JSON.parse(userRaw);
-    const items = JSON.parse(itemsRaw);
+    const invitedUsers = userRaw ? JSON.parse(userRaw) : [];
+    const items = itemsRaw ? JSON.parse(itemsRaw) : [];
+    const report = reportRaw ? JSON.parse(reportRaw) : null;
 
-    const image_path = image ? await handleFileUpload(image) : null;
+    // ✅ Upload dokumen dan simpan URL ke dalam report
+    const spt_file = docs ? await handleFileUpload(docs) : null;
 
-    const check = await checkUserLoan(userId);
-    if (!check.canBorrow) {
-      return NextResponse.json(
-        { status: "fail", message: check.reason },
-        { status: 403 }
-      );
+    const loanCheck = await checkUserLoan(userId);
+    if (!loanCheck.canBorrow) {
+      throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
     }
+
+    LoanValidator.validateLoanPayload({
+      user: invitedUsers,
+      items,
+      docs: docs
+        ? {
+            originalname: docs.name,
+            mimetype: docs.type,
+            size: docs.size,
+          }
+        : null,
+      report,
+    });
 
     const loan = await createLoan({
       userId,
-      image_path: image_path ?? "",
-      user: userInvited,
+      invitedUsers,
       items,
+      report: {
+        ...report,
+        spt_file,
+      },
     });
 
     return successResponse(loan, "Loan created successfully", 201);
