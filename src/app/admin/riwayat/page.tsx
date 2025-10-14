@@ -1,19 +1,41 @@
 "use client";
 
 import Loading from "@/app/components/Loading";
-import { useFilteredLoanHistory } from "@/hooks/useLoans";
+import { useLoans, useApproveLoan, useRejectLoan } from "@/hooks/useLoans";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
-export default function AdminPeminjamanPage() {
-  const { loans, isLoading, isError, error } = useFilteredLoanHistory("active");
+export default function RiwayatPeminjamanPage() {
+  const { loans, isLoading, isError, error } = useLoans("history");
+  const { mutate: approveLoan, isPending: isApproving } = useApproveLoan();
+  const { mutate: rejectLoan, isPending: isRejecting } = useRejectLoan();
+  const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return "-";
     return format(date, "dd MMM yyyy, HH:mm", { locale: id });
+  };
+
+  const handleApprove = (loanId: string) => {
+    if (confirm("Apakah Anda yakin ingin menyetujui peminjaman ini?")) {
+      setActioningLoanId(loanId);
+      approveLoan(loanId, {
+        onSettled: () => setActioningLoanId(null),
+      });
+    }
+  };
+
+  const handleReject = (loanId: string) => {
+    if (confirm("Apakah Anda yakin ingin menolak peminjaman ini?")) {
+      setActioningLoanId(loanId);
+      rejectLoan(loanId, {
+        onSettled: () => setActioningLoanId(null),
+      });
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -47,6 +69,7 @@ export default function AdminPeminjamanPage() {
       <h1 className="text-2xl font-bold mb-6 text-gray-700">
         Daftar Peminjaman
       </h1>
+
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="table w-full">
           <thead className="bg-gray-100 text-gray-700">
@@ -58,19 +81,24 @@ export default function AdminPeminjamanPage() {
               <th>Daftar Barang</th>
               <th>Tim</th>
               <th>Dokumen SPT</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody>
             {loans.map((loan, index) => {
               const statusInfo = getStatusBadge(loan.status);
+              const isProcessing =
+                (isApproving || isRejecting) &&
+                actioningLoanId === loan.loan_id;
+
               return (
                 <tr key={loan.loan_id} className="hover">
                   <td className="border-t border-black/10">{index + 1}</td>
                   <td className="border-t border-black/10">
                     <div>
-                      <div className="font-semibold">{loan.borrower.name}</div>
+                      <div className="font-semibold">{loan.borrower_name}</div>
                       <div className="text-sm text-gray-500">
-                        @{loan.borrower.username || "-"}
+                        @{loan.borrower_username || "-"}
                       </div>
                     </div>
                   </td>
@@ -83,13 +111,13 @@ export default function AdminPeminjamanPage() {
                     </span>
                   </td>
                   <td className="border-t border-black/10">
-                    {loan.items && loan.items.length > 0 ? (
+                    {loan.products && loan.products.length > 0 ? (
                       <ul className="list-disc list-inside">
-                        {loan.items.map((item) => (
-                          <li key={item.product_id}>
-                            {item.product_name || "-"}
+                        {loan.products.map((product) => (
+                          <li key={product.product_id}>
+                            {product.product_name || "-"}
                             <span className="ml-2 text-sm text-gray-600">
-                              ({item.quantity} unit)
+                              ({product.quantity} unit)
                             </span>
                           </li>
                         ))}
@@ -101,11 +129,11 @@ export default function AdminPeminjamanPage() {
                     )}
                   </td>
                   <td className="border-t border-black/10">
-                    {loan.participants && loan.participants.length > 0 ? (
+                    {loan.invited_users && loan.invited_users.length > 0 ? (
                       <ul className="list-disc list-inside">
-                        {loan.participants.map((participant) => (
-                          <li key={participant.user.user_id}>
-                            {participant.user.name || "-"}
+                        {loan.invited_users.map((participant) => (
+                          <li key={participant.user_id}>
+                            {participant.name || "-"}
                           </li>
                         ))}
                       </ul>
@@ -115,6 +143,7 @@ export default function AdminPeminjamanPage() {
                       </span>
                     )}
                   </td>
+
                   <td className="border-t border-black/10 text-center">
                     {loan.spt_file ? (
                       <a
@@ -132,6 +161,37 @@ export default function AdminPeminjamanPage() {
                         data-tip="Tidak Ada Dokumen"
                       >
                         <EyeOff />
+                      </span>
+                    )}
+                  </td>
+
+                  <td className="border-t border-black/10">
+                    {loan.status === "REQUESTED" ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleApprove(loan.loan_id)}
+                          disabled={isProcessing}
+                          className="btn btn-success btn-xs"
+                        >
+                          {isProcessing && actioningLoanId === loan.loan_id
+                            ? "Loading..."
+                            : "Setujui"}
+                        </button>
+                        <button
+                          onClick={() => handleReject(loan.loan_id)}
+                          disabled={isProcessing}
+                          className="btn btn-error btn-xs"
+                        >
+                          {isProcessing && actioningLoanId === loan.loan_id
+                            ? "Loading..."
+                            : "Tolak"}
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-gray-500 text-sm italic">
+                        {loan.status === "APPROVED"
+                          ? "Sudah disetujui"
+                          : "Sudah ditolak"}
                       </span>
                     )}
                   </td>

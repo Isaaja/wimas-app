@@ -23,7 +23,17 @@ export async function GET() {
                 name: true,
               },
             },
-            items: true,
+            items: {
+              include: {
+                product: {
+                  select: {
+                    product_id: true,
+                    product_name: true,
+                    quantity: true,
+                  },
+                },
+              },
+            },
             participants: {
               include: {
                 user: {
@@ -46,6 +56,11 @@ export async function GET() {
     // 3. Transform data
     const loans = userLoans.map((lp) => ({
       ...lp.loan,
+      items: lp.loan.items.map((item) => ({
+        product_id: item.product_id,
+        product_name: item.product.product_name,
+        quantity: item.quantity,
+      })),
       userRole: lp.role,
       participantId: lp.id,
     }));

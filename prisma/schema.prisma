@@ -33,41 +33,39 @@ model Category {
 }
 
 model Product {
-  product_id      String   @id @db.VarChar(32)
-  product_name    String   @unique
+  product_id      String     @id @db.VarChar(32)
+  product_name    String     @unique
   product_image   String?
   quantity        Int
-  product_avaible Int
   category_id     String
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  category  Category   @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
-  loanItems LoanItem[]
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  product_avaible Int
+  loanItems       LoanItem[]
+  category        Category   @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
 }
 
 model Loan {
-  loan_id     String     @id @db.VarChar(32)
-  borrower_id String
-  status      LoanStatus @default(REQUESTED)
-  spt_file    String?
-  created_at  DateTime   @default(now())
-  updated_at  DateTime   @updatedAt
-
+  loan_id      String            @id @db.VarChar(32)
+  borrower_id  String
+  created_at   DateTime          @default(now())
+  spt_file     String?
+  updated_at   DateTime          @updatedAt
+  status       LoanStatus        @default(REQUESTED)
   borrower     User              @relation("UserLoans", fields: [borrower_id], references: [user_id], onDelete: Cascade)
+  histories    LoanHistory[]
   items        LoanItem[]
   participants LoanParticipant[]
   report       Report?
 }
 
 model LoanItem {
-  loan_item_id String @id @db.VarChar(32)
-  loan_id      String
+  loan_item_id String  @id @db.VarChar(32)
   product_id   String
   quantity     Int
-
-  loan    Loan    @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-  product Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  loan_id      String
+  loan         Loan    @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  product      Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
 }
 
 model LoanParticipant {
@@ -76,9 +74,9 @@ model LoanParticipant {
   user_id    String
   role       ParticipantRole
   created_at DateTime        @default(now())
-
-  loan Loan @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  role       ParticipantRole
+  loan       Loan            @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  user       User            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@unique([loan_id, user_id])
 }

@@ -12,6 +12,7 @@ import ProductTable from "@/app/components/ProductsTable";
 import ProductModal from "@/app/components/ProductModal";
 import debounce from "lodash.debounce";
 import { toast } from "react-toastify";
+import Loading from "@/app/components/Loading";
 
 export default function AlatPerangkatPage() {
   const { data: products, isLoading, isError, error } = useProducts();
@@ -97,11 +98,7 @@ export default function AlatPerangkatPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex justify-center items-center p-8">
-        <span className="loading loading-spinner loading-lg"></span>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (isError) {
@@ -115,15 +112,18 @@ export default function AlatPerangkatPage() {
   return (
     <div className="mt-4  flex flex-col gap-4">
       <div className="flex justify-between items-center">
-        <input
-          type="text"
-          placeholder="Cari perangkat..."
-          className="input input-info bg-white"
-          onChange={handleSearchChange}
-        />
-        <button className="btn btn-outline btn-info" onClick={handleAdd}>
-          Tambah Perangkat
-        </button>
+        <h1 className="text-2xl font-bold">Alat & Perangkat</h1>
+        <div className="flex gap-4">
+          <input
+            type="text"
+            placeholder="Cari perangkat..."
+            className="input input-info bg-white"
+            onChange={handleSearchChange}
+          />
+          <button className="btn btn-info" onClick={handleAdd}>
+            Tambah Perangkat
+          </button>
+        </div>
       </div>
 
       {!products || products.length === 0 ? (

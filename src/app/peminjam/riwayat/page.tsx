@@ -6,8 +6,8 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function AdminPeminjamanPage() {
-  const { loans, isLoading, isError, error } = useFilteredLoanHistory("active");
+export default function RiwayatPeminjamanPage() {
+  const { loans, isLoading, isError, error } = useFilteredLoanHistory("completed");
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";

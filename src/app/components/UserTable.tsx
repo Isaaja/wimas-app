@@ -24,36 +24,34 @@ export default function UserTable({
 
   return (
     <>
-      <div className="overflow-x-auto rounded-box border border-black/30">
-        <table className="table">
-          <thead>
-            <tr className="text-black text-center">
-              <th className="border-b border-black/30">#</th>
-              <th className="border-b border-black/30">Nama</th>
-              <th className="border-b border-black/30">Username</th>
-              <th className="border-b border-black/30">Email</th>
-              <th className="border-b border-black/30">No HP</th>
-              <th className="border-b border-black/30">Role</th>
-              {!isSuperadmin && (
-                <th className="border-b border-black/30 text-center">Aksi</th>
-              )}
+      <div className="overflow-x-auto bg-white rounded-lg shadow">
+        <table className="table text-gray-700">
+          <thead className="bg-gray-200 text-gray-700">
+            <tr className="text-gray-700 text-center">
+              <th className="text-center">#</th>
+              <th className="text-center">Nama</th>
+              <th className="text-center">Username</th>
+              <th className="text-center">Email</th>
+              <th className="text-center">No HP</th>
+              <th className="text-center">Role</th>
+              {!isSuperadmin && <th className="text-center">Aksi</th>}
             </tr>
           </thead>
           <tbody>
             {users.map((user: User, index: number) => (
               <tr key={user.user_id} className="hover text-center">
-                <td className="border-b border-black/30">{index + 1}</td>
-                <td className="border-b border-black/30 font-bold">
+                <td className="border-t border-black/10">{index + 1}</td>
+                <td className="border-t border-black/10 font-bold">
                   {user.name}
                 </td>
-                <td className="border-b border-black/30">{user.username}</td>
-                <td className="border-b border-black/30">{user.email}</td>
-                <td className="border-b border-black/30">{user.noHandphone}</td>
-                <td className="border-b border-black/30">
+                <td className="border-t border-black/10">{user.username}</td>
+                <td className="border-t border-black/10">{user.email}</td>
+                <td className="border-t border-black/10">{user.noHandphone}</td>
+                <td className="border-t border-black/10">
                   <span className="badge badge-ghost">{user.role}</span>
                 </td>
                 {!isSuperadmin && (
-                  <td className="border-b border-black/30 text-center">
+                  <td className="border-t border-black/10 text-center">
                     <div className="flex gap-2 justify-center">
                       <button
                         className="btn btn-ghost btn-xs text-error"
