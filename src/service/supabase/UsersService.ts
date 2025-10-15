@@ -72,6 +72,21 @@ export async function getAllUser() {
       role: true,
       email: true,
       noHandphone: true,
+      loanParticipants: {
+        select: {
+          id: true,
+          role: true,
+          created_at: true,
+          loan: {
+            select: {
+              loan_id: true,
+              status: true,
+              created_at: true,
+              updated_at: true,
+            },
+          },
+        },
+      },
     },
   });
 

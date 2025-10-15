@@ -13,7 +13,7 @@ model User {
   createdAt        DateTime          @default(now())
   password         String
   role             Role              @default(BORROWER)
-  status           String?
+  status           LoanStatus?
   updatedAt        DateTime          @updatedAt
   user_id          String            @id @db.VarChar(32)
   username         String            @unique
