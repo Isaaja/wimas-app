@@ -8,6 +8,7 @@ import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
 import { handleFileUpload } from "@/lib/uploads";
 import LoanValidator from "@/validator/loans";
+import { sendRequestEmail } from "@/service/supabase/SendEmailService";
 export async function POST(req: Request) {
   try {
     const user = await checkAuth("BORROWER");
@@ -27,10 +28,10 @@ export async function POST(req: Request) {
     // ✅ Upload dokumen dan simpan URL ke dalam report
     const spt_file = docs ? await handleFileUpload(docs) : null;
 
-    const loanCheck = await checkUserLoan(userId);
-    if (!loanCheck.canBorrow) {
-      throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
-    }
+    // const loanCheck = await checkUserLoan(userId);
+    // if (!loanCheck.canBorrow) {
+    //   throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
+    // }
 
     LoanValidator.validateLoanPayload({
       user: invitedUsers,
@@ -53,6 +54,24 @@ export async function POST(req: Request) {
         ...report,
         spt_file,
       },
+    });
+    await sendRequestEmail({
+      to: "isaiantmaulana2004@gmail.com",
+      subject: "[PERMINTAAN] Persetujuan Peminjaman Perangkat",
+      message: `Halo Pak Isa Iant Maulana, 
+
+Pengguna dengan nama <strong>${user.name}</strong> telah mengajukan permintaan peminjaman perangkat. 
+Mohon untuk meninjau dan memberikan persetujuan melalui sistem.
+
+Terima kasih atas perhatian dan kerjasamanya.
+
+<br>
+Salam hormat,  
+</br>
+
+<br>
+Sistem Peminjaman Perangkat 
+</br>`,
     });
 
     return successResponse(loan, "Loan created successfully", 201);
