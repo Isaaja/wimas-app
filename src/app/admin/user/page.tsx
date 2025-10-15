@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useUsers } from "@/hooks/useUsers";
-import UserTable from "@/app/components/UserTable";
-import Loading from "@/app/components/Loading";
+import UserTable from "@/app/components/shared/UserTable";
+import Loading from "@/app/components/common/Loading";
 
 export default function UserPage() {
   const { data: users = [], isLoading } = useUsers();

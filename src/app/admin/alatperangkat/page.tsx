@@ -8,11 +8,11 @@ import {
   useDeleteProduct,
   Product,
 } from "@/hooks/useProducts";
-import ProductTable from "@/app/components/ProductsTable";
-import ProductModal from "@/app/components/ProductModal";
+import ProductTable from "@/app/components/shared/ProductsTable";
+import ProductModal from "@/app/components/shared/ProductModal";
 import debounce from "lodash.debounce";
 import { toast } from "react-toastify";
-import Loading from "@/app/components/Loading";
+import Loading from "@/app/components/common/Loading";
 
 export default function AlatPerangkatPage() {
   const { data: products, isLoading, isError, error } = useProducts();

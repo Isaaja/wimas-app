@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Loading from "@/app/components/Loading";
+import Loading from "@/app/components/common/Loading";
 import { useLoans, useApproveLoan, useRejectLoan } from "@/hooks/useLoans";
-import AdminLoanTable from "@/app/components/AdminLoanTable";
+import AdminLoanTable from "@/app/components/admin/AdminLoanTable";
 
 export default function AdminPeminjamanPage() {
   const { loans, isLoading, isError, error } = useLoans("history");

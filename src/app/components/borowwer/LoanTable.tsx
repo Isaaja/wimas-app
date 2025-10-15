@@ -1,4 +1,3 @@
-// components/LoanTable.tsx
 "use client";
 
 import { useState } from "react";
@@ -93,7 +92,6 @@ export default function LoanTable({
 
   return (
     <div className="space-y-4">
-      {/* Tabel */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="table w-full">
