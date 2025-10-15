@@ -8,7 +8,10 @@ import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
 import { handleFileUpload } from "@/lib/uploads";
 import LoanValidator from "@/validator/loans";
-import { sendRequestEmail } from "@/service/supabase/SendEmailService";
+import { sendEmail } from "@/service/supabase/SendEmailService";
+import { getUsersByIds } from "@/service/supabase/UsersService";
+import { getProductsWithQuantity } from "@/service/supabase/ProductsService";
+
 export async function POST(req: Request) {
   try {
     const user = await checkAuth("BORROWER");
@@ -28,10 +31,10 @@ export async function POST(req: Request) {
     // ✅ Upload dokumen dan simpan URL ke dalam report
     const spt_file = docs ? await handleFileUpload(docs) : null;
 
-    // const loanCheck = await checkUserLoan(userId);
-    // if (!loanCheck.canBorrow) {
-    //   throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
-    // }
+    const loanCheck = await checkUserLoan(userId);
+    if (!loanCheck.canBorrow) {
+      throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
+    }
 
     LoanValidator.validateLoanPayload({
       user: invitedUsers,
@@ -46,6 +49,11 @@ export async function POST(req: Request) {
       report,
     });
 
+    const owner = [{ user_id: user.user_id, name: user.name, role: "OWNER" }];
+    const invited = await getUsersByIds(invitedUsers);
+
+    const listProduct = await getProductsWithQuantity(items);
+
     const loan = await createLoan({
       userId,
       invitedUsers,
@@ -55,23 +63,13 @@ export async function POST(req: Request) {
         spt_file,
       },
     });
-    await sendRequestEmail({
+
+    await sendEmail({
       to: "isaiantmaulana2004@gmail.com",
       subject: "[PERMINTAAN] Persetujuan Peminjaman Perangkat",
-      message: `Halo Pak Isa Iant Maulana, 
-
-Pengguna dengan nama <strong>${user.name}</strong> telah mengajukan permintaan peminjaman perangkat. 
-Mohon untuk meninjau dan memberikan persetujuan melalui sistem.
-
-Terima kasih atas perhatian dan kerjasamanya.
-
-<br>
-Salam hormat,  
-</br>
-
-<br>
-Sistem Peminjaman Perangkat 
-</br>`,
+      borrowers: [...owner, ...invited],
+      items: listProduct,
+      status: "permintaan",
     });
 
     return successResponse(loan, "Loan created successfully", 201);
