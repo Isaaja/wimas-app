@@ -3,14 +3,14 @@
 import { useState, useMemo, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
-import ProductCard from "@/app/components/ProductCard";
+import ProductCard from "@/app/components/borowwer/ProductCard";
 import { useLoans, type LoanItem } from "@/hooks/useLoans";
 import { useCheckUserLoan } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
 import { MessageSquareWarning, ShoppingBag } from "lucide-react";
-import CartSummary from "@/app/components/CartSummary";
+import CartSummary from "@/app/components/borowwer/CartSummary";
 import debounce from "lodash.debounce";
-import Loading from "@/app/components/Loading";
+import Loading from "@/app/components/common/Loading";
 
 export default function AlatPerangkatPage() {
   const { data: products = [], isLoading, isError, error } = useProducts();

@@ -9,9 +9,9 @@ import {
   Category,
   CategoryPayload,
 } from "@/hooks/useCategories";
-import CategoryModal from "@/app/components/CategoryModal";
-import CategoryTable from "@/app/components/CategoryTable";
-import Loading from "@/app/components/Loading";
+import CategoryModal from "@/app/components/borowwer/CategoryModal";
+import CategoryTable from "@/app/components/borowwer/CategoryTable";
+import Loading from "@/app/components/common/Loading";
 
 export default function CategoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);

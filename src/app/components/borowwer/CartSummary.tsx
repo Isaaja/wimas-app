@@ -133,10 +133,7 @@ export default function CartSummary({
 
   const handleSubmit = () => {
     const userIds = selectedUsers.map((u) => u.user_id);
-
-    // ✅ PERBAIKAN: Hanya kirim data report tanpa spt_file
-    // spt_file sudah dihandle terpisah melalui formData docs
-    onCheckout(userIds, docsFile, reportData); // ✅ Hanya kirim reportData tanpa spt_file
+    onCheckout(userIds, docsFile, reportData);
     router.push("/peminjam/peminjaman");
   };
 

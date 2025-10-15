@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
-import ProductTable from "@/app/components/ProductsTable";
+import ProductTable from "@/app/components/shared/ProductsTable";
 import debounce from "lodash.debounce";
 
 export default function AlatPerangkatPage() {

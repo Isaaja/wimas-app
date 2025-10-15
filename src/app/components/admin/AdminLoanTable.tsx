@@ -1,7 +1,5 @@
-// components/AdminLoanTable.tsx
 "use client";
 
-import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye, EyeOff, FileText, Calendar, MapPin } from "lucide-react";
