@@ -120,7 +120,10 @@ export default function AlatPerangkatPage() {
             className="input input-info bg-white"
             onChange={handleSearchChange}
           />
-          <button className="btn btn-info" onClick={handleAdd}>
+          <button
+            className="flex w-64 items-center justify-center bg-[#91C8E4] text-[#0B1D51] rounded-lg cursor-pointer hover:bg-[#91C8E4]/80 transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+            onClick={handleAdd}
+          >
             Tambah Perangkat
           </button>
         </div>

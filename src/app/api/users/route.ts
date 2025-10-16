@@ -6,7 +6,7 @@ import { errorResponse, successResponse } from "@/app/utils/response";
 
 export async function POST(req: Request) {
   try {
-    await checkAuth("SUPERADMIN");
+    await checkAuth("ADMIN");
     // Ambil body request
     const { name, username, password, email, noHandphone } = await req.json();
 

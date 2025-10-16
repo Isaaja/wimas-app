@@ -70,19 +70,17 @@ export default function ProductsTable({
                   {product.category?.category_name || "-"}
                 </td>
                 <td className="border-t border-black/10 text-center">
-                  <span className="badge badge-ghost">{product.quantity}</span>
+                  <span>{product.quantity}</span>
                 </td>
                 <td className="border-t border-black/10 text-center">
-                  <span className="badge badge-ghost">
-                    {product.product_avaible}
-                  </span>
+                  <span>{product.product_avaible}</span>
                 </td>
                 <td className="border-t border-black/10 text-center">
                   <span
-                    className={`badge ${
+                    className={`badge border-0 ${
                       product.product_avaible === 0
-                        ? "badge-error"
-                        : "badge-success"
+                        ? "bg-[#FF8282] text-[#740938]"
+                        : "bg-[#B8F1B0] text-[#215B63]"
                     }`}
                   >
                     {product.product_avaible === 0
