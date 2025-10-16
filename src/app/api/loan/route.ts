@@ -11,6 +11,7 @@ import LoanValidator from "@/validator/loans";
 import { sendEmail } from "@/service/supabase/SendEmailService";
 import { getUsersByIds } from "@/service/supabase/UsersService";
 import { getProductsWithQuantity } from "@/service/supabase/ProductsService";
+import InvariantError from "@/exceptions/InvariantError";
 
 export async function POST(req: Request) {
   try {
@@ -64,13 +65,17 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendEmail({
-      to: "isaiantmaulana2004@gmail.com",
-      subject: "[PERMINTAAN] Persetujuan Peminjaman Perangkat",
+    const result = await sendEmail({
+      to: "111202214416@mhs.dinus.ac.id",
+      subject: "SEKOO ISA KIH INGFO",
       borrowers: [...owner, ...invited],
       items: listProduct,
       status: "permintaan",
     });
+
+    if (!result) {
+      throw new InvariantError("Pesan tidak masuk");
+    }
 
     return successResponse(loan, "Loan created successfully", 201);
   } catch (error: any) {
