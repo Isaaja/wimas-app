@@ -28,10 +28,10 @@ export async function POST(req: Request) {
     // ✅ Upload dokumen dan simpan URL ke dalam report
     const spt_file = docs ? await handleFileUpload(docs) : null;
 
-    // const loanCheck = await checkUserLoan(userId);
-    // if (!loanCheck.canBorrow) {
-    //   throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
-    // }
+    const loanCheck = await checkUserLoan(userId);
+    if (!loanCheck.canBorrow) {
+      throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
+    }
 
     LoanValidator.validateLoanPayload({
       user: invitedUsers,

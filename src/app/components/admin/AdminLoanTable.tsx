@@ -120,22 +120,7 @@ export default function AdminLoanTable({
                         <div className="font-semibold text-sm">
                           {loan.borrower.name || loan.borrower.username || "-"}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          @{loan.borrower.username}
-                        </div>
                       </div>
-
-                      {/* Pemilik */}
-                      {loan.owner && (
-                        <div>
-                          <div className="text-xs font-medium text-gray-600 mb-1">
-                            Pemilik:
-                          </div>
-                          <div className="text-xs">
-                            {loan.owner.name || loan.owner.username}
-                          </div>
-                        </div>
-                      )}
 
                       {/* Anggota Tim */}
                       {loan.invited_users && loan.invited_users.length > 0 && (

@@ -22,21 +22,31 @@ export default function CartStep3({
   const { data: users = [], isLoading: isLoadingUsers } = useUsers();
   const { user: currentUser } = useAuthContext();
 
-  const borrowers = useMemo(() => {
-    return users.filter(
-      (user) => user.role === "BORROWER" && user.user_id !== currentUser?.userId
-    );
+  const availableBorrowers = useMemo(() => {
+    return users.filter((user) => {
+      if (user.role !== "BORROWER" || user.user_id === currentUser?.userId) {
+        return false;
+      }
+
+      const hasActiveLoan = user.loanParticipants?.some(
+        (participant) =>
+          participant.loan.status === "APPROVED" ||
+          participant.loan.status === "REQUESTED"
+      );
+
+      return !hasActiveLoan;
+    });
   }, [users, currentUser]);
 
   const filteredBorrowers = useMemo(() => {
-    if (!searchTerm) return borrowers;
+    if (!searchTerm) return availableBorrowers;
     const term = searchTerm.toLowerCase();
-    return borrowers.filter(
+    return availableBorrowers.filter(
       (user) =>
         user.name?.toLowerCase().includes(term) ||
         user.username.toLowerCase().includes(term)
     );
-  }, [borrowers, searchTerm]);
+  }, [availableBorrowers, searchTerm]);
 
   const handleToggleUser = (user: SelectedUser) => {
     const exists = selectedUsers.find((u) => u.user_id === user.user_id);
@@ -59,6 +69,44 @@ export default function CartStep3({
   const availableUsers = filteredBorrowers.filter(
     (user) => !isUserSelected(user.user_id)
   );
+
+  // Helper function untuk mendapatkan status loan terbaru user
+  const getUserLoanStatus = (user: any): string | null => {
+    if (!user.loanParticipants || user.loanParticipants.length === 0) {
+      return "Tidak ada pinjaman";
+    }
+
+    const activeLoan = user.loanParticipants.find(
+      (participant: any) =>
+        participant.loan.status === "APPROVED" ||
+        participant.loan.status === "REQUESTED"
+    );
+
+    if (activeLoan) {
+      return activeLoan.loan.status;
+    }
+
+    // Jika tidak ada loan aktif, return status terbaru
+    const latestLoan = user.loanParticipants.reduce(
+      (latest: any, current: any) => {
+        return new Date(current.created_at) > new Date(latest.created_at)
+          ? current
+          : latest;
+      }
+    );
+
+    return latestLoan.loan.status;
+  };
+
+  const getStatusBadge = (status: string) => {
+    const statusMap: Record<string, { label: string; class: string }> = {
+      APPROVED: { label: "Disetujui", class: "badge-success" },
+      REQUESTED: { label: "Menunggu", class: "badge-warning" },
+      REJECTED: { label: "Ditolak", class: "badge-error" },
+      RETURNED: { label: "Dikembalikan", class: "badge-info" },
+    };
+    return statusMap[status] || { label: status, class: "badge-ghost" };
+  };
 
   return (
     <div className="space-y-4">
@@ -100,14 +148,12 @@ export default function CartStep3({
       )}
 
       {/* Search Input */}
-      <div className="form-control ">
-        <label className="input bg-white border-2 border-gray-300 w-full">
-          <span className="label">
-            <Search className="w-4 h-4 text-black" />
-            Cari Anggota Tim
-          </span>
+      <div className="form-control">
+        <label className="input bg-white border-2 border-gray-300 w-full flex items-center gap-2">
+          <Search className="w-4 h-4 text-gray-500" />
           <input
             type="text"
+            className="flex-1 border-none outline-none bg-transparent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Cari nama atau username"
@@ -126,44 +172,54 @@ export default function CartStep3({
           <div className="text-center p-6">
             <p className="text-gray-500 mb-2">
               {selectedUsers.length > 0
-                ? "Semua user sudah dipilih"
+                ? "Semua user available sudah dipilih"
                 : "Tidak ada borrower tersedia untuk ditambahkan"}
             </p>
-            {selectedUsers.length > 0 && (
+            {selectedUsers.length > 0 ? (
               <p className="text-sm text-gray-400">
                 Hapus beberapa user dari daftar terpilih untuk memilih yang lain
+              </p>
+            ) : (
+              <p className="text-sm text-gray-400">
+                Semua borrower sedang memiliki pinjaman aktif
+                (APPROVED/REQUESTED)
               </p>
             )}
           </div>
         ) : (
           <div className="divide-y">
-            {availableUsers.map((user) => (
-              <div
-                key={user.user_id}
-                className="p-3 hover:bg-gray-50 cursor-pointer transition-colors"
-                onClick={() => handleToggleUser(user)}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-gray-800">
-                      {user.name || "No Name"}
-                    </p>
-                    <p className="text-sm text-gray-500">@{user.username}</p>
+            {availableUsers.map((user) => {
+              const loanStatus = getUserLoanStatus(user);
+              const statusInfo = getStatusBadge(loanStatus || "");
+
+              return (
+                <div
+                  key={user.user_id}
+                  className="p-3 hover:bg-gray-50 cursor-pointer transition-colors"
+                  onClick={() => handleToggleUser(user)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-gray-800">
+                          {user.name || "No Name"}
+                        </p>
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      className="checkbox checkbox-primary"
+                      onChange={() => {}}
+                      readOnly
+                    />
                   </div>
-                  <input
-                    type="checkbox"
-                    className="checkbox checkbox-primary"
-                    onChange={() => {}}
-                    readOnly
-                  />
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Info */}
       <div className="bg-blue-50 p-3 rounded-lg">
         <p className="text-sm text-blue-700">
           <strong>Total Anggota Tim:</strong> {selectedUsers.length + 1} orang

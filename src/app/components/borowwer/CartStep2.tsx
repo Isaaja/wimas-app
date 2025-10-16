@@ -74,7 +74,6 @@ export default function CartStep2({
           <FileText className="w-5 h-5" />
           <div>
             <h3 className="font-bold">Upload Dokumen SPT</h3>
-            <p className="text-sm">Upload dokumen SPT (Opsional)</p>
           </div>
         </div>
 
@@ -112,7 +111,6 @@ export default function CartStep2({
           <ul className="text-xs text-yellow-700 list-disc list-inside space-y-1">
             <li>Hanya file PDF yang diperbolehkan</li>
             <li>Ukuran maksimal 5MB</li>
-            <li>Upload dokumen SPT bersifat opsional</li>
           </ul>
         </div>
       </div>
