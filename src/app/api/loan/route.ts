@@ -11,6 +11,7 @@ import LoanValidator from "@/validator/loans";
 import { sendEmail } from "@/service/supabase/SendEmailService";
 import { getUsersByIds } from "@/service/supabase/UsersService";
 import { getProductsWithQuantity } from "@/service/supabase/ProductsService";
+import InvariantError from "@/exceptions/InvariantError";
 
 export async function POST(req: Request) {
   try {
@@ -31,10 +32,10 @@ export async function POST(req: Request) {
     // ✅ Upload dokumen dan simpan URL ke dalam report
     const spt_file = docs ? await handleFileUpload(docs) : null;
 
-    const loanCheck = await checkUserLoan(userId);
-    if (!loanCheck.canBorrow) {
-      throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
-    }
+    // const loanCheck = await checkUserLoan(userId);
+    // if (!loanCheck.canBorrow) {
+    //   throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
+    // }
 
     LoanValidator.validateLoanPayload({
       user: invitedUsers,
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     });
 
     const owner = [{ user_id: user.user_id, name: user.name, role: "OWNER" }];
-    const invited = await getUsersByIds(invitedUsers);
+    const invited = await getUsersByIds(invitedUsers, "INVITED");
 
     const listProduct = await getProductsWithQuantity(items);
 
@@ -64,13 +65,19 @@ export async function POST(req: Request) {
       },
     });
 
-    await sendEmail({
+    const result = await sendEmail({
       to: "isaiantmaulana2004@gmail.com",
-      subject: "[PERMINTAAN] Persetujuan Peminjaman Perangkat",
+      subject: "SEKOO ISA KIH INGFO",
       borrowers: [...owner, ...invited],
       items: listProduct,
       status: "permintaan",
     });
+
+    console.log(invited);
+
+    if (!result) {
+      throw new InvariantError("Pesan tidak masuk");
+    }
 
     return successResponse(loan, "Loan created successfully", 201);
   } catch (error: any) {

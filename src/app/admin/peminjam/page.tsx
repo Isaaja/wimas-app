@@ -58,6 +58,7 @@ export default function AdminPeminjamanPage() {
         isLoading={isLoading}
         onApprove={handleApprove}
         onReject={handleReject}
+        onViewDetail={() => {}}
         isApproving={isApproving}
         isRejecting={isRejecting}
         actioningLoanId={actioningLoanId}

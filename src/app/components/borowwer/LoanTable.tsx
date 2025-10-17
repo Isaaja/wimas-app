@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, View } from "lucide-react";
 
 interface Loan {
   loan_id: string;
@@ -98,12 +98,13 @@ export default function LoanTable({
             <thead className="bg-gray-100 text-gray-700">
               <tr>
                 <th className="whitespace-nowrap">No</th>
-                <th className="whitespace-nowrap">Peminjam & Tim</th>
+                <th className="whitespace-nowrap">Peminjam</th>
                 <th className="whitespace-nowrap">No. SPT</th>
                 <th className="whitespace-nowrap">Tanggal Peminjaman</th>
                 <th className="whitespace-nowrap">Detail Peminjaman</th>
                 <th className="whitespace-nowrap">Status</th>
                 <th className="whitespace-nowrap text-center">Dokumen</th>
+                <th className="whitespace-nowrap text-center">Aksi</th>
               </tr>
             </thead>
             <tbody>
@@ -118,7 +119,7 @@ export default function LoanTable({
                       {startIndex + index + 1}
                     </td>
 
-                    {/* Kolom Peminjam & Tim */}
+                    {/* Kolom Peminjam */}
                     <td className="border-t border-black/10">
                       {loan.participants && loan.participants.length > 0 && (
                         <div className="space-y-1">
@@ -135,18 +136,6 @@ export default function LoanTable({
                                   {participant.user.name || "n/a"}
                                 </span>
                               </div>
-                            ))}
-                          <span className="text-xs">Anggota Tim:</span>
-                          {loan.participants
-                            .filter(
-                              (participant) => participant.role === "INVITED"
-                            )
-                            .map((participant) => (
-                              <ul key={participant.id} className="text-xs">
-                                <li className="list-disc list-inside">
-                                  {participant.user.name || "n/a"}
-                                </li>
-                              </ul>
                             ))}
                         </div>
                       )}
@@ -227,6 +216,16 @@ export default function LoanTable({
                           <span className="text-xs text-gray-400">-</span>
                         </div>
                       )}
+                    </td>
+                    {/* Aksi */}
+                    <td className="border-t border-black/10 text-center">
+                      <button
+                        className="btn btn-ghost btn-xs text-blue-500 tooltip"
+                        data-tip="Lihat Detail"
+                        onClick={() => alert(`Lihat detail ${loan.loan_id}`)}
+                      >
+                        <View className="w-4 h-4" />
+                      </button>
                     </td>
                   </tr>
                 );

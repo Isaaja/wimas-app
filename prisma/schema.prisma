@@ -92,7 +92,6 @@ model Report {
 }
 
 enum Role {
-  SUPERADMIN
   ADMIN
   BORROWER
 }
