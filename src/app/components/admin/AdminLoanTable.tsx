@@ -88,7 +88,7 @@ export default function AdminLoanTable({
     <div className="space-y-4">
       {/* Tabel */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="table w-full table-compact">
+        <table className="table w-full">
           <thead className="bg-gray-100 text-gray-700">
             <tr>
               <th className="w-12">No</th>
@@ -97,7 +97,7 @@ export default function AdminLoanTable({
               <th className="w-48">Data SPT</th>
               <th className="w-32">Status</th>
               <th className="w-20 text-center">Dokumen</th>
-              <th className="w-32 text-center">Aksi</th>
+              <th className="w-48 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -110,7 +110,7 @@ export default function AdminLoanTable({
 
               return (
                 <tr key={loan.loan_id} className="hover">
-                  <td className="border-t border-black/10 font-medium py-2 px-2 text-sm ml-4">
+                  <td className="border-t border-black/10 font-medium py-2  text-sm ml-4">
                     {startIndex + index + 1}
                   </td>
 
@@ -254,7 +254,7 @@ export default function AdminLoanTable({
                   </td>
 
                   {/* Kolom Aksi */}
-                  <td className="border-t border-black/10 py-2 px-1">
+                  <td className="border-t border-black/10 py-2 px-1 ">
                     <div className="flex flex-row gap-1 justify-center items-center">
                       {/* Button Detail */}
                       <div className="flex flex-col gap-0.5 items-center">
