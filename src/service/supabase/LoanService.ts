@@ -3,7 +3,7 @@ import { formatLoanResponse } from "@/app/utils/formatLoanResponse";
 import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
-import { ParticipantRole } from "@prisma/client";
+import { ParticipantRole, LoanStatus } from "@prisma/client";
 import { nanoid } from "nanoid";
 
 export async function createLoan({
@@ -250,6 +250,7 @@ export async function getLoanById(loanId: string) {
           product: { select: { product_id: true, product_name: true } },
         },
       },
+      report: true,
     },
   });
 
@@ -323,4 +324,110 @@ export async function getHistoryLoan() {
     participantId: lp.id,
   }));
   return loans;
+}
+
+export async function updateLoanById(
+  loanId: string,
+  data: {
+    items?: { product_id: string; quantity: number }[];
+  }
+) {
+  return prisma.$transaction(
+    async (tx) => {
+      // Check if loan exists
+      const loan = await tx.loan.findUnique({
+        where: { loan_id: loanId },
+        include: { items: true },
+      });
+
+      if (!loan) throw new InvariantError("Loan tidak ditemukan");
+
+      // Validate loan status for updates
+      if (loan.status === "APPROVED" || loan.status === "RETURNED") {
+        throw new InvariantError(
+          "Tidak dapat mengubah loan yang sudah disetujui atau dikembalikan"
+        );
+      }
+
+      // Update loan items if provided
+      if (data.items && data.items.length > 0) {
+        // Get existing items mapped by product_id
+        const existingItemsMap = new Map(
+          loan.items.map((i) => [i.product_id, i])
+        );
+        const newProductIds = new Set(
+          data.items.map((item) => item.product_id)
+        );
+
+        // Remove items that are not in the new items list
+        const itemsToRemove = loan.items.filter(
+          (item) => !newProductIds.has(item.product_id)
+        );
+        if (itemsToRemove.length > 0) {
+          await tx.loanItem.deleteMany({
+            where: {
+              loan_item_id: {
+                in: itemsToRemove.map((item) => item.loan_item_id),
+              },
+            },
+          });
+        }
+
+        // Process each item in the update request
+        for (const item of data.items) {
+          if (item.quantity <= 0) {
+            throw new InvariantError(
+              `Quantity untuk produk ${item.product_id} harus lebih dari 0`
+            );
+          }
+
+          const existing = existingItemsMap.get(item.product_id);
+
+          if (existing) {
+            // Update existing item quantity
+            await tx.loanItem.update({
+              where: { loan_item_id: existing.loan_item_id },
+              data: { quantity: item.quantity },
+            });
+          } else {
+            // Add new item to the loan
+            const { nanoid } = await import("nanoid");
+            await tx.loanItem.create({
+              data: {
+                loan_item_id: `li-${nanoid(16)}`,
+                loan_id: loanId,
+                product_id: item.product_id,
+                quantity: item.quantity,
+              },
+            });
+          }
+        }
+      }
+
+      // Return updated loan with all relations
+      const updatedLoan = await tx.loan.findUnique({
+        where: { loan_id: loanId },
+        include: {
+          borrower: { select: { user_id: true, name: true, username: true } },
+          participants: {
+            include: {
+              user: { select: { user_id: true, name: true, username: true } },
+            },
+          },
+          items: {
+            include: {
+              product: { select: { product_id: true, product_name: true } },
+            },
+          },
+          report: true,
+        },
+      });
+
+      return updatedLoan;
+    },
+    {
+      timeout: 15000,
+      maxWait: 5000,
+    }
+  );
 }
