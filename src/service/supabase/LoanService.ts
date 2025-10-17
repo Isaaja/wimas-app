@@ -235,6 +235,54 @@ export async function rejectLoan(loanId: string) {
     }
   );
 }
+
+export async function returnLoan(loanId: string) {
+  return prisma.$transaction(
+    async (tx) => {
+      // Ambil data pinjaman beserta itemnya
+      const loan = await tx.loan.findUnique({
+        where: { loan_id: loanId },
+        include: {
+          items: {
+            include: { product: true },
+          },
+        },
+      });
+
+      if (!loan) throw new NotFoundError("Loan not found");
+
+      if (loan.status === "APPROVED") {
+        // Tambah kembali stok barang
+        await Promise.all(
+          (loan.items as Array<{ product_id: string; quantity: number }>).map(
+            (item) =>
+              tx.product.update({
+                where: { product_id: item.product_id },
+                data: {
+                  product_avaible: { increment: item.quantity },
+                },
+              })
+          )
+        );
+
+        // Update status pinjaman menjadi RETURNED
+        const updatedLoan = await tx.loan.update({
+          where: { loan_id: loanId },
+          data: { status: "RETURNED" },
+        });
+
+        return updatedLoan;
+      } else {
+        throw new InvariantError("Can't Return Item");
+      }
+    },
+    {
+      timeout: 15000,
+      maxWait: 5000,
+    }
+  );
+}
+
 export async function getLoanById(loanId: string) {
   const loan = await prisma.loan.findUnique({
     where: { loan_id: loanId },

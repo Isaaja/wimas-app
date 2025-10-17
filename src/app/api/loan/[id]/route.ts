@@ -16,8 +16,7 @@ export async function GET(
     console.log((await user).user_id);
     if (
       result?.borrower.user_id !== (await user).user_id &&
-      (await user).role !== "ADMIN" &&
-      (await user).role !== "SUPERADMIN"
+      (await user).role !== "ADMIN"
     ) {
       throw new AuthenticationError("Access Denied");
     }
