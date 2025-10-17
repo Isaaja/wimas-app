@@ -156,7 +156,10 @@ interface Borrower {
   user_id?: string;
 }
 
-export async function getUsersByIds(ids: string[]): Promise<Borrower[]> {
+export async function getUsersByIds(
+  ids: string[],
+  role: string
+): Promise<Borrower[]> {
   if (!ids || ids.length === 0) return [];
 
   const users = await prisma.user.findMany({
@@ -164,28 +167,24 @@ export async function getUsersByIds(ids: string[]): Promise<Borrower[]> {
     select: {
       user_id: true,
       name: true,
-      loanParticipants: {
-        select: {
-          role: true,
-        },
-      },
+      // loanParticipants: {
+      //   select: {
+      //     role: true,
+      //   },
+      // },
     },
   });
 
   const usersById = users.reduce<Record<string, Borrower>>((acc, u) => {
-    const role =
-      u.loanParticipants && u.loanParticipants.length > 0
-        ? u.loanParticipants[0].role
-        : "-";
     acc[u.user_id] = {
       name: u.name,
-      role,
+      role: role,
       user_id: u.user_id,
     };
     return acc;
   }, {});
 
   return ids.map(
-    (id) => usersById[id] || { name: "Unknown", role: "-", user_id: id }
+    (id) => usersById[id] || { name: "Unknown", role: "INVITED", user_id: id }
   );
 }
