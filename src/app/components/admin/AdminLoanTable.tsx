@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Eye, EyeOff, FileText, Calendar, MapPin } from "lucide-react";
+import { Eye, EyeOff, FileText, Calendar, MapPin, View } from "lucide-react";
 import { Loan } from "@/hooks/useLoans";
 
 interface AdminLoanTableProps {
@@ -10,6 +10,7 @@ interface AdminLoanTableProps {
   isLoading?: boolean;
   onApprove: (loanId: string) => void;
   onReject: (loanId: string) => void;
+  onViewDetail: (loanId: string) => void;
   isApproving?: boolean;
   isRejecting?: boolean;
   actioningLoanId?: string | null;
@@ -23,6 +24,7 @@ export default function AdminLoanTable({
   isLoading = false,
   onApprove,
   onReject,
+  onViewDetail,
   isApproving = false,
   isRejecting = false,
   actioningLoanId = null,
@@ -86,16 +88,16 @@ export default function AdminLoanTable({
     <div className="space-y-4">
       {/* Tabel */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
-        <table className="table w-full">
+        <table className="table w-full table-compact">
           <thead className="bg-gray-100 text-gray-700">
             <tr>
-              <th>No</th>
-              <th>Peminjam & Tim</th>
-              <th>Detail Peminjaman</th>
-              <th>Data SPT</th>
-              <th>Status</th>
-              <th>Dokumen</th>
-              <th>Aksi</th>
+              <th className="w-12">No</th>
+              <th className="w-32">Peminjam</th>
+              <th className="w-48">Detail Peminjaman</th>
+              <th className="w-48">Data SPT</th>
+              <th className="w-32">Status</th>
+              <th className="w-20 text-center">Dokumen</th>
+              <th className="w-32 text-center">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -108,54 +110,31 @@ export default function AdminLoanTable({
 
               return (
                 <tr key={loan.loan_id} className="hover">
-                  <td className="border-t border-black/10 font-medium">
+                  <td className="border-t border-black/10 font-medium py-2 px-2 text-sm ml-4">
                     {startIndex + index + 1}
                   </td>
 
-                  {/* Kolom Peminjam & Tim */}
-                  <td className="border-t border-black/10">
-                    <div className="space-y-2">
-                      {/* Peminjam Utama */}
-                      <div>
-                        <div className="font-semibold text-sm">
-                          {loan.borrower.name || loan.borrower.username || "-"}
-                        </div>
-                      </div>
-
-                      {/* Anggota Tim */}
-                      {loan.invited_users && loan.invited_users.length > 0 && (
-                        <div>
-                          <div className="text-xs font-medium text-gray-600 mb-1">
-                            Anggota Tim:
-                          </div>
-                          <div className="space-y-1">
-                            {loan.invited_users.map((user) => (
-                              <div key={user.user_id} className="text-xs">
-                                <span className="font-medium">
-                                  {user.name || user.username}
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                  {/* Kolom Peminjam */}
+                  <td className="border-t border-black/10 py-2 px-2">
+                    <div className="font-semibold text-sm">
+                      {loan.borrower.name || loan.borrower.username || "-"}
                     </div>
                   </td>
 
-                  <td className="border-t border-black/10">
-                    <div className="space-y-2">
+                  <td className="border-t border-black/10 py-2 px-2">
+                    <div className="space-y-1">
                       {/* Tanggal */}
-                      <div className="text-sm">
+                      <div className="text-xs">
                         <div className="font-medium">Dibuat:</div>
-                        <div className="text-gray-600">
+                        <div className="text-gray-600 text-xs">
                           {formatDate(loan.created_at)}
                         </div>
                       </div>
 
-                      <div className="text-sm">
+                      <div className="text-xs">
                         <div className="font-medium">Barang:</div>
                         {loan.items && loan.items.length > 0 ? (
-                          <ul className="list-disc list-inside text-gray-600">
+                          <ul className="list-disc list-inside text-gray-600 text-xs">
                             {loan.items.map((item) => (
                               <li key={item.product_id || item.loan_item_id}>
                                 {item.product_name}
@@ -175,9 +154,9 @@ export default function AdminLoanTable({
                   </td>
 
                   {/* Kolom Data SPT */}
-                  <td className="border-t border-black/10">
+                  <td className="border-t border-black/10 py-2 px-2">
                     {loan.report ? (
-                      <div className="space-y-2 text-sm">
+                      <div className="space-y-1 text-xs">
                         {/* Nomor SPT */}
                         <div>
                           <div className="font-medium flex items-center gap-1">
@@ -228,15 +207,15 @@ export default function AdminLoanTable({
                         </div>
                       </div>
                     ) : (
-                      <span className="text-gray-500 italic text-sm">
+                      <span className="text-gray-500 italic text-xs">
                         Tidak ada data SPT
                       </span>
                     )}
                   </td>
 
                   {/* Kolom Status */}
-                  <td className="border-t border-black/10">
-                    <div className="flex flex-col gap-1">
+                  <td className="border-t border-black/10 py-2 px-2">
+                    <div className="flex flex-col gap-0.5">
                       <span className={`badge ${statusInfo.class} badge-sm`}>
                         {statusInfo.label}
                       </span>
@@ -247,14 +226,14 @@ export default function AdminLoanTable({
                   </td>
 
                   {/* Kolom Dokumen SPT */}
-                  <td className="border-t border-black/10 text-center">
+                  <td className="border-t border-black/10 py-2 px-1">
                     {sptFileUrl ? (
-                      <div className="flex flex-col gap-1 items-center">
+                      <div className="flex flex-col gap-0.5 items-center">
                         <a
                           href={sptFileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn btn-ghost btn-xs text-blue-600 tooltip"
+                          className="btn btn-ghost btn-xs text-blue-600 tooltip p-1 h-auto min-h-0"
                           data-tip="Lihat Dokumen SPT"
                         >
                           <Eye className="w-4 h-4" />
@@ -262,9 +241,9 @@ export default function AdminLoanTable({
                         <span className="text-xs text-gray-500">SPT</span>
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-1 items-center">
+                      <div className="flex flex-col gap-0.5 items-center">
                         <span
-                          className="text-gray-400 tooltip"
+                          className="text-gray-400 tooltip p-1"
                           data-tip="Tidak Ada Dokumen SPT"
                         >
                           <EyeOff className="w-4 h-4" />
@@ -275,43 +254,87 @@ export default function AdminLoanTable({
                   </td>
 
                   {/* Kolom Aksi */}
-                  <td className="border-t border-black/10">
-                    {loan.status === "REQUESTED" ? (
-                      <div className="flex flex-col gap-2">
+                  <td className="border-t border-black/10 py-2 px-1">
+                    <div className="flex flex-row gap-1 justify-center items-center">
+                      {/* Button Detail */}
+                      <div className="flex flex-col gap-0.5 items-center">
                         <button
-                          onClick={() => onApprove(loan.loan_id)}
-                          disabled={isProcessing}
-                          className="btn btn-success btn-sm"
+                          onClick={() => onViewDetail(loan.loan_id)}
+                          className="btn btn-ghost btn-xs text-blue-600 tooltip p-1 h-auto min-h-0"
+                          data-tip="Lihat Detail Peminjaman"
                         >
-                          {isProcessing && actioningLoanId === loan.loan_id ? (
-                            <span className="loading loading-spinner loading-xs"></span>
-                          ) : (
-                            "Setujui"
-                          )}
+                          <View className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => onReject(loan.loan_id)}
-                          disabled={isProcessing}
-                          className="btn btn-error btn-sm"
-                        >
-                          {isProcessing && actioningLoanId === loan.loan_id ? (
-                            <span className="loading loading-spinner loading-xs"></span>
-                          ) : (
-                            "Tolak"
-                          )}
-                        </button>
+                        <span className="text-xs text-gray-500">Detail</span>
                       </div>
-                    ) : (
-                      <div className="text-center">
-                        <span className="text-gray-500 text-sm italic">
-                          {loan.status === "APPROVED"
-                            ? "Sudah disetujui"
-                            : loan.status === "REJECTED"
-                            ? "Sudah ditolak"
-                            : "Selesai"}
-                        </span>
-                      </div>
-                    )}
+
+                      {/* Button Approve/Reject */}
+                      {loan.status === "REQUESTED" && (
+                        <>
+                          <div className="flex flex-col gap-0.5 items-center">
+                            <button
+                              onClick={() => onApprove(loan.loan_id)}
+                              disabled={isProcessing}
+                              className="btn btn-ghost btn-xs text-green-600 tooltip p-1 h-auto min-h-0"
+                              data-tip="Setujui Peminjaman"
+                            >
+                              {isProcessing &&
+                              actioningLoanId === loan.loan_id ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                            <span className="text-xs text-gray-500">
+                              Setujui
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col gap-0.5 items-center">
+                            <button
+                              onClick={() => onReject(loan.loan_id)}
+                              disabled={isProcessing}
+                              className="btn btn-ghost btn-xs text-red-600 tooltip p-1 h-auto min-h-0"
+                              data-tip="Tolak Peminjaman"
+                            >
+                              {isProcessing &&
+                              actioningLoanId === loan.loan_id ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                            <span className="text-xs text-gray-500">Tolak</span>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

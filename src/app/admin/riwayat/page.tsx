@@ -31,6 +31,11 @@ export default function AdminPeminjamanPage() {
     }
   };
 
+  const handleViewDetailLoan = (loanId: string) => {
+    // TODO: Implement detail view (e.g., open modal or navigate to detail page)
+    console.log("View detail for loan:", loanId);
+  };
+
   if (isLoading) return <Loading />;
 
   if (isError)
@@ -48,23 +53,24 @@ export default function AdminPeminjamanPage() {
     );
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-gray-700">
-        Daftar Peminjaman Aktif
-      </h1>
+    <>
+      <div className="p-6 min-h-screen">
+        <h1 className="text-2xl font-bold ">Daftar Peminjaman Aktif</h1>
 
-      <AdminLoanTable
-        loans={loans || []}
-        isLoading={isLoading}
-        onApprove={handleApprove}
-        onReject={handleReject}
-        isApproving={isApproving}
-        isRejecting={isRejecting}
-        actioningLoanId={actioningLoanId}
-        currentPage={currentPage}
-        itemsPerPage={itemsPerPage}
-        onPageChange={setCurrentPage}
-      />
-    </div>
+        <AdminLoanTable
+          loans={loans || []}
+          isLoading={isLoading}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          onViewDetail={handleViewDetailLoan}
+          isApproving={isApproving}
+          isRejecting={isRejecting}
+          actioningLoanId={actioningLoanId}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
+      </div>
+    </>
   );
 }

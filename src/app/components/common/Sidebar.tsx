@@ -6,7 +6,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { menuConfig } from "@/config/menuConfig";
 import { useAuthContext } from "../../contexts/AuthContext";
 import { LogOut } from "lucide-react";
-import Image from "next/image";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -138,7 +137,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button
             onClick={handleLogout}
             disabled={logout.isPending}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg bg-red-700 hover:bg-red-800/80 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed text-white/90"
+            className={`w-full flex space-x-3 px-4 py-3 rounded-lg btn border-0 outline-0 transition-colors text-white/90
+      ${
+        logout.isPending
+          ? "bg-red-500 disabled:cursor-not-allowed"
+          : "btn-soft btn-error"
+      }`}
           >
             <span className="text-xl">
               <LogOut />
