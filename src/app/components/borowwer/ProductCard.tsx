@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Product } from "@/hooks/useProducts";
 import { toast } from "react-toastify";
-import { Info } from "lucide-react";
+import { Info, ArrowRight } from "lucide-react";
 import ProductDetailModal from "./ProductDetailModal";
 
 interface ProductCardProps {
@@ -106,8 +106,8 @@ export default function ProductCard({
                 className="btn btn-primary btn-sm w-full"
                 onClick={openModal}
               >
-                <Info className="w-4 h-4 mr-1" />
                 Pinjam Sekarang
+                <ArrowRight className="w-4 h-4 mr-1" />
               </button>
             </div>
           )}

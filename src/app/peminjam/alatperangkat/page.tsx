@@ -7,7 +7,7 @@ import ProductCard from "@/app/components/borowwer/ProductCard";
 import { useLoans, type LoanItem } from "@/hooks/useLoans";
 import { useCheckUserLoan } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
-import { MessageSquareWarning, ShoppingBag } from "lucide-react";
+import { MessageSquareWarning, ArrowRight, ShoppingBag } from "lucide-react";
 import CartSummary from "@/app/components/borowwer/CartSummary";
 import debounce from "lodash.debounce";
 import Loading from "@/app/components/common/Loading";
@@ -110,12 +110,12 @@ export default function AlatPerangkatPage() {
     );
 
   return (
-    <div className="flex flex-col max-h-screen bg-gray-200 mt-6 rounded-md shadow-xl p-4">
+    <div className="flex flex-col max-h-screen bg-gray-200 mt-6 rounded-2xl shadow-xl p-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 px-4 gap-4">
         <input
           type="text"
           placeholder="Cari perangkat..."
-          className="input input-bordered input-info bg-white w-full md:max-w-md"
+          className="input input-bordered input-info bg-white w-full md:max-w-md rounded-2xl"
           onChange={handleSearchChange}
         />
 
