@@ -9,16 +9,16 @@ import Loading from "../common/Loading";
 interface AdminLoanTableProps {
   loans: Loan[];
   isLoading?: boolean;
-  onApprove?: (loanId: string) => void; // Optional untuk halaman riwayat
-  onReject?: (loanId: string) => void; // Optional untuk halaman riwayat
-  onViewDetail: (loanId: string) => void; // Untuk semua halaman
+  onApprove?: (loanId: string) => void; 
+  onReject?: (loanId: string) => void; 
+  onViewDetail: (loanId: string) => void; 
   isApproving?: boolean;
   isRejecting?: boolean;
   actioningLoanId?: string | null;
   currentPage: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
-  mode?: "active" | "history"; // Prop baru untuk menentukan mode
+  mode?: "active" | "history";
 }
 
 export default function AdminLoanTable({
@@ -33,7 +33,7 @@ export default function AdminLoanTable({
   currentPage,
   itemsPerPage,
   onPageChange,
-  mode = "active", // Default ke active
+  mode = "active", 
 }: AdminLoanTableProps) {
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -187,34 +187,32 @@ export default function AdminLoanTable({
                     )}
                   </td>
 
-                  {/* Kolom Aksi - Berdasarkan Mode */}
                   <td className="border-t border-black/10 py-2 px-1">
                     <div className="flex justify-center items-center gap-1">
-                      {/* Mode Active - Approve (buka modal) & Reject (langsung) */}
                       {mode === "active" && loan.status === "REQUESTED" && (
                         <>
                           <button
-                            onClick={() => onViewDetail(loan.loan_id)} // Approve buka modal
+                            onClick={() => onViewDetail(loan.loan_id)}
                             disabled={isProcessing}
                             className="btn btn-success btn-xs tooltip"
                             data-tip="Review & Approve"
                           >
                             {isProcessing &&
                             actioningLoanId === loan.loan_id ? (
-                              <span className="loading loading-spinner loading-xs"></span>
+                              <span className="loading loading-spinner loading-xs text-info"></span>
                             ) : (
                               <CheckCircle className="w-3 h-3" />
                             )}
                           </button>
                           <button
-                            onClick={() => onReject?.(loan.loan_id)} // Reject langsung
+                            onClick={() => onReject?.(loan.loan_id)} 
                             disabled={isProcessing}
                             className="btn btn-error btn-xs tooltip"
                             data-tip="Tolak Peminjaman"
                           >
                             {isProcessing &&
                             actioningLoanId === loan.loan_id ? (
-                              <span className="loading loading-spinner loading-xs"></span>
+                              <span className="loading loading-spinner loading-xs text-info"></span>
                             ) : (
                               <XCircle className="w-3 h-3" />
                             )}
@@ -222,7 +220,6 @@ export default function AdminLoanTable({
                         </>
                       )}
 
-                      {/* Mode History - Hanya tombol Detail */}
                       {mode === "history" && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}
@@ -233,7 +230,6 @@ export default function AdminLoanTable({
                         </button>
                       )}
 
-                      {/* Untuk status selain REQUESTED di mode active, tampilkan detail */}
                       {mode === "active" && loan.status !== "REQUESTED" && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}

@@ -11,6 +11,7 @@ import { MessageSquareWarning, ArrowRight, ShoppingBag } from "lucide-react";
 import CartSummary from "@/app/components/borowwer/CartSummary";
 import debounce from "lodash.debounce";
 import Loading from "@/app/components/common/Loading";
+import { useRouter } from "next/navigation";
 
 export default function AlatPerangkatPage() {
   const { data: products = [], isLoading, isError, error } = useProducts();
@@ -18,6 +19,7 @@ export default function AlatPerangkatPage() {
     useCart();
   const { createLoan, isCreating } = useLoans();
   const { data: checkResult, isLoading: isLoadingCheck } = useCheckUserLoan();
+  const router = useRouter()
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,6 +75,7 @@ export default function AlatPerangkatPage() {
       });
       clearCart();
       setIsModalOpen(false);
+      router.push("/peminjam/peminjaman")
     } catch (error: any) {
       console.error("Checkout error:", error);
     }

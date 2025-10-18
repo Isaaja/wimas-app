@@ -285,13 +285,13 @@ export default function LoanDetailModal({
 
                     {productsLoading ? (
                       <div className="text-center py-4">
-                        <span className="loading loading-spinner loading-sm"></span>
+                        <span className="loading loading-spinner loading-sm text-info"></span>
                         <p className="text-xs text-gray-500 mt-1">
                           Memuat produk...
                         </p>
                       </div>
                     ) : availableProducts.length > 0 ? (
-                      <div className="max-h-32 overflow-y-auto border border-gray-200 rounded">
+                      <div className="max-h-32 overflow-y-auto border border-blue-200 rounded">
                         {availableProducts.map((product) => (
                           <button
                             key={product.product_id}

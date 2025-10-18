@@ -97,12 +97,10 @@ export default function CartSummary({
   return (
     <dialog className="modal modal-open">
       <div className="modal-box w-11/12 max-w-2xl bg-white p-0 overflow-hidden flex flex-col max-h-[70vh]">
-        {/* Header - Sticky */}
         <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
           <h3 className="font-bold text-lg">{getStepTitle()}</h3>
         </div>
 
-        {/* Content Area - Scrollable */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           {step === 1 && (
             <CartStep1
@@ -129,7 +127,6 @@ export default function CartSummary({
           )}
         </div>
 
-        {/* Footer - Sticky */}
         <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
           <div className="flex justify-between items-center">
             <button className="btn" onClick={onClose} disabled={isLoading}>
@@ -162,7 +159,7 @@ export default function CartSummary({
                   disabled={isLoading || cart.length === 0}
                 >
                   {isLoading ? (
-                    <span className="loading loading-spinner loading-sm"></span>
+                    <span className="loading loading-spinner loading-sm text-info"></span>
                   ) : (
                     "Konfirmasi Pinjam"
                   )}
