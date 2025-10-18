@@ -110,9 +110,9 @@ export default function AlatPerangkatPage() {
   }
 
   return (
-    <div className="mt-4  flex flex-col gap-4">
+    <div className="flex flex-col gap-4 p-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Alat & Perangkat</h1>
+        <h1 className="text-2xl font-bold text-gray-700">Alat & Perangkat</h1>
         <div className="flex gap-4">
           <input
             type="text"

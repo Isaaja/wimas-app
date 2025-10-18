@@ -138,7 +138,7 @@ export default function ProductsTable({
         </table>
       </div>
 
-      <div className="flex justify-between mt-4">
+      <div className="flex justify-between mt-2">
         <div className="flex">
           {currentPage} of {totalPages} pages
         </div>
