@@ -76,40 +76,40 @@ export interface LoanHistoryUser {
 }
 
 export interface LoanHistoryParticipant {
-  id: string; 
-  loan_id: string; 
-  user_id: string; 
-  created_at: string; 
-  role: "OWNER" | "INVITED"; 
-  user: LoanHistoryUser; 
+  id: string;
+  loan_id: string;
+  user_id: string;
+  created_at: string;
+  role: "OWNER" | "INVITED";
+  user: LoanHistoryUser;
 }
 
 export interface LoanHistoryReport {
   report_id: string;
-  loan_id: string; 
+  loan_id: string;
   spt_file: string | null;
   spt_number: string;
   destination: string;
   place_of_execution: string;
   start_date: string;
   end_date: string;
-  created_at: string; 
-  updated_at: string; 
+  created_at: string;
+  updated_at: string;
 }
 
 export interface LoanHistory {
   loan_id: string;
-  borrower_id: string; 
+  borrower_id: string;
   status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
-  spt_file?: string | null; 
+  spt_file?: string | null;
   created_at: string;
   updated_at: string;
   borrower: LoanHistoryUser;
   items: LoanHistoryProduct[];
   participants: LoanHistoryParticipant[];
   userRole: "OWNER" | "INVITED";
-  participantId: string; 
-  report?: LoanHistoryReport; 
+  participantId: string;
+  report?: LoanHistoryReport;
 }
 
 export interface LoanHistoryResponse {
@@ -333,6 +333,39 @@ const deleteLoan = async (loanId: string): Promise<void> => {
 
   if (!response.ok)
     throw new Error(result?.message || "Gagal menghapus peminjaman");
+};
+
+export const useUpdateLoanItems = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ loanId, items }: { loanId: string; items: any[] }) => {
+      const token = getAccessToken();
+
+      const response = await fetch(`/api/loan/${loanId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ items }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal memperbarui item peminjaman");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["loans", "active"] });
+      queryClient.invalidateQueries({ queryKey: ["loans", "history"] });
+    },
+    onError: (error) => {
+      console.error("❌ Error update items:", error);
+    },
+  });
 };
 
 // ==================== LOAN HISTORY FUNCTIONS ====================
