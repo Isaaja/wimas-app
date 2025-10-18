@@ -65,11 +65,13 @@ export default function LoanTable({
   const getSptFileUrl = (sptFile: string | null | undefined): string | null => {
     if (!sptFile) return null;
     if (sptFile.startsWith("http")) return sptFile;
+    if (sptFile.startsWith("public/")) {
+      return sptFile.replace("public/", "/");
+    }
     if (sptFile.startsWith("/")) return sptFile;
-    return `/uploads/${sptFile}`;
+    return `/${sptFile}`;
   };
 
-  // Calculate pagination
   const totalPages = Math.ceil(loans.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentLoans = loans.slice(startIndex, startIndex + itemsPerPage);

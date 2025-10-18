@@ -31,6 +31,10 @@ export default function AdminPeminjamanPage() {
     }
   };
 
+  const handleViewDetailLoan = (loanId: string) => {
+    console.log("View detail for loan:", loanId);
+  };
+
   if (isLoading) return <Loading />;
 
   if (isError)
@@ -58,7 +62,7 @@ export default function AdminPeminjamanPage() {
         isLoading={isLoading}
         onApprove={handleApprove}
         onReject={handleReject}
-        onViewDetail={() => {}}
+        onViewDetail={handleViewDetailLoan}
         isApproving={isApproving}
         isRejecting={isRejecting}
         actioningLoanId={actioningLoanId}

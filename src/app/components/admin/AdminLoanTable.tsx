@@ -59,8 +59,11 @@ export default function AdminLoanTable({
   const getSptFileUrl = (sptFile: string | null | undefined): string | null => {
     if (!sptFile) return null;
     if (sptFile.startsWith("http")) return sptFile;
+    if (sptFile.startsWith("public/")) {
+      return sptFile.replace("public/", "/");
+    }
     if (sptFile.startsWith("/")) return sptFile;
-    return `/uploads/${sptFile}`;
+    return `/${sptFile}`;
   };
 
   // Calculate pagination
@@ -86,7 +89,6 @@ export default function AdminLoanTable({
 
   return (
     <div className="space-y-4">
-      {/* Tabel */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="table w-full">
           <thead className="bg-gray-100 text-gray-700">

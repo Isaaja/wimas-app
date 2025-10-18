@@ -32,7 +32,6 @@ export default function AdminPeminjamanPage() {
   };
 
   const handleViewDetailLoan = (loanId: string) => {
-    // TODO: Implement detail view (e.g., open modal or navigate to detail page)
     console.log("View detail for loan:", loanId);
   };
 
