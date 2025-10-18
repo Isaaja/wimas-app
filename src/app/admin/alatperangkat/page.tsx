@@ -114,12 +114,32 @@ export default function AlatPerangkatPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-700">Alat & Perangkat</h1>
         <div className="flex gap-4">
-          <input
-            type="text"
-            placeholder="Cari perangkat..."
-            className="input input-info bg-white"
-            onChange={handleSearchChange}
-          />
+          <label className="input input-bordered bg-white rounded-2xl flex items-center gap-2 w-full md:max-w-md">
+            <svg
+              className="h-[1.2em] w-[1.2em] opacity-50"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+            >
+              <g
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                strokeWidth="2.5"
+                fill="none"
+                stroke="currentColor"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </g>
+            </svg>
+            <input
+              type="search"
+              required
+              placeholder="Cari perangkat..."
+              className="grow outline-none bg-transparent text-gray-700"
+              onChange={handleSearchChange}
+            />
+          </label>
+
           <button
             className="flex w-64 items-center justify-center bg-[#91C8E4] text-[#0B1D51] rounded-lg cursor-pointer hover:bg-[#91C8E4]/80 transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
             onClick={handleAdd}
