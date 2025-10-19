@@ -150,6 +150,16 @@ async function checkUserAvalible(id: string) {
   }
 }
 
+export async function getUsersById(id: string) {
+  const user = await prisma.user.findUnique({
+    where: { user_id: id },
+  });
+  if (!user) {
+    throw new NotFoundError("User tidak ditemukan");
+  }
+  return user;
+}
+
 interface Borrower {
   name: string;
   role: string;
@@ -167,11 +177,6 @@ export async function getUsersByIds(
     select: {
       user_id: true,
       name: true,
-      // loanParticipants: {
-      //   select: {
-      //     role: true,
-      //   },
-      // },
     },
   });
 
