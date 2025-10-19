@@ -1,6 +1,7 @@
 import {
   updateUserById,
   deleteUserById,
+  getUsersById,
 } from "@/service/supabase/UsersService";
 import { NextRequest } from "next/server";
 import { checkAuth } from "@/app/utils/auth";
@@ -10,7 +11,7 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    await checkAuth("BORROWER");
+    await checkAuth("");
 
     const body = await req.json();
     const { id } = await context.params;
@@ -42,5 +43,18 @@ export async function DELETE(
       error.message || "An error occurred",
       error.statusCode || 400
     );
+  }
+}
+
+export async function GET(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await context.params;
+    const result = await getUsersById(id);
+    return successResponse(result);
+  } catch (error) {
+    return errorResponse(error);
   }
 }

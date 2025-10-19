@@ -1,35 +1,35 @@
-import { NextResponse } from "next/server";
-import { addUser } from "@/app/service/supabase/UsersService";
-import UsersValidator from "@/app/validator/users";
-import NotFoundError from "@/app/exceptions/NotFoundError";
+import { addUser, getAllUser } from "@/service/supabase/UsersService";
+import UsersValidator from "@/validator/users";
+import NotFoundError from "@/exceptions/NotFoundError";
+import { checkAuth } from "@/app/utils/auth";
+import { errorResponse, successResponse } from "@/app/utils/response";
 
 export async function POST(req: Request) {
-  const { name, username, password } = await req.json();
-
   try {
-    // Validation
-    UsersValidator.validateUserPayload(req);
+    await checkAuth("ADMIN");
+    // Ambil body request
+    const { name, username, password, email, noHandphone } = await req.json();
 
-    const user = await addUser(name, username, password);
+    UsersValidator.validateUserPayload({
+      name,
+      username,
+      password,
+      email,
+      noHandphone,
+    });
+
+    const user = await addUser(name, username, password, email, noHandphone);
 
     if (!user) {
-      throw new NotFoundError("User Id tidak ditemukan");
+      throw new NotFoundError("User tidak berhasil ditambahkan");
     }
-
-    return NextResponse.json(
-      {
-        status: "success",
-        data: { user },
-      },
-      { status: 201 }
-    );
+    return successResponse(user, "", 201);
   } catch (error: any) {
-    return NextResponse.json(
-      {
-        status: "fail",
-        message: error.message,
-      },
-      { status: error.statusCode || 400 }
-    );
+    return errorResponse(error, "Failed to add user");
   }
+}
+
+export async function GET() {
+  const user = await getAllUser();
+  return successResponse(user);
 }
