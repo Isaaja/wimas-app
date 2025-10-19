@@ -1,17 +1,10 @@
 "use client";
 
-<<<<<<< HEAD
-export default function ProfildPage() {
-  return (
-    <div className="p-5">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Profil Page</h1>
-=======
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuthContext } from "@/app/contexts/AuthContext";
 import Loading from "@/app/components/common/Loading";
-import { Edit, Save, X, User, Mail, Phone, Key, Building } from "lucide-react";
-import { useUpdateUser } from "@/hooks/useUsers";
+import { Edit, Save, X, User, Mail, Phone, Key } from "lucide-react";
+import { useUpdateUser, useUserById } from "@/hooks/useUsers";
 
 interface FormData {
   name: string;
@@ -28,23 +21,76 @@ interface FormErrors {
   noHandphone?: string;
 }
 
-export default function BorrowerProfilePage() {
-  const { user, updateUser } = useAuthContext();
+export default function AdminProfilePage() {
+  const { user: authUser, updateUser: updateAuthUser } = useAuthContext();
   const { mutate: updateUserMutation, isPending: isUpdating } = useUpdateUser();
+
+  // Fetch user data from API
+  const {
+    data: userData,
+    isLoading: isFetchingUser,
+    error: fetchError,
+  } = useUserById(authUser?.userId || "");
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    name: user?.name || "",
-    username: user?.username || "",
-    email: user?.email || "",
-    noHandphone: user?.noHandphone || "",
+    name: "",
+    username: "",
+    email: "",
+    noHandphone: "",
     password: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
-  if (!user) {
+  // Track if we've already synced userData to prevent infinite loops
+  const hasSyncedRef = useRef(false);
+
+  // Update form data when user data is fetched
+  useEffect(() => {
+    if (userData && !hasSyncedRef.current) {
+      setFormData({
+        name: userData.name || "",
+        username: userData.username || "",
+        email: userData.email || "",
+        noHandphone: userData.noHandphone || "",
+        password: "",
+      });
+
+      // Sync with AuthContext for global state (only once on initial load)
+      updateAuthUser({
+        name: userData.name,
+        username: userData.username,
+        email: userData.email,
+        noHandphone: userData.noHandphone,
+        created_at: userData.created_at,
+        updated_at: userData.updated_at,
+      });
+
+      hasSyncedRef.current = true;
+    }
+  }, [userData, updateAuthUser]);
+
+  if (!authUser) {
     return <Loading />;
   }
+
+  if (isFetchingUser) {
+    return <Loading />;
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
+          <h3 className="text-red-800 font-semibold mb-2">Error</h3>
+          <p className="text-red-600">{(fetchError as Error).message}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Use fetched data as the source of truth
+  const user = userData || authUser;
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -95,10 +141,11 @@ export default function BorrowerProfilePage() {
     }
 
     updateUserMutation(
-      { userId: user.userId, payload },
+      { userId: authUser.userId, payload },
       {
         onSuccess: (updatedUser: any) => {
-          updateUser({
+          // Update AuthContext with new data
+          updateAuthUser({
             name: updatedUser.name,
             username: updatedUser.username,
             email: updatedUser.email,
@@ -110,6 +157,7 @@ export default function BorrowerProfilePage() {
         },
         onError: (error: Error) => {
           console.error("Gagal update profil:", error.message);
+          alert(`Gagal update profil: ${error.message}`);
         },
       }
     );
@@ -309,7 +357,11 @@ export default function BorrowerProfilePage() {
                     Role
                   </label>
                   <p className="text-gray-900 font-medium p-2 bg-gray-50 rounded">
-                    {user.role === "BORROWER" ? "Peminjam" : user.role}
+                    {user.role === "ADMIN"
+                      ? "Admin"
+                      : user.role === "SUPERADMIN"
+                      ? "Super Admin"
+                      : user.role}
                   </p>
                 </div>
               </>
@@ -362,7 +414,11 @@ export default function BorrowerProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-gray-600">User ID</p>
-              <p className="text-gray-900 font-mono">{user.userId}</p>
+              <p className="text-gray-900 font-mono">
+                {userData && "user_id" in userData
+                  ? userData.user_id
+                  : authUser.userId}
+              </p>
             </div>
             <div>
               <p className="text-gray-600">Tanggal Bergabung</p>
@@ -377,9 +433,23 @@ export default function BorrowerProfilePage() {
                   : "-"}
               </p>
             </div>
+            {user.updated_at && (
+              <div className="md:col-span-2">
+                <p className="text-gray-600">Terakhir Diperbarui</p>
+                <p className="text-gray-900">
+                  {new Date(user.updated_at).toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+            )}
           </div>
         </div>
->>>>>>> e88fd1095b09f910e244663b090f3223c3979d90
       </div>
     </div>
   );

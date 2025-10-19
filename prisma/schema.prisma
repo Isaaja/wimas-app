@@ -21,6 +21,9 @@ model User {
   noHandphone      String?
   loans            Loan[]            @relation("UserLoans")
   loanParticipants LoanParticipant[]
+
+  @@index([role])
+  @@index([username])
 }
 
 model Category {
@@ -42,6 +45,10 @@ model Product {
   product_avaible Int
   loanItems       LoanItem[]
   category        Category   @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+
+
+  @@index([category_id])
+  @@index([product_avaible])
 }
 
 model Loan {
@@ -54,6 +61,11 @@ model Loan {
   items        LoanItem[]
   participants LoanParticipant[]
   report       Report?
+  
+  @@index([borrower_id])
+  @@index([status])
+  @@index([created_at])
+  @@index([borrower_id, status])
 }
 
 model LoanItem {

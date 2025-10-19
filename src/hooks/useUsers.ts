@@ -170,14 +170,53 @@ export const useCreateUser = () => {
   });
 };
 
+// Fetch single user by ID
+const fetchUserById = async (userId: string): Promise<User> => {
+  const token = getAccessToken();
+
+  const response = await fetch(`/api/users/${userId}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Gagal mengambil data user");
+  }
+
+  const result: ApiResponse<User> = await response.json();
+  return result.data;
+};
+
+export const useUserById = (userId: string) => {
+  return useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => fetchUserById(userId),
+    staleTime: 5 * 60 * 1000,
+    retry: 2,
+    enabled: !!userId, // Only run if userId exists
+  });
+};
+
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateUserPayload }) =>
-      updateUser(id, data),
-    onSuccess: () => {
+    mutationFn: ({
+      userId,
+      payload,
+    }: {
+      userId: string;
+      payload: UpdateUserPayload;
+    }) => updateUser(userId, payload),
+    onSuccess: (data, variables) => {
+      // Invalidate both the users list and the specific user
       queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: ["user", variables.userId] });
     },
   });
 };

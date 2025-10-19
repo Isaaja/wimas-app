@@ -196,13 +196,27 @@ export async function getLoanedProducts() {
           user: { select: { user_id: true, name: true, username: true } },
         },
       },
-      report: true,
+      report: {
+        select: {
+          report_id: true,
+          spt_file: true,
+          spt_number: true,
+          destination: true,
+          place_of_execution: true,
+          start_date: true,
+          end_date: true,
+        },
+      },
       items: {
         include: {
           product: { select: { product_id: true, product_name: true } },
         },
       },
     },
+    orderBy: {
+      created_at: "desc",
+    },
+    take: 100, // Limit hasil jika terlalu banyak
   });
 
   return loans.map(formatLoanResponse);
@@ -351,13 +365,24 @@ export async function getHistoryLoan() {
               },
             },
           },
-          report: true,
+          report: {
+            select: {
+              report_id: true,
+              spt_file: true,
+              spt_number: true,
+              destination: true,
+              place_of_execution: true,
+              start_date: true,
+              end_date: true,
+            },
+          },
         },
       },
     },
     orderBy: {
       created_at: "desc",
     },
+    take: 100,
   });
 
   // 3. Transform data
