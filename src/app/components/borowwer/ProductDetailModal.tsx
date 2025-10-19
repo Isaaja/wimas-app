@@ -38,82 +38,120 @@ export default function ProductDetailModal({
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box max-w-2xl p-0 bg-gray-200">
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 border-b">
-          <h3 className="font-bold text-lg">Detail Produk</h3>
+      <div className="modal-box max-w-3xl p-0 bg-white rounded-lg max-h-[80vh] overflow-hidden flex flex-col">
+        {/* Header - Compact */}
+        <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <h3 className="font-bold text-lg text-gray-800">Detail Produk</h3>
           <button
-            className="btn btn-ghost btn-sm btn-circle"
+            className="btn btn-ghost btn-sm btn-circle hover:bg-gray-100"
             onClick={handleClose}
           >
-            <X className="w-4 h-4" />
+            <X className="w-4 h-4 text-gray-600" />
           </button>
         </div>
 
-        <div className="flex p-4 gap-4 ">
-          {/* Product Image */}
-          <div className="flex flex-col w-full gap-4 bg-gray-300 justify-center items-center rounded-lg shadow-md">
-            <div className="flex justify-center">
+        {/* Content Area with Scroll */}
+        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+          {/* Left Column - Product Image */}
+          <div className="flex flex-col w-full lg:w-2/3 p-4 gap-3 border-r border-gray-200">
+            <div className="bg-gray-50 rounded-3xl p-4 flex justify-center items-center flex-1 min-h-0">
               <img
                 src={product.product_image}
                 alt={product.product_name}
-                className="w-48 h-48 object-cover rounded-lg"
+                className="w-96 h-84 object-cover rounded-sm"
               />
             </div>
 
-            {/* Product Info */}
+            {/* Stock Badge */}
             <div className="text-center">
-              <h2 className="text-xl font-bold mb-2">{product.product_name}</h2>
-              <div className="badge badge-primary badge-lg">
-                Stok: {product.product_avaible}
+              <div
+                className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
+                  product.product_avaible > 0
+                    ? "bg-green-500 text-white"
+                    : "bg-red-500 text-white"
+                }`}
+              >
+                {product.product_avaible > 0
+                  ? `Tersedia: ${product.product_avaible}`
+                  : "Stok Habis"}
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col w-full gap-4">
-            {/* Product Details */}
-            <div className="space-y-2 text-sm w-2xs">
-              <div className="flex justify-between">
-                <span className="text-gray-600">Kategori:</span>
-                <span className="font-medium">{product.category?.category_name}</span>
+          {/* Right Column - Product Details */}
+          <div className="flex flex-col w-full lg:w-1/2 p-4 gap-4 overflow-y-auto">
+            {/* Product Name */}
+            <div>
+              <h2 className="text-xl font-bold text-gray-800 mb-1 line-clamp-2">
+                {product.product_name}
+              </h2>
+              <div className="w-12 h-1 bg-blue-500 rounded-full"></div>
+            </div>
+
+            {/* Product Details - Compact */}
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between items-center py-1">
+                <span className="text-gray-600 font-medium">Kategori:</span>
+                <span className="font-semibold text-gray-800 text-right">
+                  {product.category?.category_name || "-"}
+                </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">Jumlah Barang:</span>
-                <span className="font-medium">{product.quantity}</span>
+
+              <div className="flex justify-between items-center py-1">
+                <span className="text-gray-600 font-medium">Total Stok:</span>
+                <span className="font-semibold text-gray-800">
+                  {product.quantity} unit
+                </span>
               </div>
-              <div>
-                <span className="text-gray-600">Deskripsi:</span>
-                <p className="text-gray-700 mt-1">n/A</p>
+
+              <div className="py-1">
+                <span className="text-gray-600 font-medium block mb-1">
+                  Deskripsi:
+                </span>
+                <p className="text-gray-700 bg-gray-50 rounded-lg p-2 text-xs line-clamp-3">
+                  "Tidak ada deskripsi"
+                </p>
               </div>
             </div>
 
-            {/* Quantity Selector */}
-            <div className="bg-gray-300 rounded-lg shadow-md py-2">
-              <label className="block text-sm font-medium mb-2 text-center">
-                Jumlah Pinjam
+            {/* Quantity Selector - Compact */}
+            <div className="bg-blue-50 rounded-lg p-3">
+              <label className="block text-xs font-semibold mb-2 text-gray-700 text-center">
+                JUMLAH PINJAM
               </label>
               <div className="flex items-center justify-center gap-3">
                 <button
-                  className="btn btn-sm btn-circle"
+                  className="btn btn-circle btn-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
                   onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                  disabled={!canBorrow || product.product_avaible === 0}
                 >
                   -
                 </button>
                 <input
                   type="number"
-                  className="input input-bordered input-sm w-16 text-center text-white  "
+                  className="input input-bordered input-sm w-16 text-center font-semibold text-gray-800 bg-white"
                   value={quantity}
                   min={1}
                   max={product.product_avaible}
                   onChange={(e) =>
-                    setQuantity(Math.max(1, Number(e.target.value)))
+                    setQuantity(
+                      Math.max(
+                        1,
+                        Math.min(
+                          Number(e.target.value),
+                          product.product_avaible
+                        )
+                      )
+                    )
                   }
+                  disabled={!canBorrow || product.product_avaible === 0}
                 />
                 <button
-                  className="btn btn-sm btn-circle"
+                  className="btn btn-circle btn-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
                   onClick={() =>
                     setQuantity((q) => Math.min(q + 1, product.product_avaible))
                   }
+                  disabled={!canBorrow || product.product_avaible === 0}
                 >
                   +
                 </button>
@@ -123,40 +161,60 @@ export default function ProductDetailModal({
               </p>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button className="btn btn-outline flex-1" onClick={handleClose}>
-                Batal
-              </button>
-              <button
-                className="btn btn-primary flex-1"
-                onClick={handleAddToCart}
-                disabled={!canBorrow || quantity > product.product_avaible}
-              >
-                {!canBorrow ? "Tidak Bisa Pinjam" : "Tambah ke List"}
-              </button>
-            </div>
-
-            {/* Status Messages */}
+            {/* Status Messages - Compact */}
             {!canBorrow && (
-              <div className="alert alert-warning">
-                <span>⚠️ Ada pinjaman aktif</span>
+              <div className="alert alert-warning py-2 bg-yellow-50 border-yellow-200">
+                <span className="text-yellow-800 text-sm">
+                  ⚠️ Ada pinjaman aktif
+                </span>
               </div>
             )}
 
-            {/* Summary */}
-            <div className="alert alert-info">
-              <span>
-                Akan pinjam: <strong>{quantity} unit</strong>{" "}
-                {product.product_name}
-              </span>
+            {product.product_avaible === 0 && (
+              <div className="alert alert-error py-2 bg-red-50 border-red-200">
+                <span className="text-red-800 text-sm">❌ Stok habis</span>
+              </div>
+            )}
+
+            {/* Summary - Compact */}
+            {canBorrow && product.product_avaible > 0 && (
+              <div className="alert alert-info py-2 bg-blue-50 border-blue-200">
+                <span className="text-blue-800 text-sm">
+                  Akan pinjam: <strong>{quantity} unit</strong>
+                </span>
+              </div>
+            )}
+
+            {/* Action Buttons - Compact */}
+            <div className="flex gap-2 mt-auto pt-2">
+              <button
+                className="btn btn-outline btn-sm flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
+                onClick={handleClose}
+              >
+                Batal
+              </button>
+              <button
+                className="btn btn-primary btn-sm flex-1 bg-blue-600 border-blue-600 text-white hover:bg-blue-700 text-xs font-semibold"
+                onClick={handleAddToCart}
+                disabled={
+                  !canBorrow ||
+                  product.product_avaible === 0 ||
+                  quantity > product.product_avaible
+                }
+              >
+                {!canBorrow
+                  ? "Tidak Bisa Pinjam"
+                  : product.product_avaible === 0
+                  ? "Stok Habis"
+                  : "Pinjam Sekarang"}
+              </button>
             </div>
           </div>
         </div>
       </div>
 
       {/* Modal Backdrop */}
-      <form method="dialog" className="modal-backdrop">
+      <form method="dialog" className="modal-backdrop bg-black/50">
         <button onClick={handleClose}>close</button>
       </form>
     </dialog>
