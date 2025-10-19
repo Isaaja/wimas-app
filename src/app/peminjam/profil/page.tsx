@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAuthContext } from "@/app/contexts/AuthContext";
 import Loading from "@/app/components/common/Loading";
-import { Edit, Save, X, User, Mail, Phone, Key, Building } from "lucide-react";
+import { Edit, Save, X, User, Mail, Phone, Key } from "lucide-react";
 import { useUpdateUser } from "@/hooks/useUsers";
 
 interface FormData {
@@ -79,8 +79,8 @@ export default function BorrowerProfilePage() {
     const payload: any = {
       name: formData.name,
       username: formData.username,
-      email: formData.email.trim() || null, 
-      noHandphone: formData.noHandphone.trim() || null, 
+      email: formData.email.trim() || null,
+      noHandphone: formData.noHandphone.trim() || null,
     };
 
     if (formData.password.trim()) {

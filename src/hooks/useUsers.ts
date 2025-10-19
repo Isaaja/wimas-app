@@ -16,8 +16,8 @@ export interface User {
   user_id: string;
   name: string;
   username: string;
-  email?: string;
-  noHandphone?: string;
+  email: string | null;
+  noHandphone: string | null;
   role: "ADMIN" | "SUPERADMIN" | "BORROWER";
   loanParticipants: LoanParticipant[];
   created_at?: string;
@@ -108,23 +108,24 @@ const createUser = async (payload: {
 };
 
 const updateUser = async (
-  userId: string,
+  id: string,
   payload: UpdateUserPayload
 ): Promise<User> => {
   const token = getAccessToken();
 
-  const response = await fetch(`/api/users/${userId}`, {
+  const response = await fetch(`/api/users/${id}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
+      ...(token && { Authorization: `Bearer ${token}` }),
     },
+    credentials: "include",
     body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.message || "Gagal memperbarui profil");
+    throw new Error(error.message || "Gagal mengupdate user");
   }
 
   const result: ApiResponse<User> = await response.json();
@@ -173,19 +174,10 @@ export const useUpdateUser = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      userId,
-      payload,
-    }: {
-      userId: string;
-      payload: UpdateUserPayload;
-    }) => updateUser(userId, payload),
-    onSuccess: (data: User) => {
-      queryClient.invalidateQueries({ queryKey: ["user"] });
+    mutationFn: ({ id, data }: { id: string; data: UpdateUserPayload }) =>
+      updateUser(id, data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-    onError: (error: Error) => {
-      console.error("Update user error:", error);
     },
   });
 };

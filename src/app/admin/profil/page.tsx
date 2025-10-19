@@ -1,5 +1,12 @@
 "use client";
 
+<<<<<<< HEAD
+export default function ProfildPage() {
+  return (
+    <div className="p-5">
+      <div className="flex justify-between mb-4">
+        <h1 className="text-2xl font-bold">Profil Page</h1>
+=======
 import { useState } from "react";
 import { useAuthContext } from "@/app/contexts/AuthContext";
 import Loading from "@/app/components/common/Loading";
@@ -372,6 +379,7 @@ export default function BorrowerProfilePage() {
             </div>
           </div>
         </div>
+>>>>>>> e88fd1095b09f910e244663b090f3223c3979d90
       </div>
     </div>
   );
