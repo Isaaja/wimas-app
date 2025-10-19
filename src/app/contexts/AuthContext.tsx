@@ -12,7 +12,7 @@ interface User {
   userId: string;
   name: string;
   role: string;
-  username?: string;
+  username: string;
   email?: string;
   noHandphone?: string;
   created_at?: string;
@@ -46,12 +46,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const created_at = localStorage.getItem("created_at");
         const updated_at = localStorage.getItem("updated_at");
 
-        if (userId && name && role) {
+        if (userId && name && role && username) {
           setUserState({
             userId,
             name,
             role,
-            username: username || undefined,
+            username,
             email: email || undefined,
             noHandphone: noHandphone || undefined,
             created_at: created_at || undefined,
@@ -73,9 +73,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("userId", userData.userId);
     localStorage.setItem("name", userData.name);
     localStorage.setItem("userRole", userData.role);
+    localStorage.setItem("username", userData.username);
 
-    // Simpan field tambahan jika ada
-    if (userData.username) localStorage.setItem("username", userData.username);
     if (userData.email) localStorage.setItem("email", userData.email);
     if (userData.noHandphone)
       localStorage.setItem("noHandphone", userData.noHandphone);
@@ -87,7 +86,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearUser = () => {
     setUserState(null);
-    // Hapus semua data user dari localStorage
     localStorage.removeItem("userId");
     localStorage.removeItem("name");
     localStorage.removeItem("userRole");
