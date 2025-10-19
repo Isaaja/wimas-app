@@ -1,16 +1,9 @@
 "use client";
 
-<<<<<<< HEAD
-export default function ProfilPage() {
-  return (
-    <div className="p-5">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Profil Page</h1>
-=======
 import { useState } from "react";
 import { useAuthContext } from "@/app/contexts/AuthContext";
 import Loading from "@/app/components/common/Loading";
-import { Edit, Save, X, User, Mail, Phone, Key, Building } from "lucide-react";
+import { Edit, Save, X, User, Mail, Phone, Key } from "lucide-react";
 import { useUpdateUser } from "@/hooks/useUsers";
 
 interface FormData {
@@ -86,8 +79,8 @@ export default function BorrowerProfilePage() {
     const payload: any = {
       name: formData.name,
       username: formData.username,
-      email: formData.email.trim() || null, 
-      noHandphone: formData.noHandphone.trim() || null, 
+      email: formData.email.trim() || null,
+      noHandphone: formData.noHandphone.trim() || null,
     };
 
     if (formData.password.trim()) {
@@ -379,7 +372,6 @@ export default function BorrowerProfilePage() {
             </div>
           </div>
         </div>
->>>>>>> e88fd1095b09f910e244663b090f3223c3979d90
       </div>
     </div>
   );
