@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               {user.name.charAt(0).toUpperCase()}
             </div>
             <div className="flex flex-col items-center justify-center">
-              <p className="font-semibold text-lg text-white font-mono tracking-wider">
+              <p className="font-semibold text-lg text-white font-mono tracking-wider text-center">
                 {user.name}
               </p>
               <span
