@@ -4,7 +4,8 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { menuConfig } from "@/config/menuConfig";
-import { useAuthContext } from "../contexts/AuthContext";
+import { useAuthContext } from "../../contexts/AuthContext";
+import { LogOut } from "lucide-react";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -13,22 +14,25 @@ interface SidebarProps {
 
 const roleColors: Record<
   string,
-  { bg: string; hover: string; accent: string }
+  { bg: string; hover: string; accent: string; text: string }
 > = {
   superadmin: {
-    bg: "from-red-700 to-red-600",
-    hover: "hover:bg-red-500/70",
-    accent: "bg-red-200 text-red-900",
+    bg: "from-indigo-800 to-indigo-700",
+    hover: "hover:bg-indigo-600/80",
+    accent: "bg-indigo-100 text-indigo-900",
+    text: "text-indigo-100",
   },
   admin: {
-    bg: "from-blue-700 to-blue-600",
-    hover: "hover:bg-blue-500/70",
-    accent: "bg-blue-200 text-blue-900",
+    bg: "from-blue-800 to-blue-700",
+    hover: "hover:bg-blue-600/80",
+    accent: "bg-blue-100 text-blue-900",
+    text: "text-blue-100",
   },
   peminjam: {
-    bg: "from-green-700 to-green-600",
-    hover: "hover:bg-green-500/70",
-    accent: "bg-green-200 text-green-900",
+    bg: "from-sky-600 to-sky-500",
+    hover: "hover:bg-sky-500/80",
+    accent: "bg-sky-100 text-sky-900",
+    text: "text-sky-100",
   },
 };
 
@@ -38,7 +42,6 @@ const roleMap: Record<string, string> = {
   superadmin: "superadmin",
 };
 
-// 🏷️ Label role untuk tampilan UI (display text)
 const displayRoleMap: Record<string, string> = {
   peminjam: "Peminjam",
   admin: "Admin",
@@ -79,26 +82,34 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div className="p-6 border-b border-white/20">
-          <div className="flex items-center space-x-3">
-            <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center font-bold text-lg">
+        <div className="p-6 border-b border-white/20 flex justify-center items-center">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <div
+              className={`w-20 h-20 rounded-full bg-white/20 flex items-center justify-center font-bold text-lg ${colors.text}`}
+            >
               {user.name.charAt(0).toUpperCase()}
             </div>
-            <div className="flex-1">
-              <p className="font-semibold text-sm truncate">{user.name}</p>
-              <span className="inline-block text-xs bg-white/20 px-2 py-1 rounded-full capitalize mt-1">
+            <div className="flex flex-col items-center justify-center">
+              <p className="font-semibold text-lg text-white font-mono tracking-wider">
+                {user.name}
+              </p>
+              <span
+                className={`inline-block text-xs ${colors.text} bg-white/20 px-2 py-1 font-sans tracking-widest rounded-full capitalize mt-1`}
+              >
                 {displayRole}
               </span>
             </div>
           </div>
         </div>
 
+        {/* Navigation Menu */}
         <nav className="flex-1 overflow-y-auto p-4 h-[calc(100vh-300px)]">
           <ul className="space-y-2">
             {menuItems.map((item, index) => {
               const rolePath = `/${mappedRole}`;
               const fullPath = `${rolePath}${item.href}`;
               const isActive = pathname === fullPath;
+              const IconComponent = item.icon;
 
               return (
                 <li key={index}>
@@ -106,10 +117,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     href={fullPath}
                     onClick={onClose}
                     className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200 ${
-                      isActive ? colors.accent : `text-white/80 ${colors.hover}`
+                      isActive
+                        ? `${colors.accent} font-semibold`
+                        : `text-white/90 ${colors.hover}`
                     }`}
                   >
-                    <span className="text-xl">{item.icon}</span>
+                    <IconComponent className="w-5 h-5" />
                     <span className="font-medium">{item.label}</span>
                   </Link>
                 </li>
@@ -124,9 +137,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           <button
             onClick={handleLogout}
             disabled={logout.isPending}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg bg-red-500/80 hover:bg-red-600 transition-colors disabled:bg-gray-600 disabled:cursor-not-allowed"
+            className={`w-full flex space-x-3 px-4 py-3 rounded-lg btn border-0 outline-0 transition-colors text-white/90
+      ${
+        logout.isPending
+          ? "bg-red-500 disabled:cursor-not-allowed"
+          : "btn-soft btn-error"
+      }`}
           >
-            <span className="text-xl">🚪</span>
+            <span className="text-xl">
+              <LogOut />
+            </span>
             <span className="font-medium">
               {logout.isPending ? "Logging out..." : "Logout"}
             </span>

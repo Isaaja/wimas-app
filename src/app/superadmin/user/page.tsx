@@ -9,8 +9,8 @@ import {
   User,
 } from "@/hooks/useUsers";
 import { toast } from "react-toastify";
-import UserTable from "@/app/components/UserTable";
-import UserModal from "@/app/components/UserModal";
+import UserTable from "@/app/components/shared/UserTable";
+import UserModal from "@/app/components/shared/UserModal";
 import { usePathname } from "next/navigation";
 
 export default function SuperAdminUserPage() {

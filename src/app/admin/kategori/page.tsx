@@ -9,9 +9,11 @@ import {
   Category,
   CategoryPayload,
 } from "@/hooks/useCategories";
-import CategoryModal from "@/app/components/CategoryModal";
-import CategoryTable from "@/app/components/CategoryTable";
-import Loading from "@/app/components/Loading";
+import CategoryModal from "@/app/components/borowwer/CategoryModal";
+import CategoryTable from "@/app/components/borowwer/CategoryTable";
+import Loading from "@/app/components/common/Loading";
+import Swal from "sweetalert2";
+import { toast } from "react-toastify";
 
 export default function CategoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,9 +37,26 @@ export default function CategoryPage() {
   };
 
   const handleDeleteClick = (categoryId: string) => {
-    if (window.confirm("Apakah Anda yakin ingin menghapus kategori ini?")) {
-      deleteMutation.mutate(categoryId);
-    }
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: "Anda akan menghapus kategori ini!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+      customClass: {
+        confirmButton: "btn btn-error",
+        cancelButton: "btn btn-secondary",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteMutation.mutate(categoryId);
+        toast.success("Kategori berhasil dihapus!");
+      }
+    });
   };
 
   const handleSubmit = (payload: CategoryPayload) => {
@@ -47,6 +66,7 @@ export default function CategoryPage() {
         {
           onSuccess: () => {
             setIsModalOpen(false);
+            toast.success("Produk berhasil ditambah!");
           },
         }
       );
@@ -54,6 +74,7 @@ export default function CategoryPage() {
       createMutation.mutate(payload, {
         onSuccess: () => {
           setIsModalOpen(false);
+          toast.success("Produk berhasil ditambah!");
         },
       });
     }
@@ -95,7 +116,6 @@ export default function CategoryPage() {
           categories={data}
           onEdit={handleEditClick}
           onDelete={handleDeleteClick}
-          isDeleting={deleteMutation.status === "pending"}
         />
       )}
 

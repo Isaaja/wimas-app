@@ -1,14 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
+export interface LoanParticipant {
+  id: string;
+  role: "OWNER" | "INVITED";
+  created_at: string;
+  loan: {
+    loan_id: string;
+    status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
+    created_at: string;
+    updated_at: string;
+  };
+}
+
 export interface User {
   user_id: string;
   name: string;
   username: string;
-  email: string;
-  noHandphone: string;
-  role: string;
-  created_at?: Date;
-  updated_at?: Date;
+  email: string | null;
+  noHandphone: string | null;
+  role: "ADMIN" | "SUPERADMIN" | "BORROWER";
+  loanParticipants: LoanParticipant[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateUserPayload {
@@ -20,8 +33,8 @@ export interface UpdateUserPayload {
   name?: string;
   username?: string;
   password?: string;
-  email?: string;
-  noHandphone?: string;
+  email?: string | null;
+  noHandphone?: string | null;
 }
 
 interface ApiResponse<T> {

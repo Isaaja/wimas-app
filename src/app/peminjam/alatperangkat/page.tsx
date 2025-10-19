@@ -3,14 +3,15 @@
 import { useState, useMemo, useCallback } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
-import ProductCard from "@/app/components/ProductCard";
+import ProductCard from "@/app/components/borowwer/ProductCard";
 import { useLoans, type LoanItem } from "@/hooks/useLoans";
 import { useCheckUserLoan } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
-import { MessageSquareWarning, ShoppingBag } from "lucide-react";
-import CartSummary from "@/app/components/CartSummary";
+import { MessageSquareWarning, ArrowRight, ShoppingBag } from "lucide-react";
+import CartSummary from "@/app/components/borowwer/CartSummary";
 import debounce from "lodash.debounce";
-import Loading from "@/app/components/Loading";
+import Loading from "@/app/components/common/Loading";
+import { useRouter } from "next/navigation";
 
 export default function AlatPerangkatPage() {
   const { data: products = [], isLoading, isError, error } = useProducts();
@@ -18,6 +19,7 @@ export default function AlatPerangkatPage() {
     useCart();
   const { createLoan, isCreating } = useLoans();
   const { data: checkResult, isLoading: isLoadingCheck } = useCheckUserLoan();
+  const router = useRouter()
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -73,6 +75,7 @@ export default function AlatPerangkatPage() {
       });
       clearCart();
       setIsModalOpen(false);
+      router.push("/peminjam/peminjaman")
     } catch (error: any) {
       console.error("Checkout error:", error);
     }
@@ -110,14 +113,33 @@ export default function AlatPerangkatPage() {
     );
 
   return (
-    <div className="flex flex-col max-h-screen bg-gray-200 mt-6 rounded-md shadow-xl p-4">
+    <div className="flex flex-col max-h-screen bg-gray-200 mt-6 rounded-2xl shadow-xl p-4">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 px-4 gap-4">
-        <input
-          type="text"
-          placeholder="Cari perangkat..."
-          className="input input-bordered input-info bg-white w-full md:max-w-md"
-          onChange={handleSearchChange}
-        />
+        <label className="input input-bordered bg-white rounded-2xl flex items-center gap-2 w-full md:max-w-md">
+          <svg
+            className="h-[1.2em] w-[1.2em] opacity-50"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+          >
+            <g
+              strokeLinejoin="round"
+              strokeLinecap="round"
+              strokeWidth="2.5"
+              fill="none"
+              stroke="currentColor"
+            >
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </g>
+          </svg>
+          <input
+            type="search"
+            required
+            placeholder="Cari perangkat..."
+            className="grow outline-none bg-transparent text-gray-700"
+            onChange={handleSearchChange}
+          />
+        </label>
 
         {canBorrow && (
           <button

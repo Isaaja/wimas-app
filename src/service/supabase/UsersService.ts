@@ -72,6 +72,21 @@ export async function getAllUser() {
       role: true,
       email: true,
       noHandphone: true,
+      loanParticipants: {
+        select: {
+          id: true,
+          role: true,
+          created_at: true,
+          loan: {
+            select: {
+              loan_id: true,
+              status: true,
+              created_at: true,
+              updated_at: true,
+            },
+          },
+        },
+      },
     },
   });
 
@@ -133,4 +148,43 @@ async function checkUserAvalible(id: string) {
   if (!user) {
     throw new NotFoundError("User tidak ditemukan");
   }
+}
+
+interface Borrower {
+  name: string;
+  role: string;
+  user_id?: string;
+}
+
+export async function getUsersByIds(
+  ids: string[],
+  role: string
+): Promise<Borrower[]> {
+  if (!ids || ids.length === 0) return [];
+
+  const users = await prisma.user.findMany({
+    where: { user_id: { in: ids } },
+    select: {
+      user_id: true,
+      name: true,
+      // loanParticipants: {
+      //   select: {
+      //     role: true,
+      //   },
+      // },
+    },
+  });
+
+  const usersById = users.reduce<Record<string, Borrower>>((acc, u) => {
+    acc[u.user_id] = {
+      name: u.name,
+      role: role,
+      user_id: u.user_id,
+    };
+    return acc;
+  }, {});
+
+  return ids.map(
+    (id) => usersById[id] || { name: "Unknown", role: "INVITED", user_id: id }
+  );
 }

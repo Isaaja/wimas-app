@@ -83,3 +83,41 @@ export async function deleteProductById(id: string) {
     throw new InvariantError(error.message || "Failed to Delete Product");
   }
 }
+
+export async function getProductsWithQuantity(
+  items: { product_id: string; quantity: number }[]
+) {
+  if (!items || items.length === 0) return [];
+
+  const ids = items.map((i) => i.product_id);
+
+  const products = await prisma.product.findMany({
+    where: { product_id: { in: ids } },
+    select: {
+      product_id: true,
+      product_name: true,
+      quantity: true,
+      category: {
+        select: {
+          category_id: true,
+          category_name: true,
+        },
+      },
+    },
+  });
+
+  const productMap = products.reduce<Record<string, any>>((acc, p) => {
+    acc[p.product_id] = p;
+    return acc;
+  }, {});
+
+  return items.map((item) => {
+    const product = productMap[item.product_id];
+    if (!product)
+      throw new NotFoundError(`Product ${item.product_id} not found`);
+    return {
+      ...product,
+      quantity: item.quantity,
+    };
+  });
+}

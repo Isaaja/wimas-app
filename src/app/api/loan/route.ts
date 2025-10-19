@@ -8,6 +8,11 @@ import { checkAuth } from "@/app/utils/auth";
 import { errorResponse, successResponse } from "@/app/utils/response";
 import { handleFileUpload } from "@/lib/uploads";
 import LoanValidator from "@/validator/loans";
+import { sendEmail } from "@/service/supabase/SendEmailService";
+import { getUsersByIds } from "@/service/supabase/UsersService";
+import { getProductsWithQuantity } from "@/service/supabase/ProductsService";
+import InvariantError from "@/exceptions/InvariantError";
+
 export async function POST(req: Request) {
   try {
     const user = await checkAuth("BORROWER");
@@ -27,10 +32,10 @@ export async function POST(req: Request) {
     // ✅ Upload dokumen dan simpan URL ke dalam report
     const spt_file = docs ? await handleFileUpload(docs) : null;
 
-    const loanCheck = await checkUserLoan(userId);
-    if (!loanCheck.canBorrow) {
-      throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
-    }
+    // const loanCheck = await checkUserLoan(userId);
+    // if (!loanCheck.canBorrow) {
+    //   throw new Error(`Tidak bisa membuat pinjaman baru. ${loanCheck.reason}`);
+    // }
 
     LoanValidator.validateLoanPayload({
       user: invitedUsers,
@@ -45,6 +50,11 @@ export async function POST(req: Request) {
       report,
     });
 
+    const owner = [{ user_id: user.user_id, name: user.name, role: "OWNER" }];
+    const invited = await getUsersByIds(invitedUsers, "INVITED");
+
+    const listProduct = await getProductsWithQuantity(items);
+
     const loan = await createLoan({
       userId,
       invitedUsers,
@@ -54,6 +64,20 @@ export async function POST(req: Request) {
         spt_file,
       },
     });
+
+    const result = await sendEmail({
+      to: "erdin22xii@gmail.com",
+      subject: "SEKOO ISA KIH INGFO",
+      borrowers: [...owner, ...invited],
+      items: listProduct,
+      status: "permintaan",
+    });
+
+    console.log(invited);
+
+    if (!result) {
+      throw new InvariantError("Pesan tidak masuk");
+    }
 
     return successResponse(loan, "Loan created successfully", 201);
   } catch (error: any) {

@@ -31,7 +31,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    await checkAuth("SUPERADMIN");
+    await checkAuth("ADMIN");
 
     const { id } = await context.params;
     const result = await deleteUserById(id);

@@ -48,7 +48,7 @@ export default function CategoryModal({
             <input
               type="text"
               placeholder="Masukkan nama kategori"
-              className="input input-bordered w-full bg-white border-2 border-cyan-400"
+              className="input input-bordered w-full bg-white border-2 border-gray-200"
               value={categoryName}
               onChange={(e) => setCategoryName(e.target.value)}
               required
@@ -69,7 +69,7 @@ export default function CategoryModal({
               disabled={isSubmitting}
             >
               {isSubmitting ? (
-                <span className="loading loading-spinner"></span>
+                <span className="loading loading-spinner text-indigo-500"></span>
               ) : initialData ? (
                 "Simpan Perubahan"
               ) : (

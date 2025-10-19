@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import Loading from "@/app/components/Loading";
+import Loading from "@/app/components/common/Loading";
 import { useFilteredLoanHistory } from "@/hooks/useLoans";
-import LoanTable from "@/app/components/LoanTable";
+import LoanTable from "@/app/components/borowwer/LoanTable";
 
 export default function PeminjamanPage() {
   const { loans, isLoading, isError, error } = useFilteredLoanHistory("active");
