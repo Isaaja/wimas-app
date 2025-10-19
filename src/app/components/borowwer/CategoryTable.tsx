@@ -1,20 +1,30 @@
 "use client";
 
 import { Category } from "@/hooks/useCategories";
+import { useState } from "react";
 
 interface CategoryTableProps {
   categories: Category[];
   onEdit: (category: Category) => void;
   onDelete: (categoryId: string) => void;
-  isDeleting: boolean;
 }
 
 export default function CategoryTable({
   categories,
   onEdit,
   onDelete,
-  isDeleting,
 }: CategoryTableProps) {
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (categoryId: string) => {
+    setDeletingId(categoryId);
+    try {
+      await onDelete(categoryId);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       <table className="table text-gray-700">
@@ -39,6 +49,7 @@ export default function CategoryTable({
                   <button
                     className="btn btn-ghost btn-xs"
                     onClick={() => onEdit(category)}
+                    disabled={deletingId !== null}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -57,11 +68,11 @@ export default function CategoryTable({
                   </button>
                   <button
                     className="btn btn-ghost btn-xs text-error"
-                    onClick={() => onDelete(category.category_id)}
-                    disabled={isDeleting}
+                    onClick={() => handleDelete(category.category_id)}
+                    disabled={deletingId !== null}
                   >
-                    {isDeleting ? (
-                      <span className="loading loading-spinner"></span>
+                    {deletingId === category.category_id ? (
+                      <span className="loading loading-spinner loading-xs text-warning"></span>
                     ) : (
                       <svg
                         xmlns="http://www.w3.org/2000/svg"

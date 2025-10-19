@@ -296,7 +296,7 @@ export default function LoanDetailModal({
                           <button
                             key={product.product_id}
                             onClick={() => addProduct(product)}
-                            className="w-full text-left p-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                            className="w-full text-left p-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
                           >
                             <div className="flex justify-between items-center">
                               <div>
