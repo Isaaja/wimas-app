@@ -25,7 +25,6 @@ export default function BorrowerProfilePage() {
   const { user: authUser, updateUser: updateAuthUser } = useAuthContext();
   const { mutate: updateUserMutation, isPending: isUpdating } = useUpdateUser();
 
-  // Fetch user data from API
   const {
     data: userData,
     isLoading: isFetchingUser,
@@ -42,10 +41,8 @@ export default function BorrowerProfilePage() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Track if we've already synced userData to prevent infinite loops
   const hasSyncedRef = useRef(false);
 
-  // Update form data when user data is fetched
   useEffect(() => {
     if (userData && !hasSyncedRef.current) {
       setFormData({
@@ -56,7 +53,6 @@ export default function BorrowerProfilePage() {
         password: "",
       });
 
-      // Sync with AuthContext for global state (only once on initial load)
       updateAuthUser({
         name: userData.name,
         username: userData.username,

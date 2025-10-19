@@ -131,13 +131,13 @@ export default function CartStep2({
       {/* Bagian Form Data SPT */}
       <div className="space-y-4">
         {/* Nomor SPT */}
-        <div className="form-control">
+        <div className="form-control flex justify-between">
           <label className="label">
             <span className="label-text font-medium">Nomor SPT *</span>
           </label>
           <input
             type="text"
-            className="input input-bordered bg-white"
+            className="input input-bordered bg-white border-black"
             placeholder="Contoh: 001/SPT/IT/2024"
             value={reportData.spt_number}
             onChange={(e) =>
@@ -148,13 +148,13 @@ export default function CartStep2({
         </div>
 
         {/* Tujuan Kegiatan */}
-        <div className="form-control">
+        <div className="form-control flex justify-between">
           <label className="label">
             <span className="label-text font-medium">Tujuan Kegiatan *</span>
           </label>
           <input
             type="text"
-            className="input input-bordered bg-white"
+            className="input input-bordered bg-white border-black"
             placeholder="Contoh: Maintenance Server"
             value={reportData.destination}
             onChange={(e) =>
@@ -165,13 +165,13 @@ export default function CartStep2({
         </div>
 
         {/* Tempat Pelaksanaan */}
-        <div className="form-control">
+        <div className="form-control flex justify-between">
           <label className="label">
             <span className="label-text font-medium">Tempat Pelaksanaan *</span>
           </label>
           <input
             type="text"
-            className="input input-bordered bg-white"
+            className="input input-bordered bg-white border-black"
             placeholder="Contoh: Kantor Pusat"
             value={reportData.place_of_execution}
             onChange={(e) =>
@@ -225,7 +225,7 @@ export default function CartStep2({
 
         {/* Preview Data */}
         {isReportValid && (
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200 sticky bottom-0">
+          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
             <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
               ✅ Data SPT Valid
             </h4>
