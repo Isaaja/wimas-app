@@ -289,10 +289,10 @@ export default function ProductModal({
               disabled={createProduct.isPending || updateProduct.isPending}
             >
               {createProduct.isPending || updateProduct.isPending ? (
-                <>
-                  <span className="loading loading-spinner loading-sm"></span>
+                <p className="text-black">
+                  <span className="loading loading-spinner loading-md text-success mr-2"></span>
                   Menyimpan...
-                </>
+                </p>
               ) : (
                 <>
                   <svg

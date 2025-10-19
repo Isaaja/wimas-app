@@ -13,6 +13,7 @@ import ProductModal from "@/app/components/shared/ProductModal";
 import debounce from "lodash.debounce";
 import { toast } from "react-toastify";
 import Loading from "@/app/components/common/Loading";
+import Swal from "sweetalert2";
 
 export default function AlatPerangkatPage() {
   const { data: products, isLoading, isError, error } = useProducts();
@@ -65,10 +66,32 @@ export default function AlatPerangkatPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (product: any) => {
-    deleteProduct.mutate(product.product_id, {
-      onSuccess: () => toast.success("Produk berhasil dihapus!"),
-      onError: (err: any) => toast.error(err.message),
+  const handleDelete = (product: Product) => {
+    Swal.fire({
+      title: "Apakah Anda yakin?",
+      text: `Produk "${product.product_name}" akan dihapus secara permanen!`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+      customClass: {
+        confirmButton: "btn btn-error",
+        cancelButton: "btn btn-secondary",
+      },
+    }).then((result) => {
+      if (result.isConfirmed) {
+        deleteProduct.mutate(product.product_id, {
+          onSuccess: () => {
+            toast.success("Produk berhasil dihapus!");
+          },
+          onError: (err: any) => {
+            toast.error(err.message);
+          },
+        });
+      }
     });
   };
 
