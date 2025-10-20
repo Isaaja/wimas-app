@@ -188,7 +188,7 @@ export default function AdminDashboard() {
             icon={Users}
             title="Total Pengguna"
             value={stats.totalUsers}
-            subtitle={`${stats.adminUsers} admin, ${stats.borrowerUsers} borrower`}
+            subtitle={`${stats.adminUsers} admin, ${stats.borrowerUsers} peminjam`}
             color="green"
             compact
           />

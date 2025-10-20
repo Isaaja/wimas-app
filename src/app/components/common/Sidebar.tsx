@@ -16,12 +16,6 @@ const roleColors: Record<
   string,
   { bg: string; hover: string; accent: string; text: string }
 > = {
-  superadmin: {
-    bg: "from-indigo-800 to-indigo-700",
-    hover: "hover:bg-indigo-600/80",
-    accent: "bg-indigo-100 text-indigo-900",
-    text: "text-indigo-100",
-  },
   admin: {
     bg: "from-blue-800 to-blue-700",
     hover: "hover:bg-blue-600/80",
