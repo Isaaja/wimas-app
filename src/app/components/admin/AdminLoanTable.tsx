@@ -9,9 +9,9 @@ import Loading from "../common/Loading";
 interface AdminLoanTableProps {
   loans: Loan[];
   isLoading?: boolean;
-  onApprove?: (loanId: string) => void; 
-  onReject?: (loanId: string) => void; 
-  onViewDetail: (loanId: string) => void; 
+  onApprove?: (loanId: string) => void;
+  onReject?: (loanId: string) => void;
+  onViewDetail: (loanId: string) => void;
   isApproving?: boolean;
   isRejecting?: boolean;
   actioningLoanId?: string | null;
@@ -33,13 +33,20 @@ export default function AdminLoanTable({
   currentPage,
   itemsPerPage,
   onPageChange,
-  mode = "active", 
+  mode = "active",
 }: AdminLoanTableProps) {
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return "-";
     return format(date, "dd MMM yyyy, HH:mm", { locale: id });
+  };
+  
+  const formatDateOnly = (dateString: string | null | undefined) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "-";
+    return format(date, "dd MMM yyyy", { locale: id });
   };
 
   const getStatusBadge = (status: string) => {
@@ -87,7 +94,7 @@ export default function AdminLoanTable({
               <th className="w-12">No</th>
               <th className="w-32">Peminjam</th>
               <th className="w-48">No. SPT</th>
-              <th className="w-48">Detail Peminjaman</th>
+              <th className="w-48">Tanggal Peminjaman</th>
               <th className="w-32">Status</th>
               <th className="w-20 text-center">Dokumen</th>
               <th className="w-24 text-center">Aksi</th>
@@ -124,27 +131,11 @@ export default function AdminLoanTable({
                       </span>
                     )}
                   </td>
-
-                  <td className="border-t border-black/10 py-2 px-2">
-                    <div className="space-y-1">
+                  <td className="border-t border-black/10">
+                    <div className="space-y-2">
                       <div className="text-xs">
-                        <div className="font-medium">Barang:</div>
-                        {loan.items && loan.items.length > 0 ? (
-                          <ul className="list-disc list-inside text-gray-600 text-xs">
-                            {loan.items.map((item) => (
-                              <li key={item.product_id || item.loan_item_id}>
-                                {item.product_name}
-                                <span className="ml-1 text-xs text-gray-500">
-                                  ({item.quantity}x)
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span className="text-gray-500 italic text-xs">
-                            Tidak ada barang
-                          </span>
-                        )}
+                        {formatDateOnly(loan.report?.start_date)} -{" "}
+                        {formatDateOnly(loan.report?.end_date)}
                       </div>
                     </div>
                   </td>
@@ -205,7 +196,7 @@ export default function AdminLoanTable({
                             )}
                           </button>
                           <button
-                            onClick={() => onReject?.(loan.loan_id)} 
+                            onClick={() => onReject?.(loan.loan_id)}
                             disabled={isProcessing}
                             className="btn btn-error btn-xs tooltip"
                             data-tip="Tolak Peminjaman"

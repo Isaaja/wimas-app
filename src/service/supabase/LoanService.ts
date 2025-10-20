@@ -186,10 +186,19 @@ export async function checkUserLoan(userId: string) {
   if (!latestLoan) {
     return { canBorrow: true, reason: "Belum ada pinjaman aktif" };
   }
+  
+  let statusDescription = "";
+  if (latestLoan.status === "REQUESTED") {
+    statusDescription = "Menunggu persetujuan permintaan peminjaman barang.";
+  } else if (latestLoan.status === "APPROVED") {
+    statusDescription = "Anda Belum mengembalikan Barang pinjaman anda.";
+  } else {
+    statusDescription = `Status pinjaman: ${latestLoan.status}`;
+  }
 
   return {
     canBorrow: false,
-    reason: `Sedang ada pinjaman dengan status: ${latestLoan.status}`,
+    reason: statusDescription,
   };
 }
 

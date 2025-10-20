@@ -103,7 +103,6 @@ export default function LoanTable({
                 <th className="whitespace-nowrap">Peminjam</th>
                 <th className="whitespace-nowrap">No. SPT</th>
                 <th className="whitespace-nowrap">Tanggal Peminjaman</th>
-                <th className="whitespace-nowrap">Detail Peminjaman</th>
                 <th className="whitespace-nowrap">Status</th>
                 <th className="whitespace-nowrap text-center">Dokumen</th>
                 <th className="whitespace-nowrap text-center">Aksi</th>
@@ -158,28 +157,6 @@ export default function LoanTable({
                           {formatDateOnly(loan.report?.start_date)} -{" "}
                           {formatDateOnly(loan.report?.end_date)}
                         </div>
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm">
-                        <div className="font-medium">Barang:</div>
-                        {loan.items && loan.items.length > 0 ? (
-                          <ul className="list-disc list-inside text-gray-600">
-                            {loan.items.map((item) => (
-                              <li key={item.product_id}>
-                                {item.product_name}
-                                <span className="ml-1 text-xs text-gray-500">
-                                  ({item.quantity}x)
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span className="text-gray-500 italic text-xs">
-                            Tidak ada barang
-                          </span>
-                        )}
                       </div>
                     </td>
 
