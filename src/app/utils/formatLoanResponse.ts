@@ -16,6 +16,7 @@ export function formatLoanResponse(loan: any) {
     loan_item_id: item.loan_item_id,
     product_id: item.product.product_id,
     product_name: item.product.product_name,
+    product_image: item.product.product_id,
     quantity: item.quantity,
   }));
 
