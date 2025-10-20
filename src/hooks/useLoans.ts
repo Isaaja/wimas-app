@@ -599,17 +599,14 @@ export const useUpdateLoanItems = () => {
       return response.json();
     },
     onSuccess: (data, variables) => {
-      queryClient.setQueryData(
-        LOAN_QUERY_KEYS.detail(variables.loanId), 
-        data
-      );
-      
-      queryClient.invalidateQueries({ 
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(variables.loanId), data);
+
+      queryClient.invalidateQueries({
         queryKey: LOAN_QUERY_KEYS.lists(),
-        refetchType: 'active'
+        refetchType: "active",
       });
-      queryClient.invalidateQueries({ 
-        queryKey: LOAN_QUERY_KEYS.history() 
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
       });
     },
     onError: (error) => {
@@ -623,7 +620,7 @@ export function useLoanHistory() {
     queryKey: LOAN_QUERY_KEYS.history(),
     queryFn: fetchLoanHistory,
     staleTime: CACHE_CONFIG.STALE_MEDIUM,
-    gcTime: CACHE_CONFIG.LONG_TERM, 
+    gcTime: CACHE_CONFIG.LONG_TERM,
     retry: 2,
   });
 }
@@ -656,13 +653,20 @@ export function useFilteredLoanHistory(filter?: "active" | "completed") {
 }
 
 export function useLoanHistoryById(loanId: string) {
+  const queryClient = useQueryClient();
+
+  const cachedLoan = queryClient
+    .getQueryData<LoanHistoryResponse>(LOAN_QUERY_KEYS.history())
+    ?.loans.find((loan) => loan.loan_id === loanId);
+
   const { data, isLoading, isError, error } = useLoanHistory();
 
-  const loan = data?.loans.find((loan) => loan.loan_id === loanId);
+  const loan =
+    cachedLoan || data?.loans.find((loan) => loan.loan_id === loanId);
 
   return {
     loan,
-    isLoading,
+    isLoading: cachedLoan ? false : isLoading,
     isError,
     error,
   };
@@ -688,10 +692,11 @@ export function useCheckUserLoan() {
   const { user } = useAuthContext();
 
   return useQuery({
-    queryKey: ["loans", "check", user?.userId],
+    queryKey: LOAN_QUERY_KEYS.check(),
     queryFn: checkUserLoan,
     enabled: !!user?.userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: CACHE_CONFIG.STALE_SHORT,
+    gcTime: CACHE_CONFIG.SHORT_TERM,
     retry: 1,
   });
 }
