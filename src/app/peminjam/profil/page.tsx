@@ -183,7 +183,7 @@ export default function BorrowerProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-fit bg-gray-50 py-8">
       <div className="max-w-full mx-auto px-4">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">

@@ -67,6 +67,7 @@ export interface LoanHistoryProduct {
   product_id: string;
   product_name: string;
   quantity: number;
+  product_image: string;
 }
 
 export interface LoanHistoryUser {

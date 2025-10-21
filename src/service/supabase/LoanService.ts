@@ -350,6 +350,7 @@ export async function getHistoryLoan() {
                   product_id: true,
                   product_name: true,
                   quantity: true,
+                  product_image: true,
                 },
               },
             },
@@ -392,6 +393,7 @@ export async function getHistoryLoan() {
       product_id: item.product_id,
       product_name: item.product.product_name,
       quantity: item.quantity,
+      product_image: item.product_image
     })),
     userRole: lp.role,
     participantId: lp.id,
