@@ -80,7 +80,13 @@ export async function createLoan({
           },
           items: {
             include: {
-              product: { select: { product_id: true, product_name: true } },
+              product: {
+                select: {
+                  product_id: true,
+                  product_name: true,
+                  product_image: true,
+                },
+              },
             },
           },
           report: true,
@@ -180,10 +186,19 @@ export async function checkUserLoan(userId: string) {
   if (!latestLoan) {
     return { canBorrow: true, reason: "Belum ada pinjaman aktif" };
   }
+  
+  let statusDescription = "";
+  if (latestLoan.status === "REQUESTED") {
+    statusDescription = "Menunggu persetujuan permintaan peminjaman barang.";
+  } else if (latestLoan.status === "APPROVED") {
+    statusDescription = "Anda Belum mengembalikan Barang pinjaman anda.";
+  } else {
+    statusDescription = `Status pinjaman: ${latestLoan.status}`;
+  }
 
   return {
     canBorrow: false,
-    reason: `Sedang ada pinjaman dengan status: ${latestLoan.status}`,
+    reason: statusDescription,
   };
 }
 
@@ -209,7 +224,13 @@ export async function getLoanedProducts() {
       },
       items: {
         include: {
-          product: { select: { product_id: true, product_name: true } },
+          product: {
+            select: {
+              product_id: true,
+              product_name: true,
+              product_image: true,
+            },
+          },
         },
       },
     },
@@ -349,8 +370,8 @@ export async function getHistoryLoan() {
                 select: {
                   product_id: true,
                   product_name: true,
-                  quantity: true,
                   product_image: true,
+                  quantity: true,
                 },
               },
             },
@@ -392,8 +413,8 @@ export async function getHistoryLoan() {
     items: lp.loan.items.map((item) => ({
       product_id: item.product_id,
       product_name: item.product.product_name,
+      product_image: item.product.product_image,
       quantity: item.quantity,
-      product_image: item.product_image
     })),
     userRole: lp.role,
     participantId: lp.id,

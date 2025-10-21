@@ -226,25 +226,31 @@ export default function LoanDetail({ loan, isOpen, onClose }: LoanDetailProps) {
                 loan.items.map((item, index) => (
                   <div
                     key={item.product_id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200"
+                    className="flex items-center justify-between p-3 bg-blue-50 rounded border border-gray-300"
                   >
-                    <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 min-w-0">
                       <div>
                         <Image
-                          src={item.product_image}
-                          width={500}
-                          height={500}
-                          alt="Picture of the author"
+                          src={item.product_image || "/img/no-image.jpg"}
+                          width={220}
+                          height={220}
+                          alt={item.product_name || "Product image"}
+                          className="w-28 h-20 object-cover rounded-md"
+                          onError={(e) => {
+                            e.currentTarget.src = "/img/no-image.jpg";
+                          }}
                         />
                       </div>
-                      <p className="text-sm font-medium text-gray-800">
-                        {item.product_name}
-                      </p>
-                      {item.description && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          {item.description}
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">
+                          {item.product_name}
                         </p>
-                      )}
+                        {item.description && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {item.description}
+                          </p>
+                        )}
+                      </div>
                     </div>
                     <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded text-sm font-medium border border-blue-200">
                       {item.quantity}x

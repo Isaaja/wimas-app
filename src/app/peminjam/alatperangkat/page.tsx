@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useProducts } from "@/hooks/useProducts";
 import { useCart } from "@/hooks/useCart";
 import ProductCard from "@/app/components/borowwer/ProductCard";
 import { useLoans, type LoanItem } from "@/hooks/useLoans";
 import { useCheckUserLoan } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
-import { MessageSquareWarning, ArrowRight, ShoppingBag } from "lucide-react";
+import { MessageSquareWarning, ArrowRight, ShoppingBag, X } from "lucide-react";
 import CartSummary from "@/app/components/borowwer/CartSummary";
 import debounce from "lodash.debounce";
 import Loading from "@/app/components/common/Loading";
@@ -19,10 +19,11 @@ export default function AlatPerangkatPage() {
     useCart();
   const { createLoan, isCreating } = useLoans();
   const { data: checkResult, isLoading: isLoadingCheck } = useCheckUserLoan();
-  const router = useRouter()
+  const router = useRouter();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showFloatingButton, setShowFloatingButton] = useState(false);
 
   const debouncedSearch = useCallback(
     debounce((term: string) => {
@@ -75,7 +76,8 @@ export default function AlatPerangkatPage() {
       });
       clearCart();
       setIsModalOpen(false);
-      router.push("/peminjam/peminjaman")
+      setShowFloatingButton(false);
+      router.push("/peminjam/peminjaman");
     } catch (error: any) {
       console.error("Checkout error:", error);
     }
@@ -84,6 +86,15 @@ export default function AlatPerangkatPage() {
   const totalItems = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
+
+  // Tampilkan floating button ketika ada item di cart
+  useEffect(() => {
+    if (cart.length > 0 && canBorrow) {
+      setShowFloatingButton(true);
+    } else {
+      setShowFloatingButton(false);
+    }
+  }, [cart.length, canBorrow]);
 
   const handleOpenModal = () => {
     if (cart.length === 0) {
@@ -97,6 +108,10 @@ export default function AlatPerangkatPage() {
     }
 
     setIsModalOpen(true);
+  };
+
+  const handleCloseFloatingButton = () => {
+    setShowFloatingButton(false);
   };
 
   if (isLoadingCheck) {
@@ -141,9 +156,10 @@ export default function AlatPerangkatPage() {
           />
         </label>
 
-        {canBorrow && (
+        {/* Tombol desktop tetap ada untuk aksesibilitas */}
+        {/* {canBorrow && (
           <button
-            className="relative btn btn-accent text-black w-full md:w-auto"
+            className="hidden md:flex relative btn btn-accent text-black w-full md:w-auto"
             onClick={handleOpenModal}
             disabled={cart.length === 0}
           >
@@ -155,7 +171,7 @@ export default function AlatPerangkatPage() {
               </span>
             )}
           </button>
-        )}
+        )} */}
       </div>
 
       {!canBorrow && (
@@ -184,6 +200,35 @@ export default function AlatPerangkatPage() {
           </p>
         )}
       </div>
+
+      {/* Floating Button */}
+      {showFloatingButton && (
+        <div className="fixed bottom-12 right-20 z-50">
+          <div className="flex items-center bg-white rounded-2xl shadow-2xl border-2 border-gray-300 overflow-hidden">
+            <div className="px-5 py-4 bg-gray-50 border-r border-gray-200">
+              <div className="relative">
+                <ShoppingBag className="w-6 h-6 text-gray-700" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white shadow-lg">
+                    {totalItems}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <button
+              onClick={handleOpenModal}
+              className="btn btn-accent text-black hover:bg-accent-focus shadow-none border-none rounded-none transform hover:scale-105 transition-all duration-200 px-8 py-4 min-h-0 h-auto group"
+              disabled={isCreating}
+            >
+              <div className="flex items-center gap-3">
+                <span className="font-medium font-sans text-lg">Pinjam Sekarang</span>
+                <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
 
       {isModalOpen && (
         <CartSummary

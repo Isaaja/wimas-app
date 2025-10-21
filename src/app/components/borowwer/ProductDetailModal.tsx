@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Product } from "@/hooks/useProducts";
 import { X } from "lucide-react";
+import Image from "next/image";
 
 interface ProductDetailModalProps {
   product: Product;
@@ -55,10 +56,15 @@ export default function ProductDetailModal({
           {/* Left Column - Product Image */}
           <div className="flex flex-col w-full lg:w-2/3 p-4 gap-3 border-r border-gray-200">
             <div className="bg-gray-50 rounded-3xl p-4 flex justify-center items-center flex-1 min-h-0">
-              <img
-                src={product.product_image}
-                alt={product.product_name}
-                className="w-96 h-84 object-cover rounded-sm"
+              <Image
+                src={product.product_image || "/img/no-image.jpg"}
+                width={220}
+                height={220}
+                alt={product.product_name || "Product image"}
+                className="w-96 h-80 object-cover rounded-md"
+                onError={(e) => {
+                  e.currentTarget.src = "/img/no-image.jpg";
+                }}
               />
             </div>
 
