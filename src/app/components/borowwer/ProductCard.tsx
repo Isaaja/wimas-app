@@ -5,6 +5,7 @@ import { Product } from "@/hooks/useProducts";
 import { toast } from "react-toastify";
 import { Info, ArrowRight } from "lucide-react";
 import ProductDetailModal from "./ProductDetailModal";
+import Image from "next/image";
 
 interface ProductCardProps {
   product: Product;
@@ -18,6 +19,12 @@ export default function ProductCard({
   canBorrow = true,
 }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Get valid image source
+  const imageSrc =
+    product.product_image && product.product_image.trim() !== ""
+      ? product.product_image
+      : "/img/no-image.jpg";
 
   const handleAddToCart = (product: Product, quantity: number) => {
     onAdd(product, quantity);
@@ -66,16 +73,21 @@ export default function ProductCard({
           </div>
         )}
 
-        <figure className="px-6 pt-6">
-          <img
-            src={product.product_image}
+        <figure className="px-6 pt-6 relative h-44">
+          <Image
+            src={imageSrc}
             alt={product.product_name}
-            className={`rounded-xl h-40 object-cover w-full cursor-pointer ${
+            fill
+            className={`rounded-xl w-40 h-40 object-cover cursor-pointer ${
               isOutOfStock
                 ? "grayscale"
                 : "hover:scale-105 transition-transform"
             }`}
             onClick={openModal}
+            onError={(e) => {
+              const target = e.currentTarget;
+              target.src = "/img/no-image.jpg";
+            }}
           />
         </figure>
 
@@ -106,7 +118,7 @@ export default function ProductCard({
                 className="btn btn-primary btn-sm w-full"
                 onClick={openModal}
               >
-                Pinjam Sekarang
+                Lihat Detail
                 <ArrowRight className="w-4 h-4 mr-1" />
               </button>
             </div>

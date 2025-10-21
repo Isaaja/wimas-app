@@ -4,6 +4,7 @@ import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import { Eye, EyeOff, View } from "lucide-react";
+import LoanDetail from "./LoanDetail";
 
 interface Loan {
   loan_id: string;
@@ -25,6 +26,7 @@ interface Loan {
     product_id: string;
     product_name: string;
     quantity: number;
+    product_image: string;
   }>;
 }
 
@@ -44,6 +46,8 @@ export default function LoanTable({
   onPageChange,
 }: LoanTableProps) {
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
+  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const formatDateOnly = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -76,6 +80,15 @@ export default function LoanTable({
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentLoans = loans.slice(startIndex, startIndex + itemsPerPage);
 
+  const handleViewDetail = (loan: Loan) => {
+    setSelectedLoan(loan);
+    setIsDetailOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
@@ -103,7 +116,6 @@ export default function LoanTable({
                 <th className="whitespace-nowrap">Peminjam</th>
                 <th className="whitespace-nowrap">No. SPT</th>
                 <th className="whitespace-nowrap">Tanggal Peminjaman</th>
-                <th className="whitespace-nowrap">Detail Peminjaman</th>
                 <th className="whitespace-nowrap">Status</th>
                 <th className="whitespace-nowrap text-center">Dokumen</th>
                 <th className="whitespace-nowrap text-center">Aksi</th>
@@ -161,28 +173,6 @@ export default function LoanTable({
                       </div>
                     </td>
 
-                    <td className="border-t border-black/10">
-                      <div className="text-sm">
-                        <div className="font-medium">Barang:</div>
-                        {loan.items && loan.items.length > 0 ? (
-                          <ul className="list-disc list-inside text-gray-600">
-                            {loan.items.map((item) => (
-                              <li key={item.product_id}>
-                                {item.product_name}
-                                <span className="ml-1 text-xs text-gray-500">
-                                  ({item.quantity}x)
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span className="text-gray-500 italic text-xs">
-                            Tidak ada barang
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
                     {/* Kolom Status */}
                     <td className="border-t border-black/10">
                       <div className="flex flex-col gap-1">
@@ -224,7 +214,7 @@ export default function LoanTable({
                       <button
                         className="btn btn-ghost btn-xs text-blue-500 tooltip"
                         data-tip="Lihat Detail"
-                        onClick={() => alert(`Lihat detail ${loan.loan_id}`)}
+                        onClick={() => handleViewDetail(loan)}
                       >
                         <View className="w-4 h-4" />
                       </button>
@@ -261,6 +251,11 @@ export default function LoanTable({
           </div>
         </div>
       )}
+      <LoanDetail
+        loan={selectedLoan}
+        isOpen={isDetailOpen}
+        onClose={handleCloseDetail}
+      />
     </div>
   );
 }

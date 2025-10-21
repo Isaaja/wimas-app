@@ -80,7 +80,13 @@ export async function createLoan({
           },
           items: {
             include: {
-              product: { select: { product_id: true, product_name: true } },
+              product: {
+                select: {
+                  product_id: true,
+                  product_name: true,
+                  product_image: true,
+                },
+              },
             },
           },
           report: true,
@@ -180,10 +186,19 @@ export async function checkUserLoan(userId: string) {
   if (!latestLoan) {
     return { canBorrow: true, reason: "Belum ada pinjaman aktif" };
   }
+  
+  let statusDescription = "";
+  if (latestLoan.status === "REQUESTED") {
+    statusDescription = "Menunggu persetujuan permintaan peminjaman barang.";
+  } else if (latestLoan.status === "APPROVED") {
+    statusDescription = "Anda Belum mengembalikan Barang pinjaman anda.";
+  } else {
+    statusDescription = `Status pinjaman: ${latestLoan.status}`;
+  }
 
   return {
     canBorrow: false,
-    reason: `Sedang ada pinjaman dengan status: ${latestLoan.status}`,
+    reason: statusDescription,
   };
 }
 
@@ -196,13 +211,33 @@ export async function getLoanedProducts() {
           user: { select: { user_id: true, name: true, username: true } },
         },
       },
-      report: true,
+      report: {
+        select: {
+          report_id: true,
+          spt_file: true,
+          spt_number: true,
+          destination: true,
+          place_of_execution: true,
+          start_date: true,
+          end_date: true,
+        },
+      },
       items: {
         include: {
-          product: { select: { product_id: true, product_name: true } },
+          product: {
+            select: {
+              product_id: true,
+              product_name: true,
+              product_image: true,
+            },
+          },
         },
       },
     },
+    orderBy: {
+      created_at: "desc",
+    },
+    take: 100, // Limit hasil jika terlalu banyak
   });
 
   return loans.map(formatLoanResponse);
@@ -335,6 +370,7 @@ export async function getHistoryLoan() {
                 select: {
                   product_id: true,
                   product_name: true,
+                  product_image: true,
                   quantity: true,
                 },
               },
@@ -351,13 +387,24 @@ export async function getHistoryLoan() {
               },
             },
           },
-          report: true,
+          report: {
+            select: {
+              report_id: true,
+              spt_file: true,
+              spt_number: true,
+              destination: true,
+              place_of_execution: true,
+              start_date: true,
+              end_date: true,
+            },
+          },
         },
       },
     },
     orderBy: {
       created_at: "desc",
     },
+    take: 100,
   });
 
   // 3. Transform data
@@ -366,6 +413,7 @@ export async function getHistoryLoan() {
     items: lp.loan.items.map((item) => ({
       product_id: item.product_id,
       product_name: item.product.product_name,
+      product_image: item.product.product_image,
       quantity: item.quantity,
     })),
     userRole: lp.role,

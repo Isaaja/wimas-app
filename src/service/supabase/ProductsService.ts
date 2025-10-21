@@ -18,18 +18,20 @@ export async function getProductById(id: string) {
 
 export async function addProduct(
   product_name: string,
-  product_image: string,
+  product_image: string | undefined,
   quantity: number,
   category_id: string,
   product_avaible: number
 ) {
   await checkProduckName(product_name);
+  const defaultImage =
+    product_image && product_image.trim() !== "" ? product_image : null;
   const product_id = `product-${nanoid(16)}`;
   const product = await prisma.product.create({
     data: {
       product_id: product_id,
       product_name,
-      product_image,
+      product_image: defaultImage,
       quantity,
       category_id,
       product_avaible,

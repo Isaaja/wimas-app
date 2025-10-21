@@ -44,7 +44,24 @@ export default function UserTable({
                 <td className="border-t border-black/10">{user.email}</td>
                 <td className="border-t border-black/10">{user.noHandphone}</td>
                 <td className="border-t border-black/10">
-                  <span className="badge badge-ghost">{user.role}</span>
+                  <span
+                    className={`
+    inline-flex items-center rounded-md bg-gradient-to-r px-2 py-1 text-xs font-medium ring-1 ring-inset shadow-sm
+    ${
+      user.role === "ADMIN"
+        ? "from-blue-800/20 to-blue-700/10 text-blue-700 ring-blue-700/30"
+        : user.role === "BORROWER"
+        ? "from-sky-500/20 to-sky-400/10 text-sky-500 ring-sky-400/30"
+        : "from-gray-500/20 to-gray-400/10 text-gray-600 ring-gray-400/30"
+    }
+  `}
+                  >
+                    {user.role === "ADMIN"
+                      ? "Admin"
+                      : user.role === "BORROWER"
+                      ? "Peminjam"
+                      : user.role}
+                  </span>
                 </td>
                 <td className="border-t border-black/10 text-center">
                   <div className="flex gap-2 justify-center">

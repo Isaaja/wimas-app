@@ -67,6 +67,7 @@ export interface LoanHistoryProduct {
   product_id: string;
   product_name: string;
   quantity: number;
+  product_image: string;
 }
 
 export interface LoanHistoryUser {
@@ -116,7 +117,28 @@ export interface LoanHistoryResponse {
   loans: LoanHistory[];
   total: number;
 }
-// ==================== END LOAN HISTORY INTERFACES ====================
+// ==================== CACHE CONFIGURATION ====================
+
+const CACHE_CONFIG = {
+  SHORT_TERM: 2 * 60 * 1000,
+  MEDIUM_TERM: 5 * 60 * 1000,
+  LONG_TERM: 10 * 60 * 1000,
+
+  STALE_SHORT: 1 * 60 * 1000,
+  STALE_MEDIUM: 3 * 60 * 1000,
+};
+
+// ==================== QUERY KEYS ====================
+
+export const LOAN_QUERY_KEYS = {
+  all: ["loans"] as const,
+  lists: () => [...LOAN_QUERY_KEYS.all, "list"] as const,
+  list: (filter?: string) => [...LOAN_QUERY_KEYS.lists(), { filter }] as const,
+  details: () => [...LOAN_QUERY_KEYS.all, "detail"] as const,
+  detail: (id: string) => [...LOAN_QUERY_KEYS.details(), id] as const,
+  history: () => [...LOAN_QUERY_KEYS.all, "history"] as const,
+  check: () => [...LOAN_QUERY_KEYS.all, "check"] as const,
+} as const;
 
 const getAccessToken = (): string | null => {
   if (typeof window === "undefined") return null;
@@ -335,40 +357,6 @@ const deleteLoan = async (loanId: string): Promise<void> => {
     throw new Error(result?.message || "Gagal menghapus peminjaman");
 };
 
-export const useUpdateLoanItems = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ loanId, items }: { loanId: string; items: any[] }) => {
-      const token = getAccessToken();
-
-      const response = await fetch(`/api/loan/${loanId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ items }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Gagal memperbarui item peminjaman");
-      }
-
-      return response.json();
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loans", "active"] });
-      queryClient.invalidateQueries({ queryKey: ["loans", "history"] });
-    },
-    onError: (error) => {
-      console.error("❌ Error update items:", error);
-    },
-  });
-};
-
-// ==================== LOAN HISTORY FUNCTIONS ====================
 const fetchLoanHistory = async (): Promise<LoanHistoryResponse> => {
   const token = getAccessToken();
   if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
@@ -389,9 +377,8 @@ const fetchLoanHistory = async (): Promise<LoanHistoryResponse> => {
 
   return result?.data as LoanHistoryResponse;
 };
-// ==================== END LOAN HISTORY FUNCTIONS ====================
 
-/* -------------------- Custom Hooks -------------------- */
+// ==================== OPTIMIZED HOOKS DENGAN CACHING ====================
 
 export function useLoans(filter?: "active" | "history") {
   const { user } = useAuthContext();
@@ -404,10 +391,13 @@ export function useLoans(filter?: "active" | "history") {
     error,
     refetch,
   } = useQuery({
-    queryKey: ["loans", filter],
+    queryKey: LOAN_QUERY_KEYS.list(filter),
     queryFn: fetchLoans,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    staleTime: CACHE_CONFIG.STALE_MEDIUM,
+    gcTime: CACHE_CONFIG.MEDIUM_TERM,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    enabled: !!user,
     select: (data) => {
       if (!filter) return data;
 
@@ -430,28 +420,29 @@ export function useLoans(filter?: "active" | "history") {
   const { mutateAsync: createLoanMutation, isPending: isCreating } =
     useMutation({
       mutationFn: async (params: {
-        users: string[]; // Array of user IDs
+        users: string[];
         items: LoanItem[];
         docs?: File | null;
-        report?: any; // Tambahkan report parameter
+        report?: any;
       }) => {
         if (!user) throw new Error("User not authenticated");
-
         console.log("📤 Sending loan request:", {
           users: params.users,
           items: params.items,
           hasDocs: !!params.docs,
           hasReport: !!params.report,
         });
-
-        const data = await createLoan(params);
-        return data;
+        return await createLoan(params);
       },
       onSuccess: (data) => {
         toast.success("Peminjaman berhasil dibuat!");
-        queryClient.invalidateQueries({ queryKey: ["loans"] });
-        queryClient.invalidateQueries({ queryKey: ["loans", "check"] });
-        queryClient.invalidateQueries({ queryKey: ["loanHistory"] });
+
+        queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.lists() });
+        queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.check() });
+        queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.history() });
+
+        queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
+
         console.log("✅ Loan created:", data);
       },
       onError: (err: Error) => {
@@ -471,21 +462,20 @@ export function useLoans(filter?: "active" | "history") {
   };
 }
 
-/**
- * Hook untuk mendapatkan detail peminjaman berdasarkan ID
- */
 export function useLoanById(loanId: string) {
   return useQuery({
-    queryKey: ["loans", loanId],
+    queryKey: LOAN_QUERY_KEYS.detail(loanId),
     queryFn: () => fetchLoanById(loanId),
     enabled: !!loanId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    retry: 1,
+    staleTime: CACHE_CONFIG.STALE_MEDIUM,
+    gcTime: CACHE_CONFIG.LONG_TERM,
+    retry: (failureCount, error) => {
+      if (error.message.includes("not found")) return false;
+      return failureCount < 2;
+    },
   });
 }
-/**
- * Hook untuk approve peminjaman
- */
+
 export function useApproveLoan() {
   const queryClient = useQueryClient();
 
@@ -493,9 +483,16 @@ export function useApproveLoan() {
     mutationFn: approveLoan,
     onSuccess: (data) => {
       toast.success("Peminjaman berhasil disetujui!");
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
-      queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
+
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
+
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
+      });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal menyetujui peminjaman");
@@ -504,9 +501,6 @@ export function useApproveLoan() {
   });
 }
 
-/**
- * Hook untuk reject peminjaman
- */
 export function useRejectLoan() {
   const queryClient = useQueryClient();
 
@@ -514,9 +508,16 @@ export function useRejectLoan() {
     mutationFn: rejectLoan,
     onSuccess: (data) => {
       toast.success("Peminjaman berhasil ditolak!");
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
-      queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
+
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
+
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
+      });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal menolak peminjaman");
@@ -525,9 +526,6 @@ export function useRejectLoan() {
   });
 }
 
-/**
- * Hook untuk return/mengembalikan peminjaman
- */
 export function useReturnLoan() {
   const queryClient = useQueryClient();
 
@@ -535,9 +533,16 @@ export function useReturnLoan() {
     mutationFn: returnLoan,
     onSuccess: (data) => {
       toast.success("Peminjaman berhasil dikembalikan!");
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loans", data.loan_id] });
-      queryClient.invalidateQueries({ queryKey: ["loanHistory"] }); // Invalidate history too
+
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
+
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
+      });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal mengembalikan peminjaman");
@@ -546,18 +551,25 @@ export function useReturnLoan() {
   });
 }
 
-/**
- * Hook untuk delete peminjaman
- */
 export function useDeleteLoan() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteLoan,
-    onSuccess: () => {
+    onSuccess: (_, loanId) => {
       toast.success("Peminjaman berhasil dihapus!");
-      queryClient.invalidateQueries({ queryKey: ["loans"] });
-      queryClient.invalidateQueries({ queryKey: ["loanHistory"] });
+
+      queryClient.removeQueries({
+        queryKey: LOAN_QUERY_KEYS.detail(loanId),
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
+      });
     },
     onError: (err: Error) => {
       toast.error(err.message || "Gagal menghapus peminjaman");
@@ -566,11 +578,51 @@ export function useDeleteLoan() {
   });
 }
 
+export const useUpdateLoanItems = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ loanId, items }: { loanId: string; items: any[] }) => {
+      const token = getAccessToken();
+      const response = await fetch(`/api/loan/${loanId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ items }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Gagal memperbarui item peminjaman");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(variables.loanId), data);
+
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
+      });
+    },
+    onError: (error) => {
+      console.error("❌ Error update items:", error);
+    },
+  });
+};
+
 export function useLoanHistory() {
   return useQuery({
-    queryKey: ["loanHistory"],
+    queryKey: LOAN_QUERY_KEYS.history(),
     queryFn: fetchLoanHistory,
-    staleTime: 5 * 60 * 1000,
+    staleTime: CACHE_CONFIG.STALE_MEDIUM,
+    gcTime: CACHE_CONFIG.LONG_TERM,
+    retry: 2,
   });
 }
 
@@ -602,13 +654,20 @@ export function useFilteredLoanHistory(filter?: "active" | "completed") {
 }
 
 export function useLoanHistoryById(loanId: string) {
+  const queryClient = useQueryClient();
+
+  const cachedLoan = queryClient
+    .getQueryData<LoanHistoryResponse>(LOAN_QUERY_KEYS.history())
+    ?.loans.find((loan) => loan.loan_id === loanId);
+
   const { data, isLoading, isError, error } = useLoanHistory();
 
-  const loan = data?.loans.find((loan) => loan.loan_id === loanId);
+  const loan =
+    cachedLoan || data?.loans.find((loan) => loan.loan_id === loanId);
 
   return {
     loan,
-    isLoading,
+    isLoading: cachedLoan ? false : isLoading,
     isError,
     error,
   };
@@ -634,10 +693,11 @@ export function useCheckUserLoan() {
   const { user } = useAuthContext();
 
   return useQuery({
-    queryKey: ["loans", "check", user?.userId],
+    queryKey: LOAN_QUERY_KEYS.check(),
     queryFn: checkUserLoan,
     enabled: !!user?.userId,
-    staleTime: 2 * 60 * 1000,
+    staleTime: CACHE_CONFIG.STALE_SHORT,
+    gcTime: CACHE_CONFIG.SHORT_TERM,
     retry: 1,
   });
 }

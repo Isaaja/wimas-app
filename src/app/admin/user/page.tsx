@@ -11,7 +11,6 @@ import {
 import { toast } from "react-toastify";
 import UserTable from "@/app/components/shared/UserTable";
 import UserModal from "@/app/components/shared/UserModal";
-import { usePathname } from "next/navigation";
 import Loading from "@/app/components/common/Loading";
 
 export default function SuperAdminUserPage() {
@@ -48,9 +47,6 @@ export default function SuperAdminUserPage() {
       if (modalMode === "add") {
         await createUser.mutateAsync(data);
         toast.success("User berhasil ditambahkan!");
-      } else if (modalMode === "edit" && selectedUser) {
-        await updateUser.mutateAsync({ id: selectedUser.user_id, data });
-        toast.success("User berhasil diperbarui!");
       }
       setIsModalOpen(false);
     } catch (error: any) {

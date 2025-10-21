@@ -35,6 +35,30 @@ export interface GetProductsParams {
   order?: "asc" | "desc";
 }
 
+// ==================== CACHE CONFIGURATION ====================
+
+const CACHE_CONFIG = {
+  SHORT_TERM: 2 * 60 * 1000, // 2 menit
+  MEDIUM_TERM: 5 * 60 * 1000, // 5 menit
+  LONG_TERM: 10 * 60 * 1000, // 10 menit
+
+  STALE_SHORT: 1 * 60 * 1000, // 1 menit
+  STALE_MEDIUM: 3 * 60 * 1000, // 3 menit
+};
+
+// ==================== QUERY KEYS ====================
+
+export const PRODUCT_QUERY_KEYS = {
+  all: ["products"] as const,
+  lists: () => [...PRODUCT_QUERY_KEYS.all, "list"] as const,
+  list: (params?: GetProductsParams) =>
+    [...PRODUCT_QUERY_KEYS.lists(), { ...params }] as const,
+  details: () => [...PRODUCT_QUERY_KEYS.all, "detail"] as const,
+  detail: (id: string) => [...PRODUCT_QUERY_KEYS.details(), id] as const,
+} as const;
+
+// ==================== API FUNCTIONS ====================
+
 const getAccessToken = (): string => {
   const token = localStorage.getItem("accessToken");
 
@@ -105,6 +129,8 @@ const createProduct = async (
   return result.data.result;
 };
 
+// ==================== OPTIMIZED HOOKS DENGAN CACHING ====================
+
 export const fetchProductById = async (id: string): Promise<Product> => {
   const token = getAccessToken();
   const res = await fetch(`/api/products/${id}`, {
@@ -170,10 +196,12 @@ export const deleteProduct = async (id: string) => {
 
 export const useProducts = (params?: GetProductsParams) => {
   return useQuery({
-    queryKey: ["products", params],
+    queryKey: PRODUCT_QUERY_KEYS.list(params),
     queryFn: () => fetchProducts(params),
-    staleTime: 5 * 60 * 1000,
+    staleTime: CACHE_CONFIG.STALE_MEDIUM,
+    gcTime: CACHE_CONFIG.MEDIUM_TERM,
     retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 };
 
@@ -183,39 +211,102 @@ export const useCreateProduct = () => {
   return useMutation({
     mutationFn: createProduct,
     onSuccess: (newProduct) => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      console.log(newProduct);
+      queryClient.invalidateQueries({
+        queryKey: PRODUCT_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+
+      queryClient.setQueryData(
+        PRODUCT_QUERY_KEYS.detail(newProduct.product_id),
+        newProduct
+      );
+
+      console.log("✅ Product created:", newProduct);
     },
     onError: (error: Error) => {
-      console.error(error.message);
+      console.error("❌ Failed to create product:", error.message);
     },
   });
 };
 
 export function useProductById(id: string) {
   return useQuery({
-    queryKey: ["product", id],
+    queryKey: PRODUCT_QUERY_KEYS.detail(id),
     queryFn: () => fetchProductById(id),
     enabled: !!id,
+    staleTime: CACHE_CONFIG.STALE_MEDIUM,
+    gcTime: CACHE_CONFIG.LONG_TERM,
+    retry: (failureCount, error) => {
+      if (
+        error.message.includes("tidak ditemukan") ||
+        error.message.includes("not found")
+      ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 }
 
 export function useUpdateProduct() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: updateProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+    onSuccess: (updatedProduct, variables) => {
+      queryClient.setQueryData(
+        PRODUCT_QUERY_KEYS.detail(variables.id), 
+        updatedProduct
+      );
+      
+      queryClient.invalidateQueries({ 
+        queryKey: PRODUCT_QUERY_KEYS.lists(),
+        refetchType: 'active'
+      });
+      
+      queryClient.setQueriesData(
+        { queryKey: PRODUCT_QUERY_KEYS.lists() },
+        (old: Product[] | undefined) => {
+          if (!old) return old;
+          return old.map(product => 
+            product.product_id === variables.id 
+              ? { ...product, ...variables.payload }
+              : product
+          );
+        }
+      );
+    },
+    onError: (error: Error) => {
+      console.error("❌ Failed to update product:", error.message);
     },
   });
 }
 
 export function useDeleteProduct() {
   const queryClient = useQueryClient();
+  
   return useMutation({
     mutationFn: deleteProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
+    onSuccess: (_, deletedId) => {
+      queryClient.removeQueries({ 
+        queryKey: PRODUCT_QUERY_KEYS.detail(deletedId) 
+      });
+      
+      queryClient.invalidateQueries({ 
+        queryKey: PRODUCT_QUERY_KEYS.lists(),
+        refetchType: 'active'
+      });
+      
+      queryClient.setQueriesData(
+        { queryKey: PRODUCT_QUERY_KEYS.lists() },
+        (old: Product[] | undefined) => {
+          if (!old) return old;
+          return old.filter(product => product.product_id !== deletedId);
+        }
+      );
+    },
+    onError: (error: Error) => {
+      console.error("❌ Failed to delete product:", error.message);
     },
   });
 }
