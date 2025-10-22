@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test SPT Extractor</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+      }
+      .upload-section {
+        border: 2px dashed #ccc;
+        padding: 30px;
+        text-align: center;
+        border-radius: 8px;
+        margin-bottom: 20px;
+      }
+      input[type="file"] {
+        margin: 20px 0;
+      }
+      button {
+        background-color: #0070f3;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #0051cc;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .result {
+        background-color: #f5f5f5;
+        padding: 20px;
+        border-radius: 8px;
+        margin-top: 20px;
+        display: none;
+      }
+      .error {
+        background-color: #fee;
+        color: #c00;
+      }
+      .success {
+        background-color: #efe;
+        color: #060;
+      }
+      pre {
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 4px;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      .loading {
+        display: none;
+        margin-top: 20px;
+      }
+      .loading-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #0070f3;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🧪 Test SPT Extractor API</h1>
+
+    <div class="upload-section">
+      <h2>Upload PDF SPT</h2>
+      <input type="file" id="fileInput" accept=".pdf" />
+      <br />
+      <button onclick="uploadFile()" id="uploadBtn">Upload & Extract</button>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="loading-spinner"></div>
+      <p style="text-align: center">
+        Processing PDF... This may take a while...
+      </p>
+    </div>
+
+    <div class="result" id="result"></div>
+
+    <script>
+      async function uploadFile() {
+        const fileInput = document.getElementById("fileInput");
+        const resultDiv = document.getElementById("result");
+        const loadingDiv = document.getElementById("loading");
+        const uploadBtn = document.getElementById("uploadBtn");
+
+        if (!fileInput.files.length) {
+          alert("Please select a PDF file first");
+          return;
+        }
+
+        const file = fileInput.files[0];
+        if (!file.name.toLowerCase().endsWith(".pdf")) {
+          alert("Please select a PDF file");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+          uploadBtn.disabled = true;
+          loadingDiv.style.display = "block";
+          resultDiv.style.display = "none";
+
+          const response = await fetch(
+            "http://localhost:3000/api/spt-extractor",
+            {
+              method: "POST",
+              body: formData,
+            }
+          );
+
+          const data = await response.json();
+
+          resultDiv.style.display = "block";
+          loadingDiv.style.display = "none";
+          uploadBtn.disabled = false;
+
+          if (response.ok && data.success) {
+            resultDiv.className = "result success";
+            resultDiv.innerHTML = `
+                        <h3>✅ Success!</h3>
+                        <p>${data.message}</p>
+                        <h4>Extracted Data:</h4>
+                        <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                    `;
+          } else {
+            resultDiv.className = "result error";
+            resultDiv.innerHTML = `
+                        <h3>❌ Error</h3>
+                        <p><strong>Error:</strong> ${
+                          data.error || "Unknown error"
+                        }</p>
+                        ${data.details ? `<pre>${data.details}</pre>` : ""}
+                    `;
+          }
+        } catch (error) {
+          loadingDiv.style.display = "none";
+          uploadBtn.disabled = false;
+          resultDiv.style.display = "block";
+          resultDiv.className = "result error";
+          resultDiv.innerHTML = `
+                    <h3>❌ Network Error</h3>
+                    <p>${error.message}</p>
+                `;
+        }
+      }
+
+      // Allow enter key on file input
+      document
+        .getElementById("fileInput")
+        .addEventListener("change", function () {
+          if (this.files.length) {
+            document.getElementById("uploadBtn").focus();
+          }
+        });
+    </script>
+  </body>
+</html>

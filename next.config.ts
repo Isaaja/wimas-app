@@ -26,6 +26,30 @@ const nextConfig: NextConfig = {
     ],
   },
   compress: true,
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Exclude native modules from webpack bundling
+      config.externals = config.externals || [];
+      config.externals.push({
+        canvas: "commonjs canvas",
+        "pdf-parse": "commonjs pdf-parse",
+      });
+    }
+
+    // Handle PDF-related modules
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      canvas: false,
+    };
+
+    // Ignore warnings for specific modules
+    config.ignoreWarnings = [
+      { module: /node_modules\/pdf-parse/ },
+      { module: /node_modules\/tesseract\.js/ },
+    ];
+
+    return config;
+  },
 };
 
 export default nextConfig;
