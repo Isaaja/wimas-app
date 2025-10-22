@@ -116,7 +116,6 @@ export default function CartStep3({
 
     extractedUserNames.forEach((extractedName) => {
       const matchedUser = availableBorrowers.find((user) => {
-        // Simple name matching - bisa diperbaiki dengan fuzzy matching
         const userName = user.name?.toLowerCase() || "";
         const extracted = extractedName.toLowerCase();
         return userName.includes(extracted) || extracted.includes(userName);
