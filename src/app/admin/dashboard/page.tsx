@@ -1,9 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useProducts } from "@/hooks/useProducts";
-import { useUsers } from "@/hooks/useUsers";
-import { useLoans, useLoanHistory } from "@/hooks/useLoans";
+import { useDashboardStats } from "@/hooks/useDashboard";
 import Loading from "@/app/components/common/Loading";
 import {
   Package,
@@ -46,67 +44,27 @@ interface PopularProductData {
 }
 
 export default function AdminDashboard() {
-  const { data: products = [], isLoading: productsLoading } = useProducts();
-  const { data: users = [], isLoading: usersLoading } = useUsers();
-  const { loans: allLoans = [], isLoading: loansLoading } = useLoans();
-  const { data: loanHistory, isLoading: historyLoading } = useLoanHistory();
+  const { data, isLoading, isError, error } = useDashboardStats();
 
-  const stats = useMemo(() => {
-    const totalProducts = products.length;
-    const totalUsers = users.length;
-    const totalLoans = allLoans.length;
+  const stats = data?.stats || {
+    totalProducts: 0,
+    totalUsers: 0,
+    totalLoans: 0,
+    lowStockProducts: 0,
+    outOfStockProducts: 0,
+    totalAvailableProducts: 0,
+    pendingLoans: 0,
+    approvedLoans: 0,
+    rejectedLoans: 0,
+    returnedLoans: 0,
+    adminUsers: 0,
+    borrowerUsers: 0,
+    recentLoans: 0,
+  };
 
-    const lowStockProducts = products.filter(
-      (p) => p.product_avaible < 10
-    ).length;
-    const outOfStockProducts = products.filter(
-      (p) => p.product_avaible === 0
-    ).length;
-    const totalAvailableProducts = products.reduce(
-      (sum, p) => sum + p.product_avaible,
-      0
-    );
-
-    const pendingLoans = allLoans.filter(
-      (l) => l.status === "REQUESTED"
-    ).length;
-    const approvedLoans = allLoans.filter(
-      (l) => l.status === "APPROVED"
-    ).length;
-    const rejectedLoans = allLoans.filter(
-      (l) => l.status === "REJECTED"
-    ).length;
-    const returnedLoans = allLoans.filter(
-      (l) => l.status === "RETURNED"
-    ).length;
-
-    const adminUsers = users.filter(
-      (u) => u.role === "ADMIN" || u.role === "SUPERADMIN"
-    ).length;
-    const borrowerUsers = users.filter((u) => u.role === "BORROWER").length;
-
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const recentLoans = allLoans.filter(
-      (loan) => new Date(loan.created_at) > oneWeekAgo
-    ).length;
-
-    return {
-      totalProducts,
-      totalUsers,
-      totalLoans,
-      lowStockProducts,
-      outOfStockProducts,
-      totalAvailableProducts,
-      pendingLoans,
-      approvedLoans,
-      rejectedLoans,
-      returnedLoans,
-      adminUsers,
-      borrowerUsers,
-      recentLoans,
-    };
-  }, [products, users, allLoans]);
+  const allLoans = useMemo(() => data?.allLoans || [], [data?.allLoans]);
+  const lowStockProductsList = data?.lowStockProducts || [];
+  const pendingLoansList = data?.pendingLoans || [];
 
   const loanTrendData = useMemo((): LoanTrendData[] => {
     if (!allLoans || allLoans.length === 0) return [];
@@ -136,7 +94,7 @@ export default function AdminDashboard() {
   const loanStatusData = useMemo((): LoanStatusData[] => {
     if (!allLoans || allLoans.length === 0) return [];
 
-    const statusCount = {
+    const statusCount: Record<string, number> = {
       REQUESTED: 0,
       APPROVED: 0,
       REJECTED: 0,
@@ -144,7 +102,8 @@ export default function AdminDashboard() {
     };
 
     allLoans.forEach((loan) => {
-      statusCount[loan.status] = (statusCount[loan.status] || 0) + 1;
+      const status = loan.status.toUpperCase();
+      statusCount[status] = (statusCount[status] || 0) + 1;
     });
 
     return [
@@ -179,7 +138,7 @@ export default function AdminDashboard() {
     allLoans.forEach((loan) => {
       loan.items?.forEach((item) => {
         const productId = item.product_id;
-        const productName = item.product_name || "Unknown Product";
+        const productName = item.product?.product_name || "Unknown Product";
         const currentCount = productUsage.get(productId) || {
           name: productName,
           count: 0,
@@ -194,31 +153,21 @@ export default function AdminDashboard() {
       .slice(0, 5);
   }, [allLoans]);
 
-  const pendingLoans = useMemo(() => {
-    return allLoans.filter((loan) => loan.status === "REQUESTED").slice(0, 5);
-  }, [allLoans]);
-
-  const lowStockProducts = useMemo(() => {
-    return products
-      .filter((p) => p.product_avaible < 10)
-      .sort((a, b) => a.product_avaible - b.product_avaible)
-      .slice(0, 5);
-  }, [products]);
-
-  const recentUsers = useMemo(() => {
-    return users
-      .sort(
-        (a, b) =>
-          new Date(b.created_at || 0).getTime() -
-          new Date(a.created_at || 0).getTime()
-      )
-      .slice(0, 6);
-  }, [users]);
-
-  const isLoading = productsLoading || usersLoading || loansLoading;
+  const pendingLoans = pendingLoansList;
+  const lowStockProducts = lowStockProductsList;
 
   if (isLoading) {
     return <Loading />;
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4">
+        <div className="alert alert-error">
+          <span>Error: {error?.message || "Gagal memuat data dashboard"}</span>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -239,7 +188,7 @@ export default function AdminDashboard() {
             icon={Users}
             title="Total Pengguna"
             value={stats.totalUsers}
-            subtitle={`${stats.adminUsers} admin, ${stats.borrowerUsers} borrower`}
+            subtitle={`${stats.adminUsers} admin, ${stats.borrowerUsers} peminjam`}
             color="green"
             compact
           />
@@ -363,14 +312,6 @@ export default function AdminDashboard() {
                             "id-ID"
                           )}
                         </div>
-                      </div>
-                      <div className="flex gap-1 flex-shrink-0 ml-2">
-                        <button className="px-2 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors whitespace-nowrap">
-                          Approve
-                        </button>
-                        <button className="px-2 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 transition-colors whitespace-nowrap">
-                          Reject
-                        </button>
                       </div>
                     </div>
                   ))

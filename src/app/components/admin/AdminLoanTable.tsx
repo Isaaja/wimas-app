@@ -2,16 +2,25 @@
 
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Eye, CheckCircle, XCircle, View } from "lucide-react";
+import {
+  Eye,
+  CheckCircle,
+  XCircle,
+  View,
+  Calendar,
+  X,
+  Filter,
+} from "lucide-react";
 import { Loan } from "@/hooks/useLoans";
 import Loading from "../common/Loading";
+import { useState, useMemo } from "react";
 
 interface AdminLoanTableProps {
   loans: Loan[];
   isLoading?: boolean;
-  onApprove?: (loanId: string) => void; 
-  onReject?: (loanId: string) => void; 
-  onViewDetail: (loanId: string) => void; 
+  onApprove?: (loanId: string) => void;
+  onReject?: (loanId: string) => void;
+  onViewDetail: (loanId: string) => void;
   isApproving?: boolean;
   isRejecting?: boolean;
   actioningLoanId?: string | null;
@@ -33,14 +42,51 @@ export default function AdminLoanTable({
   currentPage,
   itemsPerPage,
   onPageChange,
-  mode = "active", 
+  mode = "active",
 }: AdminLoanTableProps) {
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return "-";
     return format(date, "dd MMM yyyy, HH:mm", { locale: id });
   };
+
+  const formatDateOnly = (dateString: string | null | undefined) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "-";
+    return format(date, "dd MMM yyyy", { locale: id });
+  };
+
+  // Filter data berdasarkan range tanggal
+  const filteredLoans = useMemo(() => {
+    if (!startDate && !endDate) return loans;
+
+    return loans.filter((loan) => {
+      if (!loan.created_at) return false;
+
+      const loanDate = new Date(loan.created_at);
+      const loanTime = loanDate.getTime();
+
+      if (startDate && endDate) {
+        const startTime = new Date(startDate).getTime();
+        const endTime = new Date(endDate + "T23:59:59").getTime();
+        return loanTime >= startTime && loanTime <= endTime;
+      } else if (startDate) {
+        const startTime = new Date(startDate).getTime();
+        return loanTime >= startTime;
+      } else if (endDate) {
+        const endTime = new Date(endDate + "T23:59:59").getTime();
+        return loanTime <= endTime;
+      }
+
+      return true;
+    });
+  }, [loans, startDate, endDate]);
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { label: string; class: string }> = {
@@ -62,9 +108,68 @@ export default function AdminLoanTable({
     return `/${sptFile}`;
   };
 
-  const totalPages = Math.ceil(loans.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredLoans.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentLoans = loans.slice(startIndex, startIndex + itemsPerPage);
+  const currentLoans = filteredLoans.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
+
+  const handleStartDateChange = (date: string) => {
+    setStartDate(date);
+    onPageChange(1);
+  };
+
+  const handleEndDateChange = (date: string) => {
+    setEndDate(date);
+    onPageChange(1);
+  };
+
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setShowDatePicker(false);
+    onPageChange(1);
+  };
+
+  // Quick filter options
+  const quickFilters = [
+    { label: "Hari Ini", days: 0 },
+    { label: "7 Hari", days: 7 },
+    { label: "30 Hari", days: 30 },
+    { label: "Bulan Ini", days: -1 },
+  ];
+
+  const applyQuickFilter = (days: number) => {
+    const today = new Date();
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    let start = new Date();
+
+    if (days === -1) {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else {
+      start.setDate(today.getDate() - days);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    setStartDate(start.toISOString().split("T")[0]);
+    setEndDate(end.toISOString().split("T")[0]);
+    setShowDatePicker(false);
+    onPageChange(1);
+  };
+
+  const getDisplayDateRange = () => {
+    if (startDate && endDate) {
+      return `${formatDateOnly(startDate)} - ${formatDateOnly(endDate)}`;
+    } else if (startDate) {
+      return `Dari ${formatDateOnly(startDate)}`;
+    } else if (endDate) {
+      return `Sampai ${formatDateOnly(endDate)}`;
+    }
+    return "Semua Periode";
+  };
 
   if (isLoading) {
     return <Loading />;
@@ -80,6 +185,105 @@ export default function AdminLoanTable({
 
   return (
     <div className="space-y-4">
+      {/* Compact Filter Section */}
+      <div className="bg-white p-3 rounded-lg border border-gray-200">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          {/* Left Side - Filter Controls */}
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+            {/* Filter Trigger */}
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className={`btn btn-sm gap-2 ${
+                startDate || endDate ? "btn-info" : "btn-outline"
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span className="text-sm">{getDisplayDateRange()}</span>
+              {(startDate || endDate) && (
+                <div className="badge badge-sm badge-info">
+                  {filteredLoans.length}
+                </div>
+              )}
+            </button>
+
+            {/* Quick Filters */}
+            <div className="flex flex-wrap gap-1">
+              {quickFilters.map((filter, index) => (
+                <button
+                  key={index}
+                  onClick={() => applyQuickFilter(filter.days)}
+                  className="btn btn-xs btn-ghost"
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Right Side - Clear Filter & Results Info */}
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-gray-600">
+              {filteredLoans.length} data
+            </div>
+            {(startDate || endDate) && (
+              <button
+                onClick={clearFilters}
+                className="btn btn-xs btn-ghost text-error"
+              >
+                <X className="w-3 h-3" />
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Compact Date Picker */}
+        {showDatePicker && (
+          <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-blue-50">
+            <div className="flex gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-600">
+                  Dari Tanggal
+                </label>
+                <input
+                  type="date"
+                  className="input input-bordered input-info scheme-light w-full bg-white"
+                  value={startDate}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
+                  max={endDate || undefined}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-600">
+                  Sampai Tanggal
+                </label>
+                <input
+                  type="date"
+                  className="input input-bordered input-info scheme-light w-full bg-white"
+                  value={endDate}
+                  onChange={(e) => handleEndDateChange(e.target.value)}
+                  min={startDate || undefined}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-3">
+              <div className="text-xs text-gray-500">
+                {startDate && endDate && getDisplayDateRange()}
+              </div>
+              <button
+                onClick={() => setShowDatePicker(false)}
+                className="btn btn-xs btn-ghost"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Table Section - TIDAK DIUBAH */}
       <div className="overflow-x-auto bg-white rounded-lg shadow">
         <table className="table w-full">
           <thead className="bg-gray-100 text-gray-700">
@@ -87,7 +291,7 @@ export default function AdminLoanTable({
               <th className="w-12">No</th>
               <th className="w-32">Peminjam</th>
               <th className="w-48">No. SPT</th>
-              <th className="w-48">Detail Peminjaman</th>
+              <th className="w-48">Tanggal Peminjaman</th>
               <th className="w-32">Status</th>
               <th className="w-20 text-center">Dokumen</th>
               <th className="w-24 text-center">Aksi</th>
@@ -124,27 +328,11 @@ export default function AdminLoanTable({
                       </span>
                     )}
                   </td>
-
-                  <td className="border-t border-black/10 py-2 px-2">
-                    <div className="space-y-1">
+                  <td className="border-t border-black/10">
+                    <div className="space-y-2">
                       <div className="text-xs">
-                        <div className="font-medium">Barang:</div>
-                        {loan.items && loan.items.length > 0 ? (
-                          <ul className="list-disc list-inside text-gray-600 text-xs">
-                            {loan.items.map((item) => (
-                              <li key={item.product_id || item.loan_item_id}>
-                                {item.product_name}
-                                <span className="ml-1 text-xs text-gray-500">
-                                  ({item.quantity}x)
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <span className="text-gray-500 italic text-xs">
-                            Tidak ada barang
-                          </span>
-                        )}
+                        {formatDateOnly(loan.report?.start_date)} -{" "}
+                        {formatDateOnly(loan.report?.end_date)}
                       </div>
                     </div>
                   </td>
@@ -205,7 +393,7 @@ export default function AdminLoanTable({
                             )}
                           </button>
                           <button
-                            onClick={() => onReject?.(loan.loan_id)} 
+                            onClick={() => onReject?.(loan.loan_id)}
                             disabled={isProcessing}
                             className="btn btn-error btn-xs tooltip"
                             data-tip="Tolak Peminjaman"
@@ -248,7 +436,7 @@ export default function AdminLoanTable({
         </table>
       </div>
 
-      {/* Pagination */}
+      {/* Pagination - TIDAK DIUBAH */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
           <div className="flex text-sm text-gray-600">

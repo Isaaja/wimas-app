@@ -16,7 +16,16 @@ const nextConfig: NextConfig = {
         hostname: "example.com",
       },
     ],
+    formats: ["image/webp"],
   },
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "recharts",
+      "@tanstack/react-query",
+    ],
+  },
+  compress: true,
 };
 
 export default nextConfig;
