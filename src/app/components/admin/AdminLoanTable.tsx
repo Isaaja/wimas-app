@@ -20,7 +20,7 @@ interface AdminLoanTableProps {
   isLoading?: boolean;
   onApprove?: (loanId: string) => void;
   onReject?: (loanId: string) => void;
-  onViewDetail: (loanId: string) => void;
+  onViewDetail: (loanId: string) => void; 
   isApproving?: boolean;
   isRejecting?: boolean;
   actioningLoanId?: string | null;
@@ -35,7 +35,7 @@ export default function AdminLoanTable({
   isLoading = false,
   onApprove,
   onReject,
-  onViewDetail,
+  onViewDetail, 
   isApproving = false,
   isRejecting = false,
   actioningLoanId = null,
@@ -62,7 +62,6 @@ export default function AdminLoanTable({
     return format(date, "dd MMM yyyy", { locale: id });
   };
 
-  // Filter data berdasarkan range tanggal
   const filteredLoans = useMemo(() => {
     if (!startDate && !endDate) return loans;
 
@@ -132,7 +131,6 @@ export default function AdminLoanTable({
     onPageChange(1);
   };
 
-  // Quick filter options
   const quickFilters = [
     { label: "Hari Ini", days: 0 },
     { label: "7 Hari", days: 7 },
@@ -185,12 +183,9 @@ export default function AdminLoanTable({
 
   return (
     <div className="space-y-4">
-      {/* Compact Filter Section */}
-      <div className="bg-white p-3 rounded-lg border border-gray-200">
+      <div className="bg-gray-100 p-3 rounded-lg border border-gray-200 shadow-lg">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          {/* Left Side - Filter Controls */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-            {/* Filter Trigger */}
             <button
               onClick={() => setShowDatePicker(!showDatePicker)}
               className={`btn btn-sm gap-2 ${
@@ -283,10 +278,10 @@ export default function AdminLoanTable({
         )}
       </div>
 
-      {/* Table Section - TIDAK DIUBAH */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
+      {/* Table Section */}
+      <div className="overflow-x-auto bg-white rounded-lg shadow-lg">
         <table className="table w-full">
-          <thead className="bg-gray-100 text-gray-700">
+          <thead className="bg-gray-200 text-gray-700">
             <tr>
               <th className="w-12">No</th>
               <th className="w-32">Peminjam</th>
@@ -392,6 +387,7 @@ export default function AdminLoanTable({
                               <CheckCircle className="w-3 h-3" />
                             )}
                           </button>
+
                           <button
                             onClick={() => onReject?.(loan.loan_id)}
                             disabled={isProcessing}
@@ -408,17 +404,8 @@ export default function AdminLoanTable({
                         </>
                       )}
 
-                      {mode === "history" && (
-                        <button
-                          onClick={() => onViewDetail(loan.loan_id)}
-                          className="btn btn-ghost btn-xs text-blue-600 tooltip"
-                          data-tip="Lihat Detail"
-                        >
-                          <View className="w-4 h-4" />
-                        </button>
-                      )}
-
-                      {mode === "active" && loan.status !== "REQUESTED" && (
+                      {(mode === "history" ||
+                        (mode === "active" && loan.status !== "REQUESTED")) && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}
                           className="btn btn-ghost btn-xs text-blue-600 tooltip"
@@ -436,7 +423,7 @@ export default function AdminLoanTable({
         </table>
       </div>
 
-      {/* Pagination - TIDAK DIUBAH */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
           <div className="flex text-sm text-gray-600">

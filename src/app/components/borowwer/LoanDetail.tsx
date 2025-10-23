@@ -114,7 +114,6 @@ export default function LoanDetail({ loan, isOpen, onClose }: LoanDetailProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {/* Status */}
           <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
@@ -199,9 +198,6 @@ export default function LoanDetail({ loan, isOpen, onClose }: LoanDetailProps) {
                     <p className="text-sm font-medium text-gray-800">
                       {participant.user.name}
                     </p>
-                    <p className="text-xs text-gray-600 capitalize">
-                      {participant.role.toLowerCase()}
-                    </p>
                   </div>
                 ))}
               </div>
@@ -229,18 +225,6 @@ export default function LoanDetail({ loan, isOpen, onClose }: LoanDetailProps) {
                     className="flex items-center justify-between p-3 bg-blue-50 rounded border border-gray-300"
                   >
                     <div className="flex items-center gap-2 min-w-0">
-                      <div>
-                        <Image
-                          src={item.product_image || "/img/no-image.jpg"}
-                          width={220}
-                          height={220}
-                          alt={item.product_name || "Product image"}
-                          className="w-28 h-20 object-cover rounded-md"
-                          onError={(e) => {
-                            e.currentTarget.src = "/img/no-image.jpg";
-                          }}
-                        />
-                      </div>
                       <div>
                         <p className="text-sm font-medium text-gray-800">
                           {item.product_name}
