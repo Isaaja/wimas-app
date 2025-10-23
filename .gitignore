@@ -43,3 +43,9 @@ yarn-error.log*
 next-env.d.ts
 
 /src/generated/prisma
+
+# Python virtual environments
+**/venv/
+python-script/venv/
+venv/
+

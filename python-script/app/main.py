@@ -22,6 +22,26 @@ if not API_KEY:
 
 client = genai.Client(api_key=API_KEY)
 
+def remove_degrees_from_name(name):
+    """
+    Menghapus gelar dari nama menggunakan tanda koma sebagai patokan
+    Contoh: 
+    - "Kuswahyudi, S.Kom., M.M." -> "Kuswahyudi"
+    - "Purwanto, S.E." -> "Purwanto"
+    - "Agung Suryo Wibowo, S.Kom., M.T." -> "Agung Suryo Wibowo"
+    """
+    if not name or not isinstance(name, str):
+        return name
+    
+    # Split berdasarkan koma dan ambil bagian pertama
+    parts = name.split(',')
+    if parts:
+        # Ambil bagian pertama dan hilangkan spasi di ujung
+        clean_name = parts[0].strip()
+        return clean_name
+    
+    return name
+
 def clean_extracted_text(text):
     if not text:
         return text
@@ -142,9 +162,24 @@ def validate_personil_list(personil_list):
             continue
             
         if ',' in person and len(person) > 5:
+            # Simpan nama asli untuk diproses nanti
             filtered_personil.append(person.strip())
     
     return filtered_personil
+
+def remove_degrees_from_personil_list(personil_list):
+    """
+    Menghapus gelar dari semua nama dalam list personil
+    """
+    if not personil_list:
+        return []
+    
+    clean_personil = []
+    for person in personil_list:
+        clean_name = remove_degrees_from_name(person)
+        clean_personil.append(clean_name)
+    
+    return clean_personil
 
 def analyze_text_with_llm(extracted_text):
     if not extracted_text:
@@ -204,7 +239,10 @@ def analyze_text_with_llm(extracted_text):
         extracted_data = json.loads(json_string)
         
         if 'personil' in extracted_data:
+            # Validasi personil terlebih dahulu
             extracted_data['personil'] = validate_personil_list(extracted_data['personil'])
+            # Kemudian hapus gelar dari nama personil
+            extracted_data['personil'] = remove_degrees_from_personil_list(extracted_data['personil'])
         
         if extracted_data.get('tanggal_pelaksanaan'):
             date_conversion = convert_date_format(extracted_data['tanggal_pelaksanaan'])
@@ -300,6 +338,9 @@ def process_pdf():
             
             if not final_output:
                 return jsonify({"error": "Processing Error"}), 500
+            
+            print(f"✅ Successfully processed. User count: {len(final_output['user'])}")
+            print(f"✅ User names (without degrees): {final_output['user']}")
             
             return jsonify(final_output)
                 

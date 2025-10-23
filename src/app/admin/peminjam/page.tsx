@@ -20,7 +20,7 @@ export default function AdminPeminjamanPage() {
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
-  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null); // Kembali ke selectedLoan
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function AdminPeminjamanPage() {
     if (result.isConfirmed) {
       setActioningLoanId(loanId);
       rejectLoan(loanId, {
-        onSettled: () => setActioningLoanId(null)
+        onSettled: () => setActioningLoanId(null),
       });
     }
   };
@@ -126,8 +126,9 @@ export default function AdminPeminjamanPage() {
         mode="active"
       />
 
+      {/* Pastikan menggunakan selectedLoan, bukan selectedLoanId */}
       <LoanDetailModal
-        loan={selectedLoan}
+        loan={selectedLoan} // Ini yang benar
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onApprove={handleApprove}
