@@ -52,6 +52,7 @@ export default function AdminPeminjamanPage() {
       approveLoan(loanId, {
         onSettled: () => setActioningLoanId(null),
       });
+      setIsModalOpen(false);
     }
   };
 

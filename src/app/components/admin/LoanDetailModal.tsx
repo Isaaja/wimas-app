@@ -10,7 +10,18 @@ import {
 import { useProducts, Product } from "@/hooks/useProducts";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { X, Edit, Save, Download, Plus, Search } from "lucide-react";
+import {
+  X,
+  Edit,
+  Save,
+  Download,
+  Plus,
+  Search,
+  UserPen,
+  Users,
+  Box,
+  Mail,
+} from "lucide-react";
 import { toast } from "react-toastify";
 
 interface LoanDetailModalProps {
@@ -210,9 +221,6 @@ export default function LoanDetailModal({
             <h2 className="text-lg font-semibold text-gray-800">
               Detail Peminjaman
             </h2>
-            <p className="text-xs text-gray-500 mt-1">
-              ID: {displayLoan.loan_id}
-            </p>
             {loanLoading && (
               <div className="flex items-center gap-1 mt-1">
                 <span className="loading loading-spinner loading-xs text-info"></span>
@@ -259,17 +267,10 @@ export default function LoanDetailModal({
           {/* User Info */}
           <div className="grid grid-cols-2 gap-3 p-3 bg-white rounded-lg border border-gray-200">
             <div>
-              <label className="text-xs text-gray-500 font-medium">
-                Pemilik
-              </label>
-              <p className="text-sm text-gray-800 font-medium mt-1">
-                {ownerName}
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 font-medium">
-                Peminjam
-              </label>
+              <div className="flex gap-2 items-center text-xs text-gray-500 font-medium">
+                <UserPen className="w-4 h-4" color="black" />
+                <label>Peminjam</label>
+              </div>
               <p className="text-sm text-gray-800 font-medium mt-1">
                 {borrowerName}
               </p>
@@ -279,9 +280,12 @@ export default function LoanDetailModal({
           {/* Participants */}
           {invitedUsers.length > 0 && (
             <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <label className="text-xs text-gray-500 font-medium mb-2 block">
-                Pengguna Diundang ({invitedUsers.length})
-              </label>
+              <div className="flex gap-2 text-xs text-gray-500 font-medium">
+                <Users className="w-4 h-4" color="black" />
+                <label className=" mb-2 block">
+                  Pengguna Diundang ({invitedUsers.length})
+                </label>
+              </div>
               <div className="flex flex-wrap gap-1">
                 {invitedUsers.map((user) => (
                   <span
@@ -298,15 +302,18 @@ export default function LoanDetailModal({
           {/* Items Section */}
           <div className="p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs text-gray-500 font-medium">
-                Perangkat ({currentItems.length})
-                {isUpdating && (
-                  <span className="ml-2 text-orange-500">(Menyimpan...)</span>
-                )}
-                {loanLoading && (
-                  <span className="ml-2 text-blue-500">(Memperbarui...)</span>
-                )}
-              </label>
+              <div className="flex gap-2">
+                <Box className="w-4 h-4" color="black" />
+                <label className="text-xs text-gray-500 font-medium">
+                  Perangkat ({currentItems.length})
+                  {isUpdating && (
+                    <span className="ml-2 text-orange-500">(Menyimpan...)</span>
+                  )}
+                  {loanLoading && (
+                    <span className="ml-2 text-blue-500">(Memperbarui...)</span>
+                  )}
+                </label>
+              </div>
               {displayLoan.status === "REQUESTED" &&
                 !isEditing &&
                 !isUpdating && (
@@ -451,9 +458,10 @@ export default function LoanDetailModal({
           {/* Report */}
           {displayLoan.report && (
             <div className="p-3 bg-white rounded-lg border border-gray-200 space-y-3">
-              <label className="text-xs text-gray-500 font-medium block">
-                Informasi SPT
-              </label>
+              <div className="flex gap-2 text-xs text-gray-500 font-medium ">
+                <Mail className="w-4 h-4" color="black" />
+                <label className="block">Informasi SPT</label>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-gray-500">No. SPT</p>
@@ -463,14 +471,20 @@ export default function LoanDetailModal({
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Tujuan</p>
-                  <p className="text-sm text-gray-800 truncate">
+                  <p className="text-sm text-gray-800 ">
                     {displayLoan.report.destination}
                   </p>
                 </div>
-                <div className="col-span-2">
+                <div>
                   <p className="text-xs text-gray-500">Tempat Pelaksanaan</p>
                   <p className="text-sm text-gray-800">
                     {displayLoan.report.place_of_execution}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Tempat Pelaksanaan</p>
+                  <p className="text-sm text-gray-800">
+                    {formatDate(displayLoan.report.end_date)}
                   </p>
                 </div>
                 {sptFileUrl && (
