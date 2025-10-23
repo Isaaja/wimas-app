@@ -178,7 +178,7 @@ export async function checkUserLoan(userId: string) {
           },
         },
       ],
-      status: { in: ["REQUESTED", "APPROVED"] },
+      status: { in: ["REQUESTED", "APPROVED", "RETURNED"] },
     },
     orderBy: { created_at: "desc" },
   });
@@ -186,7 +186,7 @@ export async function checkUserLoan(userId: string) {
   if (!latestLoan) {
     return { canBorrow: true, reason: "Belum ada pinjaman aktif" };
   }
-  
+
   let statusDescription = "";
   if (latestLoan.status === "REQUESTED") {
     statusDescription = "Menunggu persetujuan permintaan peminjaman barang.";
@@ -254,11 +254,11 @@ export async function rejectLoan(loanId: string) {
 
       if (loan.status === "REJECTED") {
         throw new Error("Loan already rejected");
-      }
-      if (loan.status === "APPROVED") {
+      } else if (loan.status === "APPROVED") {
+        throw new Error("Loan already approved");
+      } else if (loan.status === "DONE") {
         throw new Error("Loan already approved");
       }
-
       return tx.loan.update({
         where: { loan_id: loanId },
         data: { status: "REJECTED" },
@@ -274,6 +274,34 @@ export async function rejectLoan(loanId: string) {
 export async function returnLoan(loanId: string) {
   return prisma.$transaction(
     async (tx) => {
+      const loan = await tx.loan.findUnique({
+        where: { loan_id: loanId },
+      });
+
+      if (!loan) throw new NotFoundError("Loan not found");
+
+      if (loan.status === "REJECTED") {
+        throw new Error("Loan already rejected");
+      } else if (loan.status === "REQUESTED") {
+        throw new Error("Loan already request");
+      } else if (loan.status === "DONE") {
+        throw new Error("Loan already done");
+      }
+
+      return tx.loan.update({
+        where: { loan_id: loanId },
+        data: { status: "RETURNED" },
+      });
+    },
+    {
+      timeout: 15000,
+      maxWait: 5000,
+    }
+  );
+}
+export async function doneLoan(loanId: string) {
+  return prisma.$transaction(
+    async (tx) => {
       // Ambil data pinjaman beserta itemnya
       const loan = await tx.loan.findUnique({
         where: { loan_id: loanId },
@@ -286,7 +314,7 @@ export async function returnLoan(loanId: string) {
 
       if (!loan) throw new NotFoundError("Loan not found");
 
-      if (loan.status === "APPROVED") {
+      if (loan.status === "RETURNED") {
         // Tambah kembali stok barang
         await Promise.all(
           (loan.items as Array<{ product_id: string; quantity: number }>).map(
@@ -303,7 +331,7 @@ export async function returnLoan(loanId: string) {
         // Update status pinjaman menjadi RETURNED
         const updatedLoan = await tx.loan.update({
           where: { loan_id: loanId },
-          data: { status: "RETURNED" },
+          data: { status: "DONE" },
         });
 
         return updatedLoan;
