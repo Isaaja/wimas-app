@@ -12,6 +12,7 @@ import {
   Clock,
   BarChart3,
   Calendar,
+  CheckCircle,
 } from "lucide-react";
 import {
   LineChart,
@@ -57,6 +58,7 @@ export default function AdminDashboard() {
     approvedLoans: 0,
     rejectedLoans: 0,
     returnedLoans: 0,
+    doneLoans: 0, // Tambahkan doneLoans
     adminUsers: 0,
     borrowerUsers: 0,
     recentLoans: 0,
@@ -99,6 +101,7 @@ export default function AdminDashboard() {
       APPROVED: 0,
       REJECTED: 0,
       RETURNED: 0,
+      DONE: 0, // Tambahkan status DONE
     };
 
     allLoans.forEach((loan) => {
@@ -108,24 +111,29 @@ export default function AdminDashboard() {
 
     return [
       {
+        status: "Menunggu",
+        count: statusCount.REQUESTED,
+        color: "#f59e0b", // yellow-500
+      },
+      {
         status: "Disetujui",
         count: statusCount.APPROVED,
-        color: "#10b981",
+        color: "#10b981", // green-500
       },
       {
         status: "Ditolak",
         count: statusCount.REJECTED,
-        color: "#ef4444",
+        color: "#ef4444", // red-500
       },
       {
         status: "Dikembalikan",
         count: statusCount.RETURNED,
-        color: "#3b82f6",
+        color: "#3b82f6", // blue-500
       },
       {
-        status: "Menunggu",
-        count: statusCount.REQUESTED,
-        color: "#f59e0b",
+        status: "Selesai",
+        count: statusCount.DONE,
+        color: "#8b5cf6", // violet-500
       },
     ].filter((item) => item.count > 0);
   }, [allLoans]);
@@ -155,6 +163,40 @@ export default function AdminDashboard() {
 
   const pendingLoans = pendingLoansList;
   const lowStockProducts = lowStockProductsList;
+
+  // Statistik tambahan untuk card
+  // const loanStats = useMemo(() => {
+  //   return [
+  //     {
+  //       icon: Clock,
+  //       title: "Menunggu Approval",
+  //       value: stats.pendingLoans,
+  //       color: "yellow" as const,
+  //       description: "Peminjaman pending",
+  //     },
+  //     {
+  //       icon: CheckCircle,
+  //       title: "Disetujui",
+  //       value: stats.approvedLoans,
+  //       color: "green" as const,
+  //       description: "Peminjaman aktif",
+  //     },
+  //     {
+  //       icon: Package,
+  //       title: "Dikembalikan",
+  //       value: stats.returnedLoans,
+  //       color: "blue" as const,
+  //       description: "Menunggu konfirmasi",
+  //     },
+  //     {
+  //       icon: ClipboardList,
+  //       title: "Selesai",
+  //       value: stats.doneLoans || 0, // Gunakan doneLoans dari stats
+  //       color: "purple" as const,
+  //       description: "Peminjaman selesai",
+  //     },
+  //   ];
+  // }, [stats]);
 
   if (isLoading) {
     return <Loading />;
@@ -211,6 +253,21 @@ export default function AdminDashboard() {
             compact
           />
         </div>
+
+        {/* Loan Status Cards
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          {loanStats.map((stat, index) => (
+            <StatCard
+              key={index}
+              icon={stat.icon}
+              title={stat.title}
+              value={stat.value}
+              subtitle={stat.description}
+              color={stat.color}
+              compact
+            />
+          ))}
+        </div> */}
 
         {/* Charts Section - More Compact */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">

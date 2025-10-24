@@ -13,12 +13,12 @@ model User {
   createdAt        DateTime          @default(now())
   password         String
   role             Role              @default(BORROWER)
-  status           LoanStatus?
   updatedAt        DateTime          @updatedAt
   user_id          String            @id @db.VarChar(32)
   username         String            @unique
   email            String?
   noHandphone      String?
+  status           LoanStatus?
   loans            Loan[]            @relation("UserLoans")
   loanParticipants LoanParticipant[]
 

@@ -7,9 +7,9 @@ import {
   CheckCircle,
   XCircle,
   View,
-  Calendar,
   X,
   Filter,
+  CheckCheck,
 } from "lucide-react";
 import { Loan } from "@/hooks/useLoans";
 import Loading from "../common/Loading";
@@ -20,9 +20,11 @@ interface AdminLoanTableProps {
   isLoading?: boolean;
   onApprove?: (loanId: string) => void;
   onReject?: (loanId: string) => void;
-  onViewDetail: (loanId: string) => void; 
+  onDone?: (loanId: string) => void;
+  onViewDetail: (loanId: string) => void;
   isApproving?: boolean;
   isRejecting?: boolean;
+  isDoing?: boolean;
   actioningLoanId?: string | null;
   currentPage: number;
   itemsPerPage: number;
@@ -35,9 +37,11 @@ export default function AdminLoanTable({
   isLoading = false,
   onApprove,
   onReject,
-  onViewDetail, 
+  onDone,
+  onViewDetail,
   isApproving = false,
   isRejecting = false,
+  isDoing = false,
   actioningLoanId = null,
   currentPage,
   itemsPerPage,
@@ -93,6 +97,7 @@ export default function AdminLoanTable({
       APPROVED: { label: "Disetujui", class: "badge-success" },
       REJECTED: { label: "Ditolak", class: "badge-error" },
       RETURNED: { label: "Dikembalikan", class: "badge-info" },
+      DONE: { label: "Selesai", class: "badge-success" },
     };
     return statusMap[status] || { label: status, class: "badge-ghost" };
   };
@@ -296,7 +301,7 @@ export default function AdminLoanTable({
             {currentLoans.map((loan, index) => {
               const statusInfo = getStatusBadge(loan.status);
               const isProcessing =
-                (isApproving || isRejecting) &&
+                (isApproving || isRejecting || isDoing) &&
                 actioningLoanId === loan.loan_id;
               const sptFileUrl = getSptFileUrl(loan.report?.spt_file);
 
@@ -404,8 +409,38 @@ export default function AdminLoanTable({
                         </>
                       )}
 
+                      {/* Tombol DONE untuk status RETURNED */}
+                      {loan.status === "RETURNED" && (
+                        <button
+                          onClick={() => onDone?.(loan.loan_id)}
+                          disabled={isProcessing}
+                          className="btn btn-info btn-xs tooltip"
+                          data-tip="Selesaikan Peminjaman"
+                        >
+                          {isProcessing && actioningLoanId === loan.loan_id ? (
+                            <span className="loading loading-spinner loading-xs text-info"></span>
+                          ) : (
+                            <CheckCheck className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
+
+                      {/* Tombol Lihat Detail untuk semua status selain REQUESTED */}
                       {(mode === "history" ||
-                        (mode === "active" && loan.status !== "REQUESTED")) && (
+                        (mode === "active" &&
+                          loan.status !== "REQUESTED" &&
+                          loan.status !== "RETURNED")) && (
+                        <button
+                          onClick={() => onViewDetail(loan.loan_id)}
+                          className="btn btn-ghost btn-xs text-blue-600 tooltip"
+                          data-tip="Lihat Detail"
+                        >
+                          <View className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* Tombol Lihat Detail untuk status RETURNED (selain tombol DONE) */}
+                      {loan.status === "RETURNED" && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}
                           className="btn btn-ghost btn-xs text-blue-600 tooltip"
