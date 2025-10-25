@@ -248,6 +248,8 @@ export default function LoanDetailModal({
                   ? "bg-green-100 text-green-800 border border-green-200"
                   : displayLoan.status === "REJECTED"
                   ? "bg-red-100 text-red-800 border border-red-200"
+                  : displayLoan.status === "RETURNED"
+                  ? "bg-red-100 text-indigo-500- border border-indigo-200"
                   : "bg-blue-100 text-blue-800 border border-blue-200"
               }`}
             >
@@ -257,7 +259,9 @@ export default function LoanDetailModal({
                 ? "Disetujui"
                 : displayLoan.status === "REJECTED"
                 ? "Ditolak"
-                : "Dikembalikan"}
+                : displayLoan.status === "RETURNED"
+                ? "Dikembalikan"
+                : "Selesai"}
             </span>
             <span className="text-xs text-gray-600">
               {formatDate(displayLoan.updated_at)}
@@ -408,9 +412,6 @@ export default function LoanDetailModal({
                       <p className="text-sm font-medium text-gray-800 truncate">
                         {item.product_name}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        ID: {item.product_id}
-                      </p>
                     </div>
 
                     {isEditing ? (
@@ -471,7 +472,7 @@ export default function LoanDetailModal({
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Tujuan</p>
-                  <p className="text-sm text-gray-800 ">
+                  <p className="text-sm text-gray-800 line-clamp-3">
                     {displayLoan.report.destination}
                   </p>
                 </div>

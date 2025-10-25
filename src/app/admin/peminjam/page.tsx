@@ -7,6 +7,7 @@ import {
   useApproveLoan,
   useRejectLoan,
   Loan,
+  useDoneLoan,
 } from "@/hooks/useLoans";
 import AdminLoanTable from "@/app/components/admin/AdminLoanTable";
 import LoanDetailModal from "@/app/components/admin/LoanDetailModal";
@@ -16,11 +17,12 @@ export default function AdminPeminjamanPage() {
   const { loans, isLoading, isError, error, refetch } = useLoans("active");
   const { mutate: approveLoan, isPending: isApproving } = useApproveLoan();
   const { mutate: rejectLoan, isPending: isRejecting } = useRejectLoan();
+  const { mutate: doneLoan, isPending: isDoing } = useDoneLoan();
 
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
-  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null); // Kembali ke selectedLoan
+  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
@@ -77,6 +79,26 @@ export default function AdminPeminjamanPage() {
     }
   };
 
+  const handleDone = async (loanId: string) => {
+    const result = await Swal.fire({
+      title: "Konfirmasi Penyelesaian",
+      text: "Apakah Anda yakin ingin menyelesaikan peminjaman ini?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Ya, Selesaikan!",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      setActioningLoanId(loanId);
+      doneLoan(loanId, {
+        onSettled: () => setActioningLoanId(null),
+      });
+    }
+  };
+
   const handleViewDetailLoan = (loanId: string) => {
     const loan = loans?.find((l) => l.loan_id === loanId);
     if (loan) {
@@ -114,6 +136,8 @@ export default function AdminPeminjamanPage() {
 
       <AdminLoanTable
         loans={loans}
+        onDone={handleDone}
+        isDoing={isDoing}
         isLoading={isLoading}
         onApprove={handleApprove}
         onReject={handleReject}
@@ -127,9 +151,8 @@ export default function AdminPeminjamanPage() {
         mode="active"
       />
 
-      {/* Pastikan menggunakan selectedLoan, bukan selectedLoanId */}
       <LoanDetailModal
-        loan={selectedLoan} // Ini yang benar
+        loan={selectedLoan}
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onApprove={handleApprove}

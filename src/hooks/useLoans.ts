@@ -29,7 +29,7 @@ export interface LoanReport {
 
 export interface Loan {
   loan_id: string;
-  status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
+  status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED" | "DONE";
   created_at: string;
   updated_at: string;
   borrower: LoanUser;
@@ -101,7 +101,7 @@ export interface LoanHistoryReport {
 export interface LoanHistory {
   loan_id: string;
   borrower_id: string;
-  status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED";
+  status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED" | "DONE";
   spt_file?: string | null;
   created_at: string;
   updated_at: string;
@@ -116,6 +116,18 @@ export interface LoanHistory {
 export interface LoanHistoryResponse {
   loans: LoanHistory[];
   total: number;
+}
+
+export interface ReturnLoanResponse {
+  status: string;
+  data: Loan;
+  message?: string;
+}
+
+export interface DoneLoanResponse {
+  status: string;
+  data: Loan;
+  message?: string;
 }
 // ==================== CACHE CONFIGURATION ====================
 
@@ -317,27 +329,6 @@ const rejectLoan = async (loanId: string): Promise<Loan> => {
   return result?.data;
 };
 
-const returnLoan = async (loanId: string): Promise<Loan> => {
-  const token = getAccessToken();
-  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
-
-  const response = await fetch(`/api/loan/${loanId}/return`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    credentials: "include",
-  });
-
-  const result = await response.json();
-
-  if (!response.ok)
-    throw new Error(result?.message || "Gagal mengembalikan peminjaman");
-
-  return result?.data;
-};
-
 const deleteLoan = async (loanId: string): Promise<void> => {
   const token = getAccessToken();
   if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
@@ -378,6 +369,50 @@ const fetchLoanHistory = async (): Promise<LoanHistoryResponse> => {
   return result?.data as LoanHistoryResponse;
 };
 
+const returnLoan = async (loanId: string): Promise<Loan> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch(`/api/loan/${loanId}/return`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result?.message || "Gagal mengembalikan peminjaman");
+  }
+
+  return result?.data as Loan;
+};
+
+const doneLoan = async (loanId: string): Promise<Loan> => {
+  const token = getAccessToken();
+  if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
+
+  const response = await fetch(`/api/loan/${loanId}/done`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    credentials: "include",
+  });
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result?.message || "Gagal menyelesaikan peminjaman");
+  }
+
+  return result?.data as Loan;
+};
+
 // ==================== OPTIMIZED HOOKS DENGAN CACHING ====================
 
 export function useLoans(filter?: "active" | "history") {
@@ -403,13 +438,16 @@ export function useLoans(filter?: "active" | "history") {
 
       if (filter === "active") {
         return data.filter(
-          (loan) => loan.status === "REQUESTED" || loan.status === "APPROVED"
+          (loan) =>
+            loan.status === "REQUESTED" ||
+            loan.status === "APPROVED" ||
+            loan.status === "RETURNED"
         );
       }
 
       if (filter === "history") {
         return data.filter(
-          (loan) => loan.status === "REJECTED" || loan.status === "RETURNED"
+          (loan) => loan.status === "REJECTED" || loan.status === "DONE"
         );
       }
 
@@ -526,31 +564,6 @@ export function useRejectLoan() {
   });
 }
 
-export function useReturnLoan() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: returnLoan,
-    onSuccess: (data) => {
-      toast.success("Peminjaman berhasil dikembalikan!");
-
-      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
-
-      queryClient.invalidateQueries({
-        queryKey: LOAN_QUERY_KEYS.lists(),
-        refetchType: "active",
-      });
-      queryClient.invalidateQueries({
-        queryKey: LOAN_QUERY_KEYS.history(),
-      });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || "Gagal mengembalikan peminjaman");
-      console.error("❌ Failed to return loan:", err.message);
-    },
-  });
-}
-
 export function useDeleteLoan() {
   const queryClient = useQueryClient();
 
@@ -633,11 +646,11 @@ export function useFilteredLoanHistory(filter?: "active" | "completed") {
     if (!filter) return true;
 
     if (filter === "active") {
-      return loan.status === "REQUESTED" || loan.status === "APPROVED";
+      return loan.status === "REQUESTED" || loan.status === "APPROVED" || loan.status === "RETURNED";
     }
 
     if (filter === "completed") {
-      return loan.status === "REJECTED" || loan.status === "RETURNED";
+      return loan.status === "REJECTED" || loan.status === "DONE";
     }
 
     return true;
@@ -699,5 +712,71 @@ export function useCheckUserLoan() {
     staleTime: CACHE_CONFIG.STALE_SHORT,
     gcTime: CACHE_CONFIG.SHORT_TERM,
     retry: 1,
+  });
+}
+
+export function useReturnLoan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: returnLoan,
+    onSuccess: (data) => {
+      toast.success("Barang berhasil dikembalikan!");
+
+      // Update cache untuk loan yang di-return
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
+
+      // Invalidate queries untuk refresh data
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.list("active"),
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.list("history"),
+      });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gagal mengembalikan barang");
+      console.error("❌ Failed to return loan:", err.message);
+    },
+  });
+}
+
+export function useDoneLoan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: doneLoan,
+    onSuccess: (data) => {
+      toast.success("Peminjaman berhasil diselesaikan!");
+
+      // Update cache untuk loan yang di-done
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
+
+      // Invalidate queries untuk refresh data
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.lists(),
+        refetchType: "active",
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.history(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.list("active"),
+      });
+      queryClient.invalidateQueries({
+        queryKey: LOAN_QUERY_KEYS.list("history"),
+      });
+    },
+    onError: (err: Error) => {
+      toast.error(err.message || "Gagal menyelesaikan peminjaman");
+      console.error("❌ Failed to done loan:", err.message);
+    },
   });
 }

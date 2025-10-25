@@ -49,10 +49,16 @@ interface Loan {
 interface LoanDetailProps {
   loan: Loan | null;
   isOpen: boolean;
+  onNota: (loanId: string) => void;
   onClose: () => void;
 }
 
-export default function LoanDetail({ loan, isOpen, onClose }: LoanDetailProps) {
+export default function LoanDetail({
+  loan,
+  isOpen,
+  onClose,
+  onNota,
+}: LoanDetailProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -114,29 +120,42 @@ export default function LoanDetail({ loan, isOpen, onClose }: LoanDetailProps) {
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                loan.status === "REQUESTED"
-                  ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+          <div className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200">
+            <div className="flex items-center gap-4">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  loan.status === "REQUESTED"
+                    ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                    : loan.status === "APPROVED"
+                    ? "bg-green-100 text-green-800 border border-green-200"
+                    : loan.status === "REJECTED"
+                    ? "bg-red-100 text-red-800 border border-red-200"
+                    : "bg-blue-100 text-blue-800 border border-blue-200"
+                }`}
+              >
+                {loan.status === "REQUESTED"
+                  ? "Menunggu"
                   : loan.status === "APPROVED"
-                  ? "bg-green-100 text-green-800 border border-green-200"
+                  ? "Disetujui"
                   : loan.status === "REJECTED"
-                  ? "bg-red-100 text-red-800 border border-red-200"
-                  : "bg-blue-100 text-blue-800 border border-blue-200"
-              }`}
-            >
-              {loan.status === "REQUESTED"
-                ? "Menunggu"
-                : loan.status === "APPROVED"
-                ? "Disetujui"
-                : loan.status === "REJECTED"
-                ? "Ditolak"
-                : "Dikembalikan"}
-            </span>
-            <span className="text-xs text-gray-600">
-              {formatDate(loan.updated_at)}
-            </span>
+                  ? "Ditolak"
+                  : "Dikembalikan"}
+              </span>
+              <span className="text-xs text-gray-600">
+                {formatDate(loan.updated_at)}
+              </span>
+            </div>
+            {loan.status === "APPROVED" && (
+              <div className="flex">
+                <button
+                  className="btn btn-ghost btn-xs text-green-600"
+                  onClick={() => onNota(loan.loan_id)}
+                >
+                  <FileText className="w-4 h-4" />
+                  Nota Peminjaman
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Informasi Peminjam */}

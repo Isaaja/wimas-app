@@ -3,8 +3,18 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Eye, EyeOff, View } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  View,
+  FileText,
+  Undo2,
+  RefreshCcwDot,
+} from "lucide-react";
 import LoanDetail from "./LoanDetail";
+import Swal from "sweetalert2";
+import { useReturnLoan } from "@/hooks/useLoans";
+import { useRouter } from "next/navigation";
 
 interface Loan {
   loan_id: string;
@@ -48,6 +58,8 @@ export default function LoanTable({
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const { mutate: returnLoan, isPending: isReturning } = useReturnLoan();
+  const router = useRouter();
 
   const formatDateOnly = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -61,7 +73,8 @@ export default function LoanTable({
       REQUESTED: { label: "Menunggu", class: "badge-warning" },
       APPROVED: { label: "Disetujui", class: "badge-success" },
       REJECTED: { label: "Ditolak", class: "badge-error" },
-      RETURNED: { label: "Dikembalikan", class: "badge-info" },
+      RETURNED: { label: "Dikembalikan", class: "badge-primary" },
+      DONE: { label: "Selesai", class: "badge-info" },
     };
     return statusMap[status] || { label: status, class: "badge-ghost" };
   };
@@ -74,6 +87,30 @@ export default function LoanTable({
     }
     if (sptFile.startsWith("/")) return sptFile;
     return `/${sptFile}`;
+  };
+
+  const handleReturn = async (loanId: string) => {
+    const result = await Swal.fire({
+      title: "Konfirmasi Pengembalian",
+      text: "Apakah Anda yakin ingin mengembalikan barang?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#10b981",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Ya, Kembalikan!",
+      cancelButtonText: "Batal",
+    });
+
+    if (result.isConfirmed) {
+      returnLoan(loanId, {
+        onSuccess: () => {},
+        onError: (error) => {},
+      });
+    }
+  };
+
+  const handleViewNota = (loanId: string) => {
+    router.push(`/peminjam/nota/${loanId}`);
   };
 
   const totalPages = Math.ceil(loans.length / itemsPerPage);
@@ -209,15 +246,38 @@ export default function LoanTable({
                         </div>
                       )}
                     </td>
-                    {/* Aksi */}
-                    <td className="border-t border-black/10 text-center">
-                      <button
-                        className="btn btn-ghost btn-xs text-blue-500 tooltip"
-                        data-tip="Lihat Detail"
-                        onClick={() => handleViewDetail(loan)}
-                      >
-                        <View className="w-4 h-4" />
-                      </button>
+
+                    {/* Kolom Aksi */}
+                    <td className="border-t border-black/10">
+                      <div className="flex justify-center items-center gap-1">
+                        {/* Tombol Lihat Detail - selalu tersedia */}
+                        <button
+                          className="btn btn-ghost btn-xs text-blue-500 tooltip"
+                          data-tip="Lihat Detail"
+                          onClick={() => handleViewDetail(loan)}
+                        >
+                          <View className="w-4 h-4" />
+                        </button>
+
+                        {/* Tombol khusus untuk status APPROVED */}
+                        {loan.status === "APPROVED" && (
+                          <>
+                            {/* Tombol Return */}
+                            <button
+                              className="btn btn-ghost btn-xs text-orange-600 tooltip"
+                              data-tip="Kembalikan Barang"
+                              onClick={() => handleReturn(loan.loan_id)}
+                              disabled={isProcessing}
+                            >
+                              {isProcessing ? (
+                                <span className="loading loading-spinner loading-xs"></span>
+                              ) : (
+                                <RefreshCcwDot className="w-4 h-4" />
+                              )}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -251,10 +311,12 @@ export default function LoanTable({
           </div>
         </div>
       )}
+
       <LoanDetail
         loan={selectedLoan}
         isOpen={isDetailOpen}
         onClose={handleCloseDetail}
+        onNota={handleViewNota}
       />
     </div>
   );

@@ -13,6 +13,7 @@ export interface DashboardStats {
   approvedLoans: number;
   rejectedLoans: number;
   returnedLoans: number;
+  doneLoans: number;
   recentLoans: number;
 }
 
