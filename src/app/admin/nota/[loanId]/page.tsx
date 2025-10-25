@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useLoanById } from "@/hooks/useLoans";
 import Loading from "@/app/components/common/Loading";
 import { format } from "date-fns";
@@ -10,8 +10,9 @@ import { Download, ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import { useReactToPrint } from "react-to-print";
 
-export default function NotaPeminjamanPage() {
+export default function AdminNotaPeminjamanPage() {
   const params = useParams();
+  const router = useRouter();
   const loanId = params.loanId as string;
   const { data: loan, isLoading, error } = useLoanById(loanId);
   const notaRef = useRef<HTMLDivElement>(null);
@@ -91,8 +92,8 @@ export default function NotaPeminjamanPage() {
           <p className="text-gray-600 mb-6">
             {error?.message || "Data peminjaman tidak ditemukan"}
           </p>
-          <Link href="/peminjam/peminjaman" className="btn btn-primary">
-            Kembali ke Riwayat
+          <Link href="/admin/peminjam" className="btn btn-primary">
+            Kembali ke Daftar Peminjaman
           </Link>
         </div>
       </div>
@@ -101,27 +102,31 @@ export default function NotaPeminjamanPage() {
 
   const isReturned = loan.status === "RETURNED" || loan.status === "DONE";
   const notaTitle = isReturned ? "NOTA PENGEMBALIAN" : "NOTA PEMINJAMAN";
-  const headerTitle = isReturned ? "Nota Pengembalian" : "Nota Peminjaman";
+  const headerTitle = isReturned
+    ? "Nota Pengembalian - Admin"
+    : "Nota Peminjaman - Admin";
+
+  const owner = loan.invited_users?.find((p: any) => p.role === "OWNER");
+  const invitedUsers = loan.invited_users?.filter(
+    (p: any) => p.role === "INVITED"
+  );
 
   const totalItems =
-    loan.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+    loan.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
 
   return (
-    <div className="bg-gray-50">
-      <div className="bg-white border-b no-print">
+    <div className="">
+      <div className="border-b no-print">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {isReturned ? (
-                <Link href="/peminjam/riwayat" className="btn btn-ghost btn-sm">
+                <Link href="/admin/riwayat" className="btn btn-ghost btn-sm">
                   <ArrowLeft className="w-4 h-4" />
                   Kembali
                 </Link>
               ) : (
-                <Link
-                  href="/peminjam/peminjaman"
-                  className="btn btn-ghost btn-sm"
-                >
+                <Link href="/admin/peminjam" className="btn btn-ghost btn-sm">
                   <ArrowLeft className="w-4 h-4" />
                   Kembali
                 </Link>
@@ -199,7 +204,7 @@ export default function NotaPeminjamanPage() {
                       Nama:
                     </span>
                     <span className="text-gray-800 flex-1">
-                      {loan.borrower.name || loan.borrower.username}
+                      {loan.borrower.name || "-"}
                     </span>
                   </div>
                 </div>
@@ -255,18 +260,16 @@ export default function NotaPeminjamanPage() {
                       {isReturned ? "Tanggal Kembali:" : "Tanggal Pinjam:"}
                     </span>
                     <span className="text-gray-800 flex-1">
-                      {isReturned
-                        ? formatDateTime(loan.updated_at)
-                        : formatDateTime(loan.created_at)}
+                      {formatDateTime(loan.updated_at)}
                     </span>
                   </div>
-                  {!isReturned && loan.updated_at && (
+                  {!isReturned && loan.created_at && (
                     <div className="flex">
                       <span className="font-medium text-gray-600 w-20">
-                        Terakhir Diupdate:
+                        Tanggal Pinjam:
                       </span>
                       <span className="text-gray-800 flex-1">
-                        {formatDateTime(loan.updated_at)}
+                        {formatDateTime(loan.created_at)}
                       </span>
                     </div>
                   )}
@@ -354,7 +357,7 @@ export default function NotaPeminjamanPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {loan.items?.map((item, index) => (
+                    {loan.items?.map((item: any, index: number) => (
                       <tr
                         key={item.product_id}
                         className="border-b border-gray-200 last:border-b-0"
@@ -378,11 +381,11 @@ export default function NotaPeminjamanPage() {
               </div>
             </div>
 
-            {/* Participants - Format List */}
-            {loan.invited_users && loan.invited_users.length > 0 && (
+            {/* Daftar Peserta Undangan */}
+            {invitedUsers && invitedUsers.length > 0 && (
               <div>
                 <h3 className="font-semibold text-gray-700 mb-1 text-sm">
-                  PESERTA LAIN ({loan.invited_users.length} orang)
+                  PESERTA UNDANGAN ({invitedUsers.length} orang)
                 </h3>
                 <div className="text-sm text-gray-600">
                   <div
@@ -395,7 +398,43 @@ export default function NotaPeminjamanPage() {
                       gap: "2px 16px",
                     }}
                   >
-                    {loan.invited_users.map((user, index) => (
+                    {invitedUsers.map((participant: any, index: number) => (
+                      <div
+                        key={participant.id}
+                        className="flex"
+                        style={{ width: "20%" }}
+                      >
+                        <span className="w-5 flex-shrink-0">{index + 1}.</span>
+                        <span className="truncate">
+                          {participant.user?.name ||
+                            participant.user?.username ||
+                            "-"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Daftar Invited Users (jika ada) */}
+            {loan.invited_users && loan.invited_users.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-1 text-sm">
+                  USERS YANG DIUNDANG ({loan.invited_users.length} orang)
+                </h3>
+                <div className="text-sm text-gray-600">
+                  <div
+                    className="flex flex-col flex-wrap max-h-24 gap-1"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      flexWrap: "wrap",
+                      maxHeight: "96px",
+                      gap: "2px 16px",
+                    }}
+                  >
+                    {loan.invited_users.map((user: any, index: number) => (
                       <div
                         key={user.user_id}
                         className="flex"
