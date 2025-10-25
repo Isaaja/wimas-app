@@ -64,10 +64,13 @@ export default function CartStep2({
       formData.append("pdf", file);
 
       // Call Python service directly
-      const response = await fetch("http://localhost:8000/process-pdf", {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        "http://192.168.1.7:8000/process-pdf",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();

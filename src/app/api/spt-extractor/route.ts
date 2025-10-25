@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
     // Panggil Python service (localhost untuk development)
     const pythonServiceUrl =
-      process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
+      process.env.PYTHON_SERVICE_URL || "http://192.168.1.7:8000";
     const res = await fetch(`${pythonServiceUrl}/process-pdf`, {
       method: "POST",
       body: payload,
