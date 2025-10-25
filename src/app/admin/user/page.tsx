@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import UserTable from "@/app/components/shared/UserTable";
 import UserModal from "@/app/components/shared/UserModal";
 import Loading from "@/app/components/common/Loading";
+import Swal from "sweetalert2";
 
 export default function SuperAdminUserPage() {
   const { data: users = [], isLoading } = useUsers();
@@ -34,11 +35,27 @@ export default function SuperAdminUserPage() {
   };
 
   const handleDelete = async (user: User) => {
-    try {
-      await deleteUser.mutateAsync(user.user_id);
-      toast.success("User berhasil dihapus!");
-    } catch (error: any) {
-      toast.error(error.message || "Gagal menghapus user");
+    const result = await Swal.fire({
+      title: "Konfirmasi Hapus",
+      text: `Apakah Anda yakin ingin menghapus user "${
+        user.name || user.username
+      }"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Ya, Hapus!",
+      cancelButtonText: "Batal",
+      reverseButtons: true,
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await deleteUser.mutateAsync(user.user_id);
+        toast.success("User berhasil dihapus!");
+      } catch (error: any) {
+        toast.error(error.message || "Gagal menghapus user");
+      }
     }
   };
 

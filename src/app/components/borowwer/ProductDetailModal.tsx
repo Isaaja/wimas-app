@@ -53,7 +53,6 @@ export default function ProductDetailModal({
 
         {/* Content Area with Scroll */}
         <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-          {/* Left Column - Product Image */}
           <div className="flex flex-col w-full lg:w-2/3 p-4 gap-3 border-r border-gray-200">
             <div className="bg-gray-50 rounded-3xl p-4 flex justify-center items-center flex-1 min-h-0">
               <Image
