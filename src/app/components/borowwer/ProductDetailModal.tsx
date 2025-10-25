@@ -115,7 +115,7 @@ export default function ProductDetailModal({
                   Deskripsi:
                 </span>
                 <p className="text-gray-700 bg-gray-50 rounded-lg p-2 text-xs line-clamp-3">
-                  "Tidak ada deskripsi"
+                  &quot;Tidak ada deskripsi&quot;
                 </p>
               </div>
             </div>

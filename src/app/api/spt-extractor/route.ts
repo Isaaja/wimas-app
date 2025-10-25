@@ -12,11 +12,11 @@ export async function POST(req: Request) {
       );
 
     const payload = new FormData();
-    payload.append("pdf", file); // Changed from "file" to "pdf" to match Python service
+    payload.append("pdf", file);
 
     // Panggil Python service (localhost untuk development)
     const pythonServiceUrl =
-      process.env.PYTHON_SERVICE_URL || "http://localhost:5000";
+      process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
     const res = await fetch(`${pythonServiceUrl}/process-pdf`, {
       method: "POST",
       body: payload,
