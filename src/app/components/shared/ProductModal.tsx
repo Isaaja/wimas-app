@@ -103,7 +103,7 @@ export default function ProductModal({
         if (isNaN(parsedValue)) parsedValue = 0;
       }
 
-      let newData = { ...prev, [name]: parsedValue };
+      const newData = { ...prev, [name]: parsedValue };
 
       const toastId = "product-availability-warning";
 
