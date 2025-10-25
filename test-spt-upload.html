@@ -129,7 +129,7 @@
           resultDiv.style.display = "none";
 
           const response = await fetch(
-            "http://192.168.1.7:8000/api/spt-extractor",
+            `${process.env.NEXT_PUBLIC_API_URL}/api/spt-extractor`,
             {
               method: "POST",
               body: formData,
