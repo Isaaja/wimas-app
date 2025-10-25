@@ -1,11 +1,28 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loan, LoanProduct, useUpdateLoanItems } from "@/hooks/useLoans";
+import {
+  Loan,
+  LoanProduct,
+  useUpdateLoanItems,
+  useLoanById,
+} from "@/hooks/useLoans";
 import { useProducts, Product } from "@/hooks/useProducts";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { X, Edit, Save, Download, Plus, Search } from "lucide-react";
+import {
+  X,
+  Edit,
+  Save,
+  Download,
+  Plus,
+  Search,
+  UserPen,
+  Users,
+  Box,
+  Mail,
+} from "lucide-react";
+import { toast } from "react-toastify";
 
 interface LoanDetailModalProps {
   loan: Loan | null;
@@ -32,19 +49,35 @@ export default function LoanDetailModal({
   const [editedItems, setEditedItems] = useState<LoanProduct[]>([]);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [shouldFetchLatest, setShouldFetchLatest] = useState(false);
+
+  const {
+    data: latestLoan,
+    isLoading: loanLoading,
+    refetch: refetchLoan,
+  } = useLoanById(shouldFetchLatest && loan?.loan_id ? loan.loan_id : "");
 
   const { mutate: updateLoanItems, isPending: isUpdating } =
     useUpdateLoanItems();
   const { data: products = [], isLoading: productsLoading } = useProducts();
 
   useEffect(() => {
-    if (loan) {
-      setEditedItems([...loan.items]);
-      setIsEditing(false);
-      setShowAddProduct(false);
-      setSearchTerm("");
+    if (isOpen && loan?.loan_id) {
+      setShouldFetchLatest(true);
+    } else {
+      setShouldFetchLatest(false);
     }
-  }, [loan]);
+  }, [isOpen, loan?.loan_id]);
+
+  useEffect(() => {
+    if (latestLoan && Array.isArray(latestLoan.items)) {
+      setEditedItems([...latestLoan.items]);
+    } else if (loan && Array.isArray(loan.items)) {
+      setEditedItems([...loan.items]);
+    } else {
+      setEditedItems([]);
+    }
+  }, [loan, latestLoan]);
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -54,10 +87,15 @@ export default function LoanDetailModal({
   };
 
   const handleEditClick = () => {
-    if (loan) {
-      setEditedItems([...loan.items]);
-      setIsEditing(true);
-    }
+    const currentItems =
+      latestLoan && Array.isArray(latestLoan.items)
+        ? [...latestLoan.items]
+        : loan && Array.isArray(loan.items)
+        ? [...loan.items]
+        : [];
+
+    setEditedItems(currentItems);
+    setIsEditing(true);
   };
 
   const handleSaveClick = () => {
@@ -73,10 +111,12 @@ export default function LoanDetailModal({
           onSuccess: () => {
             setIsEditing(false);
             setShowAddProduct(false);
+            refetchLoan();
+            toast.success("Berhasil mengubah perangkat yang dipinjam");
             onDataUpdated?.();
           },
           onError: (error) => {
-            console.error("Gagal update items:", error);
+            toast.error("Gagal mengubah perangkat yang dipinjam");
           },
         }
       );
@@ -84,9 +124,14 @@ export default function LoanDetailModal({
   };
 
   const handleCancelEdit = () => {
-    if (loan) {
-      setEditedItems([...loan.items]);
-    }
+    const currentItems =
+      latestLoan && Array.isArray(latestLoan.items)
+        ? [...latestLoan.items]
+        : loan && Array.isArray(loan.items)
+        ? [...loan.items]
+        : [];
+
+    setEditedItems(currentItems);
     setIsEditing(false);
     setShowAddProduct(false);
   };
@@ -150,19 +195,40 @@ export default function LoanDetailModal({
 
   if (!isOpen || !loan) return null;
 
-  const currentItems = isEditing ? editedItems : loan.items;
-  const sptFileUrl = loan.report ? getSptFileUrl(loan.report.spt_file) : null;
+  const displayLoan = loan;
+  const currentItems = isEditing
+    ? editedItems
+    : latestLoan && Array.isArray(latestLoan.items)
+    ? latestLoan.items
+    : loan && Array.isArray(loan.items)
+    ? loan.items
+    : [];
+
+  const sptFileUrl = displayLoan.report
+    ? getSptFileUrl(displayLoan.report.spt_file)
+    : null;
+  const ownerName =
+    displayLoan.owner?.name || displayLoan.owner?.username || "-";
+  const borrowerName =
+    displayLoan.borrower?.name || displayLoan.borrower?.username || "-";
+  const invitedUsers = displayLoan.invited_users || [];
 
   return (
     <div className="modal modal-open">
       <div className="modal-box p-0 max-w-2xl max-h-[80vh] flex flex-col bg-white border border-gray-200">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
               Detail Peminjaman
             </h2>
-            <p className="text-xs text-gray-500 mt-1">ID: {loan.loan_id}</p>
+            {loanLoading && (
+              <div className="flex items-center gap-1 mt-1">
+                <span className="loading loading-spinner loading-xs text-info"></span>
+                <span className="text-xs text-info">
+                  Memperbarui data perangkat...
+                </span>
+              </div>
+            )}
           </div>
           <button
             onClick={onClose}
@@ -172,91 +238,97 @@ export default function LoanDetailModal({
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {/* Status */}
           <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
             <span
               className={`px-3 py-1 rounded-full text-xs font-medium ${
-                loan.status === "REQUESTED"
+                displayLoan.status === "REQUESTED"
                   ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
-                  : loan.status === "APPROVED"
+                  : displayLoan.status === "APPROVED"
                   ? "bg-green-100 text-green-800 border border-green-200"
-                  : loan.status === "REJECTED"
+                  : displayLoan.status === "REJECTED"
                   ? "bg-red-100 text-red-800 border border-red-200"
+                  : displayLoan.status === "RETURNED"
+                  ? "bg-red-100 text-indigo-500- border border-indigo-200"
                   : "bg-blue-100 text-blue-800 border border-blue-200"
               }`}
             >
-              {loan.status === "REQUESTED"
+              {displayLoan.status === "REQUESTED"
                 ? "Menunggu"
-                : loan.status === "APPROVED"
+                : displayLoan.status === "APPROVED"
                 ? "Disetujui"
-                : loan.status === "REJECTED"
+                : displayLoan.status === "REJECTED"
                 ? "Ditolak"
-                : "Dikembalikan"}
+                : displayLoan.status === "RETURNED"
+                ? "Dikembalikan"
+                : "Selesai"}
             </span>
             <span className="text-xs text-gray-600">
-              {formatDate(loan.updated_at)}
+              {formatDate(displayLoan.updated_at)}
             </span>
           </div>
 
           {/* User Info */}
           <div className="grid grid-cols-2 gap-3 p-3 bg-white rounded-lg border border-gray-200">
             <div>
-              <label className="text-xs text-gray-500 font-medium">
-                Pemilik
-              </label>
+              <div className="flex gap-2 items-center text-xs text-gray-500 font-medium">
+                <UserPen className="w-4 h-4" color="black" />
+                <label>Peminjam</label>
+              </div>
               <p className="text-sm text-gray-800 font-medium mt-1">
-                {loan.owner.name || loan.owner.username}
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-gray-500 font-medium">
-                Peminjam
-              </label>
-              <p className="text-sm text-gray-800 font-medium mt-1">
-                {loan.borrower.name || loan.borrower.username}
+                {borrowerName}
               </p>
             </div>
           </div>
 
           {/* Participants */}
-          {loan.invited_users && loan.invited_users.length > 0 && (
+          {invitedUsers.length > 0 && (
             <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <label className="text-xs text-gray-500 font-medium mb-2 block">
-                Pengguna Diundang ({loan.invited_users.length})
-              </label>
+              <div className="flex gap-2 text-xs text-gray-500 font-medium">
+                <Users className="w-4 h-4" color="black" />
+                <label className=" mb-2 block">
+                  Pengguna Diundang ({invitedUsers.length})
+                </label>
+              </div>
               <div className="flex flex-wrap gap-1">
-                {loan.invited_users.map((user) => (
+                {invitedUsers.map((user) => (
                   <span
                     key={user.user_id}
                     className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-300"
                   >
-                    {user.name || user.username}
+                    {user.name || user.username || user.user_id}
                   </span>
                 ))}
               </div>
             </div>
           )}
 
-          {/* Items */}
+          {/* Items Section */}
           <div className="p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs text-gray-500 font-medium">
-                Perangkat ({currentItems.length})
-                {isUpdating && (
-                  <span className="ml-2 text-orange-500">(Menyimpan...)</span>
+              <div className="flex gap-2">
+                <Box className="w-4 h-4" color="black" />
+                <label className="text-xs text-gray-500 font-medium">
+                  Perangkat ({currentItems.length})
+                  {isUpdating && (
+                    <span className="ml-2 text-orange-500">(Menyimpan...)</span>
+                  )}
+                  {loanLoading && (
+                    <span className="ml-2 text-blue-500">(Memperbarui...)</span>
+                  )}
+                </label>
+              </div>
+              {displayLoan.status === "REQUESTED" &&
+                !isEditing &&
+                !isUpdating && (
+                  <button
+                    onClick={handleEditClick}
+                    className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs font-medium border border-blue-200 transition-colors"
+                  >
+                    <Edit className="w-3 h-3" />
+                    Edit Perangkat
+                  </button>
                 )}
-              </label>
-              {loan.status === "REQUESTED" && !isEditing && !isUpdating && (
-                <button
-                  onClick={handleEditClick}
-                  className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs font-medium border border-blue-200 transition-colors"
-                >
-                  <Edit className="w-3 h-3" />
-                  Edit
-                </button>
-              )}
             </div>
 
             {/* Edit Mode Controls */}
@@ -340,9 +412,6 @@ export default function LoanDetailModal({
                       <p className="text-sm font-medium text-gray-800 truncate">
                         {item.product_name}
                       </p>
-                      <p className="text-xs text-gray-500 truncate">
-                        ID: {item.product_id}
-                      </p>
                     </div>
 
                     {isEditing ? (
@@ -388,28 +457,35 @@ export default function LoanDetailModal({
           </div>
 
           {/* Report */}
-          {loan.report && (
+          {displayLoan.report && (
             <div className="p-3 bg-white rounded-lg border border-gray-200 space-y-3">
-              <label className="text-xs text-gray-500 font-medium block">
-                Informasi SPT
-              </label>
+              <div className="flex gap-2 text-xs text-gray-500 font-medium ">
+                <Mail className="w-4 h-4" color="black" />
+                <label className="block">Informasi SPT</label>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <p className="text-xs text-gray-500">No. SPT</p>
                   <p className="text-sm text-gray-800 font-medium">
-                    {loan.report.spt_number}
+                    {displayLoan.report.spt_number}
                   </p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Tujuan</p>
-                  <p className="text-sm text-gray-800 truncate">
-                    {loan.report.destination}
+                  <p className="text-sm text-gray-800 line-clamp-3">
+                    {displayLoan.report.destination}
                   </p>
                 </div>
-                <div className="col-span-2">
+                <div>
                   <p className="text-xs text-gray-500">Tempat Pelaksanaan</p>
                   <p className="text-sm text-gray-800">
-                    {loan.report.place_of_execution}
+                    {displayLoan.report.place_of_execution}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Tempat Pelaksanaan</p>
+                  <p className="text-sm text-gray-800">
+                    {formatDate(displayLoan.report.end_date)}
                   </p>
                 </div>
                 {sptFileUrl && (
@@ -433,11 +509,11 @@ export default function LoanDetailModal({
           <div className="p-3 bg-white rounded-lg border border-gray-200 text-xs text-gray-600 space-y-1">
             <p>
               <span className="font-medium">Dibuat:</span>{" "}
-              {formatDate(loan.created_at)}
+              {formatDate(displayLoan.created_at)}
             </p>
             <p>
               <span className="font-medium">Diupdate:</span>{" "}
-              {formatDate(loan.updated_at)}
+              {formatDate(displayLoan.updated_at)}
             </p>
           </div>
         </div>
@@ -468,10 +544,10 @@ export default function LoanDetailModal({
                 </button>
               </>
             ) : (
-              loan.status === "REQUESTED" &&
+              displayLoan.status === "REQUESTED" &&
               !isUpdating && (
                 <button
-                  onClick={() => onApprove?.(loan.loan_id)}
+                  onClick={() => onApprove?.(displayLoan.loan_id)}
                   disabled={isApproving}
                   className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
                 >

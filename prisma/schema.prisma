@@ -13,12 +13,12 @@ model User {
   createdAt        DateTime          @default(now())
   password         String
   role             Role              @default(BORROWER)
-  status           LoanStatus?
   updatedAt        DateTime          @updatedAt
   user_id          String            @id @db.VarChar(32)
   username         String            @unique
   email            String?
   noHandphone      String?
+  status           LoanStatus?
   loans            Loan[]            @relation("UserLoans")
   loanParticipants LoanParticipant[]
 
@@ -46,7 +46,6 @@ model Product {
   loanItems       LoanItem[]
   category        Category   @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
 
-
   @@index([category_id])
   @@index([product_avaible])
 }
@@ -61,7 +60,7 @@ model Loan {
   items        LoanItem[]
   participants LoanParticipant[]
   report       Report?
-  
+
   @@index([borrower_id])
   @@index([status])
   @@index([created_at])
@@ -113,6 +112,7 @@ enum LoanStatus {
   APPROVED
   REJECTED
   RETURNED
+  DONE
 }
 
 enum ParticipantRole {

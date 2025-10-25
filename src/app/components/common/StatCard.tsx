@@ -4,7 +4,7 @@ interface StatCardProps {
   title: string;
   value: number | string;
   subtitle: string;
-  color: "blue" | "green" | "purple" | "red" | "orange";
+  color: "blue" | "green" | "purple" | "red" | "orange" | "purple" | "yellow";
   compact?: boolean;
 }
 
@@ -22,6 +22,7 @@ export default function StatCard({
     purple: "bg-purple-50 border-purple-200 text-purple-600",
     red: "bg-red-50 border-red-200 text-red-600",
     orange: "bg-orange-50 border-orange-200 text-orange-600",
+    yellow: "bg-yellow-50 border-yellow-200 text-yellow-600",
   };
 
   if (compact) {

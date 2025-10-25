@@ -9,7 +9,6 @@ export async function GET() {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // Jalankan query secara parallel dengan Promise.all
     const [
       productsData,
       usersData,
@@ -20,24 +19,20 @@ export async function GET() {
       allLoansForStats,
       recentUsers,
     ] = await Promise.all([
-      // Products stats
       prisma.product.aggregate({
         _count: true,
         _sum: {
           product_avaible: true,
         },
       }),
-      // Users stats
       prisma.user.groupBy({
         by: ["role"],
         _count: true,
       }),
-      // Loans stats by status
       prisma.loan.groupBy({
         by: ["status"],
         _count: true,
       }),
-      // Low stock products
       prisma.product.findMany({
         select: {
           product_id: true,
@@ -59,7 +54,6 @@ export async function GET() {
         },
         take: 5,
       }),
-      // Pending loans
       prisma.loan.findMany({
         select: {
           loan_id: true,
@@ -90,7 +84,6 @@ export async function GET() {
           created_at: "desc",
         },
       }),
-      // Recent loans (last week)
       prisma.loan.count({
         where: {
           created_at: {
@@ -98,7 +91,6 @@ export async function GET() {
           },
         },
       }),
-      // All loans for trend and product popularity (last 6 months)
       prisma.loan.findMany({
         select: {
           loan_id: true,
@@ -125,7 +117,6 @@ export async function GET() {
           created_at: "desc",
         },
       }),
-      // Recent users
       prisma.user.findMany({
         select: {
           user_id: true,
@@ -141,7 +132,6 @@ export async function GET() {
       }),
     ]);
 
-    // Process loan stats
     const loanStats = loansData.reduce(
       (acc, curr) => {
         acc[curr.status.toLowerCase()] = curr._count;
@@ -152,10 +142,10 @@ export async function GET() {
         approved: 0,
         rejected: 0,
         returned: 0,
+        done: 0, 
       } as Record<string, number>
     );
 
-    // Process user stats
     const userStats = usersData.reduce(
       (acc, curr) => {
         if (curr.role === "ADMIN") acc.admin = curr._count;
@@ -165,7 +155,6 @@ export async function GET() {
       { admin: 0, borrower: 0 }
     );
 
-    // Calculate out of stock
     const outOfStockCount = await prisma.product.count({
       where: { product_avaible: 0 },
     });
@@ -184,6 +173,7 @@ export async function GET() {
         approvedLoans: loanStats.approved || 0,
         rejectedLoans: loanStats.rejected || 0,
         returnedLoans: loanStats.returned || 0,
+        doneLoans: loanStats.done || 0, 
         recentLoans: recentLoansCount,
       },
       lowStockProducts,

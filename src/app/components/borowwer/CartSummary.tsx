@@ -45,6 +45,7 @@ export default function CartSummary({
   const [step, setStep] = useState(1);
   const [docsFile, setDocsFile] = useState<File | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([]);
+  const [extractedUserNames, setExtractedUserNames] = useState<string[]>([]);
   const [reportData, setReportData] = useState<ReportData>({
     spt_number: "",
     destination: "",
@@ -52,6 +53,10 @@ export default function CartSummary({
     start_date: "",
     end_date: "",
   });
+
+  const handleUsersExtracted = (users: string[]) => {
+    setExtractedUserNames(users);
+  };
 
   const nextStep = () => setStep((prev) => Math.min(prev + 1, 3));
   const prevStep = () => setStep((prev) => Math.max(prev - 1, 1));
@@ -116,6 +121,7 @@ export default function CartSummary({
               reportData={reportData}
               onFileChange={setDocsFile}
               onReportChange={setReportData}
+              onUsersExtracted={handleUsersExtracted}
             />
           )}
 
@@ -123,6 +129,7 @@ export default function CartSummary({
             <CartStep3
               selectedUsers={selectedUsers}
               onUsersChange={setSelectedUsers}
+              extractedUserNames={extractedUserNames}
             />
           )}
         </div>

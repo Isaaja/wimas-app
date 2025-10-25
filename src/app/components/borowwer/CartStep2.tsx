@@ -1,6 +1,6 @@
 // components/CartStep2And3.tsx
 import { useState } from "react";
-import { Calendar, MapPin, FileText, X } from "lucide-react";
+import { Calendar, FileText, X, Loader2, Sparkles } from "lucide-react";
 
 interface ReportData {
   spt_number: string;
@@ -15,6 +15,7 @@ interface CartStep2And3Props {
   reportData: ReportData;
   onFileChange: (file: File | null) => void;
   onReportChange: (data: ReportData) => void;
+  onUsersExtracted?: (users: string[]) => void;
 }
 
 export default function CartStep2({
@@ -22,10 +23,14 @@ export default function CartStep2({
   reportData,
   onFileChange,
   onReportChange,
+  onUsersExtracted,
 }: CartStep2And3Props) {
   const [localDocsFile, setLocalDocsFile] = useState<File | null>(docsFile);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingError, setProcessingError] = useState<string | null>(null);
+  const [isAutoFilled, setIsAutoFilled] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
 
     if (file) {
@@ -43,12 +48,63 @@ export default function CartStep2({
 
       setLocalDocsFile(file);
       onFileChange(file);
+
+      // Auto-process PDF untuk extract data
+      await processPDF(file);
+    }
+  };
+
+  const processPDF = async (file: File) => {
+    setIsProcessing(true);
+    setProcessingError(null);
+    setIsAutoFilled(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("pdf", file);
+
+      // Call Python service directly
+      const response = await fetch("http://localhost:8000/process-pdf", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Gagal memproses PDF");
+      }
+
+      const result = await response.json();
+
+      // Auto-fill report data dari response
+      if (result.report) {
+        onReportChange({
+          spt_number: result.report.spt_number || "",
+          destination: result.report.destination || "",
+          place_of_execution: result.report.place_of_execution || "",
+          start_date: result.report.start_date || "",
+          end_date: result.report.end_date || "",
+        });
+        setIsAutoFilled(true);
+      }
+
+      // Pass extracted users to parent if callback provided
+      if (result.user && onUsersExtracted) {
+        onUsersExtracted(result.user);
+      }
+    } catch (error: any) {
+      console.error("Error processing PDF:", error);
+      setProcessingError(error.message || "Gagal memproses PDF");
+    } finally {
+      setIsProcessing(false);
     }
   };
 
   const handleRemoveFile = () => {
     setLocalDocsFile(null);
     onFileChange(null);
+    setIsAutoFilled(false);
+    setProcessingError(null);
   };
 
   const handleReportFieldChange = (field: keyof ReportData, value: string) => {
@@ -74,6 +130,9 @@ export default function CartStep2({
           <FileText className="w-5 h-5" />
           <div>
             <h3 className="font-bold">Upload Dokumen SPT</h3>
+            <p className="text-sm">
+              Upload PDF SPT untuk auto-fill data kegiatan
+            </p>
           </div>
         </div>
 
@@ -82,14 +141,56 @@ export default function CartStep2({
           accept=".pdf,application/pdf"
           className="file-input file-input-bordered w-full bg-white border-gray-300"
           onChange={handleFileChange}
+          disabled={isProcessing}
         />
 
-        {localDocsFile && (
+        {/* Processing Indicator */}
+        {isProcessing && (
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              <div>
+                <p className="text-sm text-blue-700 font-medium">
+                  🔄 Memproses dokumen SPT...
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Mengekstrak data dari PDF menggunakan AI
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Auto-filled Success */}
+        {isAutoFilled && !isProcessing && (
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-green-600" />
               <div>
                 <p className="text-sm text-green-700 font-medium">
-                  ✅ File terpilih: {localDocsFile.name}
+                  ✨ Data berhasil diekstrak dan diisi otomatis!
+                </p>
+                <p className="text-xs text-green-600 mt-1">
+                  Silakan periksa dan edit jika diperlukan
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {processingError && (
+          <div className="alert alert-error">
+            <span>❌ {processingError}</span>
+          </div>
+        )}
+
+        {localDocsFile && (
+          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-700 font-medium">
+                  📄 File: {localDocsFile.name}
                 </p>
                 <p className="text-xs text-gray-600 mt-1">
                   Ukuran: {(localDocsFile.size / 1024 / 1024).toFixed(2)} MB
@@ -135,16 +236,25 @@ export default function CartStep2({
           <label className="label">
             <span className="label-text font-medium">Nomor SPT *</span>
           </label>
-          <input
-            type="text"
-            className="input input-bordered bg-white border-black"
-            placeholder="Contoh: 001/SPT/IT/2024"
-            value={reportData.spt_number}
-            onChange={(e) =>
-              handleReportFieldChange("spt_number", e.target.value)
-            }
-            required
-          />
+          {isProcessing ? (
+            <div className="relative h-12 w-80 bg-white border border-gray-300 rounded-lg overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse"></div>
+              <div className="absolute inset-0 flex items-center px-4">
+                <div className="h-4 bg-gray-300 rounded w-40 animate-pulse"></div>
+              </div>
+            </div>
+          ) : (
+            <input
+              type="text"
+              className="input input-bordered bg-white border-black"
+              placeholder="Contoh: 001/SPT/IT/2024"
+              value={reportData.spt_number}
+              onChange={(e) =>
+                handleReportFieldChange("spt_number", e.target.value)
+              }
+              required
+            />
+          )}
         </div>
 
         {/* Tujuan Kegiatan */}
@@ -152,16 +262,25 @@ export default function CartStep2({
           <label className="label">
             <span className="label-text font-medium">Tujuan Kegiatan *</span>
           </label>
-          <input
-            type="text"
-            className="input input-bordered bg-white border-black"
-            placeholder="Contoh: Maintenance Server"
-            value={reportData.destination}
-            onChange={(e) =>
-              handleReportFieldChange("destination", e.target.value)
-            }
-            required
-          />
+          {isProcessing ? (
+            <div className="relative h-12 w-80 bg-white border border-gray-300 rounded-lg overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse"></div>
+              <div className="absolute inset-0 flex items-center px-4">
+                <div className="h-4 bg-gray-300 rounded w-48 animate-pulse"></div>
+              </div>
+            </div>
+          ) : (
+            <input
+              type="text"
+              className="input input-bordered bg-white border-black"
+              placeholder="Contoh: Maintenance Server"
+              value={reportData.destination}
+              onChange={(e) =>
+                handleReportFieldChange("destination", e.target.value)
+              }
+              required
+            />
+          )}
         </div>
 
         {/* Tempat Pelaksanaan */}
@@ -169,57 +288,86 @@ export default function CartStep2({
           <label className="label">
             <span className="label-text font-medium">Tempat Pelaksanaan *</span>
           </label>
-          <input
-            type="text"
-            className="input input-bordered bg-white border-black"
-            placeholder="Contoh: Kantor Pusat"
-            value={reportData.place_of_execution}
-            onChange={(e) =>
-              handleReportFieldChange("place_of_execution", e.target.value)
-            }
-            required
-          />
+          {isProcessing ? (
+            <div className="relative h-12 w-80 bg-white border border-gray-300 rounded-lg overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse"></div>
+              <div className="absolute inset-0 flex items-center px-4">
+                <div className="h-4 bg-gray-300 rounded w-36 animate-pulse"></div>
+              </div>
+            </div>
+          ) : (
+            <input
+              type="text"
+              className="input input-bordered bg-white border-black"
+              placeholder="Contoh: Kantor Pusat"
+              value={reportData.place_of_execution}
+              onChange={(e) =>
+                handleReportFieldChange("place_of_execution", e.target.value)
+              }
+              required
+            />
+          )}
         </div>
 
         {/* Tanggal Mulai & Selesai */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="form-control scheme-light">
-            <label className="input bg-white text-black input-warning">
-              <span className="label">
-                <Calendar className="w-4 h-4" />
-                Tanggal Mulai *
-              </span>
-              <input
-                type="date"
-                value={reportData.start_date}
-                onChange={(e) =>
-                  handleReportFieldChange("start_date", e.target.value)
-                }
-                min={new Date().toISOString().split("T")[0]}
-                required
-              />
-            </label>
+            {isProcessing ? (
+              <div className="relative h-10 w-full bg-white rounded-lg border-2 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse"></div>
+                <div className="absolute inset-0 flex items-center gap-2 px-4">
+                  <div className="w-4 h-4 bg-gray-300 rounded animate-pulse"></div>
+                  <div className="h-3 bg-gray-300 rounded w-28 animate-pulse"></div>
+                </div>
+              </div>
+            ) : (
+              <label className="input bg-white text-black input-warning">
+                <span className="label">
+                  <Calendar className="w-4 h-4" />
+                  Tanggal Mulai *
+                </span>
+                <input
+                  type="date"
+                  value={reportData.start_date}
+                  onChange={(e) =>
+                    handleReportFieldChange("start_date", e.target.value)
+                  }
+                  min={new Date().toISOString().split("T")[0]}
+                  required
+                />
+              </label>
+            )}
           </div>
 
           <div className="form-control scheme-light">
-            <label className="input bg-white text-black input-warning">
-              <span className="label ">
-                <Calendar className="w-4 h-4" />
-                Tanggal Selesai
-              </span>
-              <input
-                type="date"
-                value={reportData.end_date}
-                onChange={(e) =>
-                  handleReportFieldChange("end_date", e.target.value)
-                }
-                min={
-                  reportData.start_date ||
-                  new Date().toISOString().split("T")[0]
-                }
-                required
-              />
-            </label>
+            {isProcessing ? (
+              <div className="relative h-10 w-full bg-white rounded-lg border-2 overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-100 to-gray-200 animate-pulse"></div>
+                <div className="absolute inset-0 flex items-center gap-2 px-4">
+                  <div className="w-4 h-4 bg-gray-300 rounded animate-pulse"></div>
+                  <div className="h-3 bg-gray-300 rounded w-28 animate-pulse"></div>
+                </div>
+              </div>
+            ) : (
+              <label className="input bg-white text-black input-warning">
+                <span className="label ">
+                  <Calendar className="w-4 h-4" />
+                  Tanggal Selesai
+                </span>
+                <input
+                  type="date"
+                  value={reportData.end_date}
+                  onChange={(e) =>
+                    handleReportFieldChange("end_date", e.target.value)
+                  }
+                  min={
+                    reportData.start_date ||
+                    new Date().toISOString().split("T")[0]
+                  }
+                  required
+                />
+              </label>
+            )}
           </div>
         </div>
 

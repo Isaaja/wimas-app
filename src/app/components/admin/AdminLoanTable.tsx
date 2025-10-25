@@ -7,9 +7,9 @@ import {
   CheckCircle,
   XCircle,
   View,
-  Calendar,
   X,
   Filter,
+  CheckCheck,
 } from "lucide-react";
 import { Loan } from "@/hooks/useLoans";
 import Loading from "../common/Loading";
@@ -20,9 +20,11 @@ interface AdminLoanTableProps {
   isLoading?: boolean;
   onApprove?: (loanId: string) => void;
   onReject?: (loanId: string) => void;
+  onDone?: (loanId: string) => void;
   onViewDetail: (loanId: string) => void;
   isApproving?: boolean;
   isRejecting?: boolean;
+  isDoing?: boolean;
   actioningLoanId?: string | null;
   currentPage: number;
   itemsPerPage: number;
@@ -35,9 +37,11 @@ export default function AdminLoanTable({
   isLoading = false,
   onApprove,
   onReject,
+  onDone,
   onViewDetail,
   isApproving = false,
   isRejecting = false,
+  isDoing = false,
   actioningLoanId = null,
   currentPage,
   itemsPerPage,
@@ -62,7 +66,6 @@ export default function AdminLoanTable({
     return format(date, "dd MMM yyyy", { locale: id });
   };
 
-  // Filter data berdasarkan range tanggal
   const filteredLoans = useMemo(() => {
     if (!startDate && !endDate) return loans;
 
@@ -94,6 +97,7 @@ export default function AdminLoanTable({
       APPROVED: { label: "Disetujui", class: "badge-success" },
       REJECTED: { label: "Ditolak", class: "badge-error" },
       RETURNED: { label: "Dikembalikan", class: "badge-info" },
+      DONE: { label: "Selesai", class: "badge-success" },
     };
     return statusMap[status] || { label: status, class: "badge-ghost" };
   };
@@ -132,7 +136,6 @@ export default function AdminLoanTable({
     onPageChange(1);
   };
 
-  // Quick filter options
   const quickFilters = [
     { label: "Hari Ini", days: 0 },
     { label: "7 Hari", days: 7 },
@@ -185,12 +188,9 @@ export default function AdminLoanTable({
 
   return (
     <div className="space-y-4">
-      {/* Compact Filter Section */}
-      <div className="bg-white p-3 rounded-lg border border-gray-200">
+      <div className="bg-gray-100 p-3 rounded-lg border border-gray-200 shadow-lg">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          {/* Left Side - Filter Controls */}
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-            {/* Filter Trigger */}
             <button
               onClick={() => setShowDatePicker(!showDatePicker)}
               className={`btn btn-sm gap-2 ${
@@ -283,10 +283,10 @@ export default function AdminLoanTable({
         )}
       </div>
 
-      {/* Table Section - TIDAK DIUBAH */}
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
+      {/* Table Section */}
+      <div className="overflow-x-auto bg-white rounded-lg shadow-lg">
         <table className="table w-full">
-          <thead className="bg-gray-100 text-gray-700">
+          <thead className="bg-gray-200 text-gray-700">
             <tr>
               <th className="w-12">No</th>
               <th className="w-32">Peminjam</th>
@@ -301,7 +301,7 @@ export default function AdminLoanTable({
             {currentLoans.map((loan, index) => {
               const statusInfo = getStatusBadge(loan.status);
               const isProcessing =
-                (isApproving || isRejecting) &&
+                (isApproving || isRejecting || isDoing) &&
                 actioningLoanId === loan.loan_id;
               const sptFileUrl = getSptFileUrl(loan.report?.spt_file);
 
@@ -392,6 +392,7 @@ export default function AdminLoanTable({
                               <CheckCircle className="w-3 h-3" />
                             )}
                           </button>
+
                           <button
                             onClick={() => onReject?.(loan.loan_id)}
                             disabled={isProcessing}
@@ -408,7 +409,27 @@ export default function AdminLoanTable({
                         </>
                       )}
 
-                      {mode === "history" && (
+                      {/* Tombol DONE untuk status RETURNED */}
+                      {loan.status === "RETURNED" && (
+                        <button
+                          onClick={() => onDone?.(loan.loan_id)}
+                          disabled={isProcessing}
+                          className="btn btn-info btn-xs tooltip"
+                          data-tip="Selesaikan Peminjaman"
+                        >
+                          {isProcessing && actioningLoanId === loan.loan_id ? (
+                            <span className="loading loading-spinner loading-xs text-info"></span>
+                          ) : (
+                            <CheckCheck className="w-3 h-3" />
+                          )}
+                        </button>
+                      )}
+
+                      {/* Tombol Lihat Detail untuk semua status selain REQUESTED */}
+                      {(mode === "history" ||
+                        (mode === "active" &&
+                          loan.status !== "REQUESTED" &&
+                          loan.status !== "RETURNED")) && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}
                           className="btn btn-ghost btn-xs text-blue-600 tooltip"
@@ -418,7 +439,8 @@ export default function AdminLoanTable({
                         </button>
                       )}
 
-                      {mode === "active" && loan.status !== "REQUESTED" && (
+                      {/* Tombol Lihat Detail untuk status RETURNED (selain tombol DONE) */}
+                      {loan.status === "RETURNED" && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}
                           className="btn btn-ghost btn-xs text-blue-600 tooltip"
@@ -436,7 +458,7 @@ export default function AdminLoanTable({
         </table>
       </div>
 
-      {/* Pagination - TIDAK DIUBAH */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
           <div className="flex text-sm text-gray-600">

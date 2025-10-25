@@ -16,6 +16,7 @@ import {
   Calendar,
   ClipboardList,
   Zap,
+  CheckSquare,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -94,6 +95,7 @@ export default function BorrowerDashboard() {
       APPROVED: 0,
       REJECTED: 0,
       RETURNED: 0,
+      DONE: 0, // TAMBAHKAN STATUS DONE
     };
 
     loanHistory.loans.forEach((loan) => {
@@ -102,24 +104,29 @@ export default function BorrowerDashboard() {
 
     return [
       {
+        status: "Menunggu",
+        count: statusCount.REQUESTED,
+        color: "#f59e0b", // yellow-500
+      },
+      {
         status: "Disetujui",
         count: statusCount.APPROVED,
-        color: "#10b981",
+        color: "#10b981", // green-500
       },
       {
         status: "Ditolak",
         count: statusCount.REJECTED,
-        color: "#ef4444",
+        color: "#ef4444", // red-500
       },
       {
         status: "Dikembalikan",
         count: statusCount.RETURNED,
-        color: "#3b82f6",
+        color: "#3b82f6", // blue-500
       },
       {
-        status: "Menunggu",
-        count: statusCount.REQUESTED,
-        color: "#f59e0b",
+        status: "Selesai",
+        count: statusCount.DONE,
+        color: "#8b5cf6", // violet-500
       },
     ].filter((item) => item.count > 0);
   }, [loanHistory]);
@@ -128,10 +135,20 @@ export default function BorrowerDashboard() {
     if (!loanHistory?.loans || loanHistory.loans.length === 0) return 0;
 
     const successfulLoans = loanHistory.loans.filter(
-      (loan) => loan.status === "APPROVED" || loan.status === "RETURNED"
+      (loan) =>
+        loan.status === "APPROVED" ||
+        loan.status === "RETURNED" ||
+        loan.status === "DONE"
     ).length;
 
     return Math.round((successfulLoans / loanHistory.loans.length) * 100);
+  }, [loanHistory]);
+
+  const completedLoans = useMemo(() => {
+    if (!loanHistory?.loans) return 0;
+    return loanHistory.loans.filter(
+      (loan) => loan.status === "RETURNED" || loan.status === "DONE"
+    ).length;
   }, [loanHistory]);
 
   const popularProductsData = useMemo((): PopularProductData[] => {
@@ -273,10 +290,10 @@ export default function BorrowerDashboard() {
           />
 
           <StatCard
-            icon={History}
-            title="Riwayat"
-            value={loanHistory?.total || 0}
-            subtitle="Total"
+            icon={CheckSquare}
+            title="Selesai"
+            value={completedLoans}
+            subtitle="Peminjaman"
             color="purple"
             compact
           />
@@ -392,13 +409,21 @@ export default function BorrowerDashboard() {
                           )}
                         </div>
                       </div>
-                      {loan.status === "RETURNED" ? (
+                      {loan.status === "DONE" ? (
+                        <Badge color="bg-purple-100 text-purple-800 text-xs">
+                          Selesai
+                        </Badge>
+                      ) : loan.status === "RETURNED" ? (
                         <Badge color="bg-green-100 text-green-800 text-xs">
                           Kembali
                         </Badge>
                       ) : loan.status === "REJECTED" ? (
                         <Badge color="bg-red-100 text-red-800 text-xs">
                           Ditolak
+                        </Badge>
+                      ) : loan.status === "APPROVED" ? (
+                        <Badge color="bg-green-100 text-green-800 text-xs">
+                          Disetujui
                         </Badge>
                       ) : (
                         <Badge color="bg-yellow-100 text-yellow-800 text-xs">

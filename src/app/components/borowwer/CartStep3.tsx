@@ -12,11 +12,13 @@ interface SelectedUser {
 interface CartStep4Props {
   selectedUsers: SelectedUser[];
   onUsersChange: (users: SelectedUser[]) => void;
+  extractedUserNames?: string[];
 }
 
 export default function CartStep3({
   selectedUsers,
   onUsersChange,
+  extractedUserNames = [],
 }: CartStep4Props) {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: users = [], isLoading: isLoadingUsers } = useUsers();
@@ -108,6 +110,34 @@ export default function CartStep3({
     return statusMap[status] || { label: status, class: "badge-ghost" };
   };
 
+  // Auto-select users from extracted names
+  const handleAutoSelectExtractedUsers = () => {
+    const matchedUsers: SelectedUser[] = [];
+
+    extractedUserNames.forEach((extractedName) => {
+      const matchedUser = availableBorrowers.find((user) => {
+        const userName = user.name?.toLowerCase() || "";
+        const extracted = extractedName.toLowerCase();
+        return userName.includes(extracted) || extracted.includes(userName);
+      });
+
+      if (
+        matchedUser &&
+        !selectedUsers.find((u) => u.user_id === matchedUser.user_id)
+      ) {
+        matchedUsers.push({
+          user_id: matchedUser.user_id,
+          name: matchedUser.name || "",
+          username: matchedUser.username,
+        });
+      }
+    });
+
+    if (matchedUsers.length > 0) {
+      onUsersChange([...selectedUsers, ...matchedUsers]);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="alert alert-info">
@@ -121,6 +151,38 @@ export default function CartStep3({
           </p>
         </div>
       </div>
+
+      {/* Extracted Users dari PDF */}
+      {extractedUserNames.length > 0 && (
+        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="font-medium text-purple-800">
+                ✨ Anggota dari Dokumen SPT ({extractedUserNames.length})
+              </p>
+              <p className="text-xs text-purple-600 mt-1">
+                Diekstrak otomatis dari PDF yang diupload
+              </p>
+            </div>
+            <button
+              className="btn btn-sm btn-primary"
+              onClick={handleAutoSelectExtractedUsers}
+            >
+              Pilih Semua
+            </button>
+          </div>
+          <div className="bg-white p-3 rounded max-h-32 overflow-y-auto">
+            <ul className="text-sm text-purple-700 space-y-1">
+              {extractedUserNames.map((name, idx) => (
+                <li key={idx} className="flex items-center gap-2">
+                  <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                  {name}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       {/* Selected Users */}
       {selectedUsers.length > 0 && (
@@ -189,9 +251,6 @@ export default function CartStep3({
         ) : (
           <div className="divide-y">
             {availableUsers.map((user) => {
-              const loanStatus = getUserLoanStatus(user);
-              const statusInfo = getStatusBadge(loanStatus || "");
-
               return (
                 <div
                   key={user.user_id}
