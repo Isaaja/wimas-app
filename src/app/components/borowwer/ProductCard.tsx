@@ -67,7 +67,7 @@ export default function ProductCard({
                 Stok Habis
               </h3>
               <p className="text-sm text-gray-600">
-                Produk ini sedang tidak tersedia
+                {product.product_name} sedang tidak tersedia
               </p>
             </div>
           </div>
@@ -115,7 +115,7 @@ export default function ProductCard({
           {canBorrow && !isOutOfStock && (
             <div className="card-actions justify-center mt-4">
               <button
-                className="btn btn-primary btn-sm w-full"
+                className="btn btn-info btn-sm w-full"
                 onClick={openModal}
               >
                 Lihat Detail

@@ -12,6 +12,7 @@ import {
 import AdminLoanTable from "@/app/components/admin/AdminLoanTable";
 import LoanDetailModal from "@/app/components/admin/LoanDetailModal";
 import Swal from "sweetalert2";
+import { useRouter } from "next/navigation";
 
 export default function AdminPeminjamanPage() {
   const { loans, isLoading, isError, error, refetch } = useLoans("active");
@@ -24,6 +25,7 @@ export default function AdminPeminjamanPage() {
   const [itemsPerPage] = useState(5);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (loans && selectedLoan) {
@@ -112,6 +114,10 @@ export default function AdminPeminjamanPage() {
     setSelectedLoan(null);
   };
 
+  const handleViewNota = (loanId: string) => {
+    router.push(`/admin/nota/${loanId}`);
+  };
+
   if (isLoading) return <Loading />;
 
   if (isError)
@@ -154,6 +160,7 @@ export default function AdminPeminjamanPage() {
       <LoanDetailModal
         loan={selectedLoan}
         isOpen={isModalOpen}
+        onNota={handleViewNota}
         onClose={handleCloseModal}
         onApprove={handleApprove}
         onReject={handleReject}

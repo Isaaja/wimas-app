@@ -12,6 +12,7 @@ import {
   RefreshCcwDot,
 } from "lucide-react";
 import LoanDetail from "./LoanDetail";
+import ReturnModal from "./ReturnModal";
 import Swal from "sweetalert2";
 import { useReturnLoan } from "@/hooks/useLoans";
 import { useRouter } from "next/navigation";
@@ -58,6 +59,7 @@ export default function LoanTable({
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [loanToReturn, setLoanToReturn] = useState<Loan | null>(null);
   const { mutate: returnLoan, isPending: isReturning } = useReturnLoan();
   const router = useRouter();
 
@@ -89,7 +91,13 @@ export default function LoanTable({
     return `/${sptFile}`;
   };
 
-  const handleReturn = async (loanId: string) => {
+  const handleReturn = (loan: Loan) => {
+    setLoanToReturn(loan);
+  };
+
+  const confirmReturn = async () => {
+    if (!loanToReturn) return;
+
     const result = await Swal.fire({
       title: "Konfirmasi Pengembalian",
       text: "Apakah Anda yakin ingin mengembalikan barang?",
@@ -102,11 +110,18 @@ export default function LoanTable({
     });
 
     if (result.isConfirmed) {
-      returnLoan(loanId, {
-        onSuccess: () => {},
-        onError: (error) => {},
+      returnLoan(loanToReturn.loan_id, {
+        onSuccess: () => {
+          setLoanToReturn(null);
+        },
+        onError: (error) => {
+        },
       });
     }
+  };
+
+  const handleCloseReturnModal = () => {
+    setLoanToReturn(null);
   };
 
   const handleViewNota = (loanId: string) => {
@@ -250,7 +265,6 @@ export default function LoanTable({
                     {/* Kolom Aksi */}
                     <td className="border-t border-black/10">
                       <div className="flex justify-center items-center gap-1">
-                        {/* Tombol Lihat Detail - selalu tersedia */}
                         <button
                           className="btn btn-ghost btn-xs text-blue-500 tooltip"
                           data-tip="Lihat Detail"
@@ -259,14 +273,12 @@ export default function LoanTable({
                           <View className="w-4 h-4" />
                         </button>
 
-                        {/* Tombol khusus untuk status APPROVED */}
                         {loan.status === "APPROVED" && (
                           <>
-                            {/* Tombol Return */}
                             <button
                               className="btn btn-ghost btn-xs text-orange-600 tooltip"
                               data-tip="Kembalikan Barang"
-                              onClick={() => handleReturn(loan.loan_id)}
+                              onClick={() => handleReturn(loan)}
                               disabled={isProcessing}
                             >
                               {isProcessing ? (
@@ -287,7 +299,7 @@ export default function LoanTable({
         </div>
       </div>
 
-      {/* Pagination dengan desain baru */}
+      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
           <div className="flex text-sm text-gray-600">
@@ -311,6 +323,14 @@ export default function LoanTable({
           </div>
         </div>
       )}
+
+      <ReturnModal
+        loan={loanToReturn}
+        isOpen={!!loanToReturn}
+        isReturning={isReturning}
+        onClose={handleCloseReturnModal}
+        onConfirm={confirmReturn}
+      />
 
       <LoanDetail
         loan={selectedLoan}

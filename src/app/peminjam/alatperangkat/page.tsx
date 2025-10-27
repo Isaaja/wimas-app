@@ -7,11 +7,19 @@ import ProductCard from "@/app/components/borowwer/ProductCard";
 import { useLoans, type LoanItem } from "@/hooks/useLoans";
 import { useCheckUserLoan } from "@/hooks/useLoans";
 import { toast } from "react-toastify";
-import { MessageSquareWarning, ArrowRight, ShoppingBag, X } from "lucide-react";
+import { ArrowRight, ShoppingBag, X } from "lucide-react";
 import CartSummary from "@/app/components/borowwer/CartSummary";
 import debounce from "lodash.debounce";
 import Loading from "@/app/components/common/Loading";
 import { useRouter } from "next/navigation";
+
+function sortProductsWithOutOfStockLast(products: any[]): any[] {
+  return [...products].sort((a, b) => {
+    if (a.product_avaible === 0 && b.product_avaible > 0) return 1;
+    if (b.product_avaible === 0 && a.product_avaible > 0) return -1;
+    return 0;
+  });
+}
 
 export default function AlatPerangkatPage() {
   const { data: products = [], isLoading, isError, error } = useProducts();
@@ -36,12 +44,18 @@ export default function AlatPerangkatPage() {
     debouncedSearch(e.target.value);
   };
 
-  const filteredProducts = useMemo(() => {
+  const filteredAndSortedProducts = useMemo(() => {
     if (!products) return [];
-    if (!searchTerm) return products;
-    return products.filter((p) =>
-      p.product_name.toLowerCase().includes(searchTerm)
-    );
+
+    let filtered = products;
+
+    if (searchTerm) {
+      filtered = products.filter((p) =>
+        p.product_name.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return sortProductsWithOutOfStockLast(filtered);
   }, [products, searchTerm]);
 
   const canBorrow = checkResult?.canBorrow ?? true;
@@ -87,7 +101,6 @@ export default function AlatPerangkatPage() {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
   }, [cart]);
 
-  // Tampilkan floating button ketika ada item di cart
   useEffect(() => {
     if (cart.length > 0 && canBorrow) {
       setShowFloatingButton(true);
@@ -155,23 +168,6 @@ export default function AlatPerangkatPage() {
             onChange={handleSearchChange}
           />
         </label>
-
-        {/* Tombol desktop tetap ada untuk aksesibilitas */}
-        {/* {canBorrow && (
-          <button
-            className="hidden md:flex relative btn btn-accent text-black w-full md:w-auto"
-            onClick={handleOpenModal}
-            disabled={cart.length === 0}
-          >
-            <ShoppingBag className="w-5 h-5" />
-            <span>Pinjam Sekarang</span>
-            {totalItems > 0 && (
-              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {totalItems}
-              </span>
-            )}
-          </button>
-        )} */}
       </div>
 
       {!canBorrow && (
@@ -185,8 +181,8 @@ export default function AlatPerangkatPage() {
       )}
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto w-full max-h-[73vh] rounded-md px-4 pb-4">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((p) => (
+        {filteredAndSortedProducts.length > 0 ? (
+          filteredAndSortedProducts.map((p) => (
             <ProductCard
               key={p.product_id}
               product={p}
@@ -222,7 +218,9 @@ export default function AlatPerangkatPage() {
               disabled={isCreating}
             >
               <div className="flex items-center gap-3">
-                <span className="font-medium font-sans text-lg">Pinjam Sekarang</span>
+                <span className="font-medium font-sans text-lg">
+                  Pinjam Sekarang
+                </span>
                 <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
               </div>
             </button>

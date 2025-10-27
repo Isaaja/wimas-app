@@ -95,7 +95,7 @@ export default function BorrowerDashboard() {
       APPROVED: 0,
       REJECTED: 0,
       RETURNED: 0,
-      DONE: 0, // TAMBAHKAN STATUS DONE
+      DONE: 0,
     };
 
     loanHistory.loans.forEach((loan) => {
@@ -106,27 +106,27 @@ export default function BorrowerDashboard() {
       {
         status: "Menunggu",
         count: statusCount.REQUESTED,
-        color: "#f59e0b", // yellow-500
+        color: "#f59e0b",
       },
       {
         status: "Disetujui",
         count: statusCount.APPROVED,
-        color: "#10b981", // green-500
+        color: "#10b981",
       },
       {
         status: "Ditolak",
         count: statusCount.REJECTED,
-        color: "#ef4444", // red-500
+        color: "#ef4444",
       },
       {
         status: "Dikembalikan",
         count: statusCount.RETURNED,
-        color: "#3b82f6", // blue-500
+        color: "#3b82f6",
       },
       {
         status: "Selesai",
         count: statusCount.DONE,
-        color: "#8b5cf6", // violet-500
+        color: "#8b5cf6",
       },
     ].filter((item) => item.count > 0);
   }, [loanHistory]);
@@ -181,7 +181,6 @@ export default function BorrowerDashboard() {
   return (
     <div className="min-h-fit p-4 bg-white">
       <div className="max-w-7xl mx-auto">
-        {/* Status dan Peminjaman Aktif - Side by Side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
           <div
             className={`flex justify-start items-center rounded-lg px-8 shadow-lg border ${
@@ -200,8 +199,12 @@ export default function BorrowerDashboard() {
                 <h3 className="font-bold text-gray-800 text-lg truncate">
                   {canBorrow ? "Bisa Meminjam" : "Tidak Bisa Meminjam"}
                 </h3>
-                <div className="text-md text-gray-600 truncate">
-                  {checkResult?.reason}
+                <div className="text-sm text-gray-600 truncate">
+                  <p>
+                    {canBorrow
+                      ? "Silahkan memilih perangkat untuk dipinjam"
+                      : "Silahkan selesaikan peminjaman anda sebelum meminjam kembali"}
+                  </p>
                 </div>
               </div>
             </div>

@@ -130,6 +130,8 @@ export default function LoanDetail({
                     ? "bg-green-100 text-green-800 border border-green-200"
                     : loan.status === "REJECTED"
                     ? "bg-red-100 text-red-800 border border-red-200"
+                    : loan.status === "RETURNED"
+                    ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
                     : "bg-blue-100 text-blue-800 border border-blue-200"
                 }`}
               >
@@ -139,7 +141,9 @@ export default function LoanDetail({
                   ? "Disetujui"
                   : loan.status === "REJECTED"
                   ? "Ditolak"
-                  : "Dikembalikan"}
+                  : loan.status === "RETURNED"
+                  ? "Dikembalikan"
+                  : "Selesai"}
               </span>
               <span className="text-xs text-gray-600">
                 {formatDate(loan.updated_at)}
@@ -153,6 +157,17 @@ export default function LoanDetail({
                 >
                   <FileText className="w-4 h-4" />
                   Nota Peminjaman
+                </button>
+              </div>
+            )}
+            {(loan.status === "RETURNED" || loan.status === "DONE") && (
+              <div className="flex">
+                <button
+                  className="btn btn-ghost btn-xs text-yellow-600"
+                  onClick={() => onNota(loan.loan_id)}
+                >
+                  <FileText className="w-4 h-4" />
+                  Nota Pengembalian
                 </button>
               </div>
             )}

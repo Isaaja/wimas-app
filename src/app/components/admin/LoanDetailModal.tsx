@@ -23,11 +23,14 @@ import {
   Mail,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import { FileText } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface LoanDetailModalProps {
   loan: Loan | null;
   isOpen: boolean;
   onClose: () => void;
+  onNota: (loanId: string) => void;
   onApprove?: (loanId: string) => void;
   onReject?: (loanId: string) => void;
   isApproving?: boolean;
@@ -40,6 +43,7 @@ export default function LoanDetailModal({
   isOpen,
   onClose,
   onApprove,
+  onNota,
   onReject,
   isApproving = false,
   isRejecting = false,
@@ -50,6 +54,7 @@ export default function LoanDetailModal({
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [shouldFetchLatest, setShouldFetchLatest] = useState(false);
+  const router = useRouter();
 
   const {
     data: latestLoan,
@@ -239,33 +244,57 @@ export default function LoanDetailModal({
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                displayLoan.status === "REQUESTED"
-                  ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+          <div className="flex justify-between items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
+            <div className="flex gap-2 items-center">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  displayLoan.status === "REQUESTED"
+                    ? "bg-yellow-100 text-yellow-800 border border-yellow-200"
+                    : displayLoan.status === "APPROVED"
+                    ? "bg-green-100 text-green-800 border border-green-200"
+                    : displayLoan.status === "REJECTED"
+                    ? "bg-red-100 text-red-800 border border-red-200"
+                    : displayLoan.status === "RETURNED"
+                    ? "bg-red-100 text-indigo-500- border border-indigo-200"
+                    : "bg-blue-100 text-blue-800 border border-blue-200"
+                }`}
+              >
+                {displayLoan.status === "REQUESTED"
+                  ? "Menunggu"
                   : displayLoan.status === "APPROVED"
-                  ? "bg-green-100 text-green-800 border border-green-200"
+                  ? "Disetujui"
                   : displayLoan.status === "REJECTED"
-                  ? "bg-red-100 text-red-800 border border-red-200"
+                  ? "Ditolak"
                   : displayLoan.status === "RETURNED"
-                  ? "bg-red-100 text-indigo-500- border border-indigo-200"
-                  : "bg-blue-100 text-blue-800 border border-blue-200"
-              }`}
-            >
-              {displayLoan.status === "REQUESTED"
-                ? "Menunggu"
-                : displayLoan.status === "APPROVED"
-                ? "Disetujui"
-                : displayLoan.status === "REJECTED"
-                ? "Ditolak"
-                : displayLoan.status === "RETURNED"
-                ? "Dikembalikan"
-                : "Selesai"}
-            </span>
-            <span className="text-xs text-gray-600">
-              {formatDate(displayLoan.updated_at)}
-            </span>
+                  ? "Dikembalikan"
+                  : "Selesai"}
+              </span>
+              <span className="text-xs text-gray-600">
+                {formatDate(displayLoan.updated_at)}
+              </span>
+            </div>
+            {loan.status === "APPROVED" && (
+              <div className="flex">
+                <button
+                  className="btn btn-ghost btn-xs text-green-600"
+                  onClick={() => onNota(loan.loan_id)}
+                >
+                  <FileText className="w-4 h-4" />
+                  Nota Peminjaman
+                </button>
+              </div>
+            )}
+            {(loan.status === "RETURNED" || loan.status === "DONE") && (
+              <div className="flex">
+                <button
+                  className="btn btn-ghost btn-xs text-yellow-600"
+                  onClick={() => onNota(loan.loan_id)}
+                >
+                  <FileText className="w-4 h-4" />
+                  Nota Pengembalian
+                </button>
+              </div>
+            )}
           </div>
 
           {/* User Info */}
