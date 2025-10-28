@@ -183,7 +183,7 @@ export default function BorrowerDashboard() {
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
           <div
-            className={`flex justify-start items-center rounded-lg px-8 shadow-lg border ${
+            className={`flex justify-start items-center rounded-lg lg:px-8 px-3 lg:py-0 py-2 shadow-lg border ${
               canBorrow
                 ? "bg-gradient-to-r from-green-100 to-green-200 border-green-200"
                 : "bg-gradient-to-r from-yellow-100 to-yellow-200 border-yellow-300"
@@ -196,10 +196,10 @@ export default function BorrowerDashboard() {
                 <AlertCircle className="w-10 h-10 text-yellow-600" />
               )}
               <div className="flex-1 min-w-0">
-                <h3 className="font-bold text-gray-800 text-lg truncate">
+                <h3 className="font-bold text-gray-800 lg:text-lg text-sm truncate">
                   {canBorrow ? "Bisa Meminjam" : "Tidak Bisa Meminjam"}
                 </h3>
-                <div className="text-sm text-gray-600 truncate">
+                <div className="lg:text-sm text-xs text-gray-600">
                   <p>
                     {canBorrow
                       ? "Silahkan memilih perangkat untuk dipinjam"
@@ -214,7 +214,7 @@ export default function BorrowerDashboard() {
           <div className="bg-white rounded-lg shadow-lg border border-blue-100">
             <div className="p-2 border-b border-blue-100">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-800 text-sm flex items-center gap-1">
+                <h2 className="font-semibold text-gray-800 text-xs flex items-center gap-1">
                   <Clock className="w-4 h-4 text-blue-600" />
                   Peminjaman Aktif
                 </h2>
@@ -381,7 +381,7 @@ export default function BorrowerDashboard() {
           <div className="bg-white rounded-lg shadow border border-blue-100">
             <div className="p-2 border-b border-blue-100">
               <div className="flex items-center justify-between">
-                <h2 className="font-semibold text-gray-800 text-sm flex items-center gap-1">
+                <h2 className="font-semibold text-gray-800 text-xs flex items-center gap-1">
                   <History className="w-4 h-4 text-blue-600" />
                   Riwayat Terbaru
                 </h2>
@@ -393,7 +393,7 @@ export default function BorrowerDashboard() {
             <div className="p-2 max-h-32 overflow-y-auto">
               <div className="space-y-1">
                 {recentLoans.length === 0 ? (
-                  <p className="text-gray-500 text-center py-2 text-sm">
+                  <p className="text-gray-500 text-center py-2 text-xs">
                     Belum ada riwayat
                   </p>
                 ) : (
@@ -448,7 +448,7 @@ export default function BorrowerDashboard() {
             </div>
           </div>
           <div className="bg-white rounded-lg shadow-lg border border-blue-100 p-3">
-            <h2 className="font-semibold text-gray-800 text-sm mb-3 flex items-center gap-2">
+            <h2 className="font-semibold text-gray-800 text-xs mb-3 flex items-center gap-2">
               <Zap className="w-4 h-4 text-blue-600" />
               Aksi Cepat
             </h2>

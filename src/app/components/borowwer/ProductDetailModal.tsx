@@ -54,13 +54,13 @@ export default function ProductDetailModal({
         {/* Content Area with Scroll */}
         <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
           <div className="flex flex-col w-full lg:w-2/3 p-4 gap-3 border-r border-gray-200">
-            <div className="bg-gray-50 rounded-3xl p-4 flex justify-center items-center flex-1 min-h-0">
+            <div className="bg-gray-50 rounded-3xl p-4 flex justify-center items-center overflow-y-auto">
               <Image
                 src={product.product_image || "/img/no-image.jpg"}
                 width={220}
                 height={220}
                 alt={product.product_name || "Product image"}
-                className="w-96 h-80 object-cover rounded-md"
+                className="lg:w-96 lg:h-80 object-cover rounded-md"
                 onError={(e) => {
                   e.currentTarget.src = "/img/no-image.jpg";
                 }}

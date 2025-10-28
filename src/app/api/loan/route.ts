@@ -67,7 +67,7 @@ export async function POST(req: Request) {
 
     const result = await sendEmail({
       to: "isaiantmaulana2004@gmail.com",
-      subject: "SEKOO ISA KIH INGFO",
+      subject: "[PERMINTAAN] Persetujuan Peminjaman Perangkat",
       borrowers: [...owner, ...invited],
       items: listProduct,
       status: "permintaan",

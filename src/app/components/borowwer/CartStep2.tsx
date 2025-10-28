@@ -66,7 +66,7 @@ export default function CartStep2({
       // Call Python service directly
       const response = await fetch(
         `${
-          process.env.IP_INTRANET_LLM || "http://192.168.1.7:8000"
+          process.env.IP_INTRANET_LLM || "http://192.168.88.180:8000"
         }/process-pdf`,
         {
           method: "POST",
