@@ -13,6 +13,7 @@ import AdminLoanTable from "@/app/components/admin/AdminLoanTable";
 import LoanDetailModal from "@/app/components/admin/LoanDetailModal";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 export default function AdminPeminjamanPage() {
   const { loans, isLoading, isError, error, refetch } = useLoans("history");
@@ -115,7 +116,7 @@ export default function AdminPeminjamanPage() {
   };
 
   const handleViewNota = (loanId: string) => {
-    router.push(`/admin/nota/${loanId}`);
+    toast.success("Membuka nota peminjaman...");
   };
 
   if (isLoading) return <Loading />;

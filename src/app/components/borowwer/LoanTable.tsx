@@ -16,6 +16,7 @@ import ReturnModal from "./ReturnModal";
 import Swal from "sweetalert2";
 import { useReturnLoan } from "@/hooks/useLoans";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface Loan {
   loan_id: string;
@@ -114,8 +115,7 @@ export default function LoanTable({
         onSuccess: () => {
           setLoanToReturn(null);
         },
-        onError: (error) => {
-        },
+        onError: (error) => {},
       });
     }
   };
@@ -125,7 +125,7 @@ export default function LoanTable({
   };
 
   const handleViewNota = (loanId: string) => {
-    router.push(`/peminjam/nota/${loanId}`);
+    toast.success("Membuka nota peminjaman...");
   };
 
   const totalPages = Math.ceil(loans.length / itemsPerPage);
