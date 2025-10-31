@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     payload.append("pdf", file);
 
     const pythonServiceUrl =
-      process.env.IP_INTRANET_LLM || "http://192.168.88.180:8000";
+      process.env.IP_INTRANET_LLM || "http://192.168.1.7:8000";
     const res = await fetch(`${pythonServiceUrl}/process-pdf`, {
       method: "POST",
       body: payload,

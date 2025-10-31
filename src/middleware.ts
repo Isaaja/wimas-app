@@ -7,7 +7,10 @@ export function middleware(req: NextRequest) {
 
   if (pathname.startsWith("/api")) {
     // skip auth untuk endpoint tertentu
-    if (pathname.startsWith("/api/auth")) {
+    if (
+      pathname.startsWith("/api/auth") ||
+      pathname.startsWith("/api/storage")
+    ) {
       return NextResponse.next();
     }
     const authHeader = req.headers.get("Authorization");
