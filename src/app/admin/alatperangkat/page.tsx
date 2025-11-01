@@ -133,9 +133,9 @@ export default function AlatPerangkatPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-700">Alat & Perangkat</h1>
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col lg:flex-row justify-between items-center">
+        <h1 className="lg:text-2xl text-xl font-bold text-gray-700">Alat & Perangkat</h1>
         <div className="flex gap-4">
           <label className="input input-bordered bg-white rounded-2xl flex items-center gap-2 w-full md:max-w-md">
             <svg

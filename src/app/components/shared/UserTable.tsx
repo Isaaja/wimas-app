@@ -20,30 +20,30 @@ export default function UserTable({
 }: UserTableProps) {
   return (
     <>
-      <div className="overflow-x-auto bg-white rounded-lg shadow">
+      <div className="overflow-x-auto overflow-auto bg-white rounded-lg shadow">
         <table className="table text-gray-700">
           <thead className="bg-gray-200 text-gray-700">
             <tr className="text-gray-700 text-center">
-              <th className="text-center">#</th>
-              <th className="text-center">Nama</th>
-              <th className="text-center">Username</th>
-              <th className="text-center">Email</th>
-              <th className="text-center">No HP</th>
-              <th className="text-center">Role</th>
-              <th className="text-center">Aksi</th>
+              <th className="text-center lg:text-xl text-xs">#</th>
+              <th className="text-center lg:text-xl text-xs">Nama</th>
+              <th className="text-center lg:text-xl text-xs">Username</th>
+              <th className="text-center lg:text-xl text-xs">Email</th>
+              <th className="text-center lg:text-xl text-xs">No HP</th>
+              <th className="text-center lg:text-xl text-xs">Role</th>
+              <th className="text-center lg:text-xl text-xs">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user: User, index: number) => (
               <tr key={user.user_id} className="hover text-center">
-                <td className="border-t border-black/10">{index + 1}</td>
-                <td className="border-t border-black/10 font-bold">
+                <td className="border-t border-black/10 lg:text-xl text-xs">{index + 1}</td>
+                <td className="border-t border-black/10 lg:text-xl text-xs font-bold">
                   {user.name}
                 </td>
-                <td className="border-t border-black/10">{user.username}</td>
-                <td className="border-t border-black/10">{user.email}</td>
-                <td className="border-t border-black/10">{user.noHandphone}</td>
-                <td className="border-t border-black/10">
+                <td className="border-t border-black/10 lg:text-xl text-xs">{user.username}</td>
+                <td className="border-t border-black/10 lg:text-xl text-xs">{user.email}</td>
+                <td className="border-t border-black/10 lg:text-xl text-xs">{user.noHandphone}</td>
+                <td className="border-t border-black/10 lg:text-xl text-xs">
                   <span
                     className={`
     inline-flex items-center rounded-md bg-gradient-to-r px-2 py-1 text-xs font-medium ring-1 ring-inset shadow-sm
@@ -63,7 +63,7 @@ export default function UserTable({
                       : user.role}
                   </span>
                 </td>
-                <td className="border-t border-black/10 text-center">
+                <td className="border-t border-black/10 lg:text-xl text-xs text-center">
                   <div className="flex gap-2 justify-center">
                     <button
                       className="btn btn-ghost btn-xs text-error"
