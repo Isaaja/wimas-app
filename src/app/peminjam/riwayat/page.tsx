@@ -22,9 +22,7 @@ export default function RiwayatPeminjamanPage() {
 
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-gray-700">
-        Riwayat Peminjaman
-      </h1>
+      <h1 className="lg:text-2xl text-xl font-bold mb-4">Riwayat Peminjaman</h1>
 
       <LoanTable
         loans={loans || []}

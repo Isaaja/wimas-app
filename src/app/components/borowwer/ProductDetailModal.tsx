@@ -39,10 +39,12 @@ export default function ProductDetailModal({
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box max-w-3xl p-0 bg-white rounded-lg max-h-[80vh] overflow-hidden flex flex-col">
-        {/* Header - Compact */}
-        <div className="flex justify-between items-center p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
-          <h3 className="font-bold text-lg text-gray-800">Detail Produk</h3>
+      <div className="modal-box max-w-3xl w-11/12 sm:w-10/12 md:w-9/12 lg:max-w-3xl p-0 bg-white rounded-lg max-h-[80vh] sm:max-h-[85vh] lg:max-h-[80vh] overflow-hidden flex flex-col mt-12">
+        {/* Header */}
+        <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+          <h3 className="font-bold text-base sm:text-lg text-gray-800">
+            Detail Produk
+          </h3>
           <button
             className="btn btn-ghost btn-sm btn-circle hover:bg-gray-100"
             onClick={handleClose}
@@ -52,23 +54,25 @@ export default function ProductDetailModal({
         </div>
 
         {/* Content Area with Scroll */}
-        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
-          <div className="flex flex-col w-full lg:w-2/3 p-4 gap-3 border-r border-gray-200">
-            <div className="bg-gray-50 rounded-3xl p-4 flex justify-center items-center flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto">
+          {/* Left Column - Image (Mobile: Full width, Desktop: 2/3) */}
+          <div className="flex flex-col w-full lg:w-2/3 p-3 sm:p-4 gap-3 lg:border-r lg:border-gray-200">
+            {/* Image Container */}
+            <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex justify-center items-center min-h-[200px] sm:min-h-[250px] lg:min-h-0 lg:flex-1">
               <Image
                 src={product.product_image || "/img/no-image.jpg"}
-                width={220}
-                height={220}
+                width={280}
+                height={280}
                 alt={product.product_name || "Product image"}
-                className="w-96 h-80 object-cover rounded-md"
+                className="w-full h-auto max-w-xs sm:max-w-sm object-cover rounded-md"
                 onError={(e) => {
                   e.currentTarget.src = "/img/no-image.jpg";
                 }}
               />
             </div>
 
-            {/* Stock Badge */}
-            <div className="text-center">
+            {/* Stock Badge - Mobile only */}
+            <div className="lg:hidden text-center">
               <div
                 className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
                   product.product_avaible > 0
@@ -77,24 +81,39 @@ export default function ProductDetailModal({
                 }`}
               >
                 {product.product_avaible > 0
-                  ? `Tersedia: ${product.product_avaible}`
+                  ? `Tersedia: ${product.product_avaible} unit`
                   : "Stok Habis"}
               </div>
             </div>
           </div>
 
           {/* Right Column - Product Details */}
-          <div className="flex flex-col w-full lg:w-1/2 p-4 gap-4 overflow-y-auto">
-            {/* Product Name */}
+          <div className="flex flex-col w-full lg:w-1/2 p-3 sm:p-4 gap-3 sm:gap-4">
+            {/* Product Title */}
             <div>
-              <h2 className="text-xl font-bold text-gray-800 mb-1 line-clamp-2">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 line-clamp-2">
                 {product.product_name}
               </h2>
               <div className="w-12 h-1 bg-blue-500 rounded-full"></div>
             </div>
 
-            {/* Product Details - Compact */}
-            <div className="space-y-3 text-sm">
+            {/* Stock Badge - Desktop only */}
+            <div className="hidden lg:block text-center">
+              <div
+                className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
+                  product.product_avaible > 0
+                    ? "bg-green-500 text-white"
+                    : "bg-red-500 text-white"
+                }`}
+              >
+                {product.product_avaible > 0
+                  ? `Tersedia: ${product.product_avaible} unit`
+                  : "Stok Habis"}
+              </div>
+            </div>
+
+            {/* Product Details */}
+            <div className="space-y-2 sm:space-y-3 text-sm">
               <div className="flex justify-between items-center py-1">
                 <span className="text-gray-600 font-medium">Kategori:</span>
                 <span className="font-semibold text-gray-800 text-right">
@@ -119,7 +138,7 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            {/* Quantity Selector - Compact */}
+            {/* Quantity Selector */}
             <div className="bg-blue-50 rounded-lg p-3">
               <label className="block text-xs font-semibold mb-2 text-gray-700 text-center">
                 JUMLAH PINJAM
@@ -166,40 +185,42 @@ export default function ProductDetailModal({
               </p>
             </div>
 
-            {/* Status Messages - Compact */}
+            {/* Status Messages */}
             {!canBorrow && (
-              <div className="alert alert-warning py-2 bg-yellow-50 border-yellow-200">
-                <span className="text-yellow-800 text-sm">
+              <div className="alert alert-warning py-2 px-3 bg-yellow-50 border-yellow-200">
+                <span className="text-yellow-800 text-xs sm:text-sm">
                   ⚠️ Ada pinjaman aktif
                 </span>
               </div>
             )}
 
             {product.product_avaible === 0 && (
-              <div className="alert alert-error py-2 bg-red-50 border-red-200">
-                <span className="text-red-800 text-sm">❌ Stok habis</span>
+              <div className="alert alert-error py-2 px-3 bg-red-50 border-red-200">
+                <span className="text-red-800 text-xs sm:text-sm">
+                  ❌ Stok habis
+                </span>
               </div>
             )}
 
-            {/* Summary - Compact */}
+            {/* Summary */}
             {canBorrow && product.product_avaible > 0 && (
-              <div className="alert alert-info py-2 bg-blue-50 border-blue-200">
-                <span className="text-blue-800 text-sm">
+              <div className="alert alert-info py-2 px-3 bg-blue-50 border-blue-200">
+                <span className="text-blue-800 text-xs sm:text-sm">
                   Akan pinjam: <strong>{quantity} unit</strong>
                 </span>
               </div>
             )}
 
-            {/* Action Buttons - Compact */}
-            <div className="flex gap-2 mt-auto pt-2">
+            {/* Action Buttons - Sticky di mobile */}
+            <div className="flex gap-2 mt-2 pt-2 bg-white sticky bottom-0 -mx-3 -mb-3 px-3 pb-3 sm:static sm:mx-0 sm:mb-0 sm:px-0 sm:pb-0">
               <button
-                className="btn btn-outline btn-sm flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs"
+                className="btn btn-outline btn-sm flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs py-2 h-auto"
                 onClick={handleClose}
               >
                 Batal
               </button>
               <button
-                className="btn btn-primary btn-sm flex-1 bg-blue-600 border-blue-600 text-white hover:bg-blue-700 text-xs font-semibold"
+                className="btn btn-primary btn-sm flex-1 bg-blue-600 border-blue-600 text-white hover:bg-blue-700 text-xs font-semibold py-2 h-auto"
                 onClick={handleAddToCart}
                 disabled={
                   !canBorrow ||
