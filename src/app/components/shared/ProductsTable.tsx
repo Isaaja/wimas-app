@@ -154,7 +154,6 @@ export default function ProductsTable({
             key={product.product_id}
             className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-5 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
           >
-            {/* Header dengan gradient dan ranking */}
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
                 <div className="relative">
@@ -194,7 +193,6 @@ export default function ProductsTable({
                 </div>
               </div>
 
-              {/* Action Buttons dengan modern design */}
               <div className="flex gap-2">
                 <button
                   className="btn btn-circle btn-sm bg-white/80 backdrop-blur-sm  hover:bg-blue-50 border-blue-300 text-blue-600 transition-all duration-200 shadow-sm"
@@ -239,17 +237,15 @@ export default function ProductsTable({
               </div>
             </div>
 
-            {/* Product Name dengan gradient text */}
             <div className="mb-4">
               <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
                 Nama Produk
               </div>
-              <div className="font-bold text-gray-900 text-lg truncate bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <div className="font-bold text-gray-900 text-lg truncate bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text">
                 {product.product_name}
               </div>
             </div>
 
-            {/* Info Grid dengan card-style */}
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
@@ -354,7 +350,7 @@ export default function ProductsTable({
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mt-4 mb-10">
         <div className="text-sm text-gray-600">
           Halaman {currentPage} dari {totalPages}
         </div>
@@ -367,7 +363,7 @@ export default function ProductsTable({
             Sebelumnya
           </button>
           <button
-            className="join-item btn btn-sm btn-primary px-4"
+            className="join-item btn btn-sm px-4"
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage === totalPages}
           >

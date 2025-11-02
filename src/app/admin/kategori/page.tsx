@@ -90,13 +90,13 @@ export default function CategoryPage() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="lg:text-2xl text-xl font-bold">Manajemen Kategori</h1>
         <button
-          className="btn btn-primary lg:flex hidden"
+          className="btn btn-info lg:flex hidden"
           onClick={handleAddClick}
         >
           Tambah Kategori Baru
         </button>
         <button
-          className="flex lg:hidden fixed bottom-8 right-8 bg-primary/90 backdrop-blur-sm p-3 rounded-full shadow-2xl border border-white/20 hover:bg-primary transition-all duration-300 hover:scale-110 hover:shadow-primary/40"
+          className="flex lg:hidden fixed bottom-8 right-8 bg-info/90 backdrop-blur-sm p-3 rounded-full shadow-2xl border border-white/20 hover:bg-info transition-all duration-300 hover:scale-110 hover:shadow-info/40"
           onClick={handleAddClick}
         >
           <Plus

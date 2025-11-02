@@ -82,7 +82,7 @@ export default function SuperAdminUserPage() {
     <div className="lg:p-5 p-3">
       <div className="flex justify-between mb-4 items-center">
         <h1 className="lg:text-2xl text-xl font-bold">Daftar User</h1>
-        <button className="btn btn-primary" onClick={handleAdd}>
+        <button className="btn btn-info" onClick={handleAdd}>
           + Tambah User
         </button>
       </div>

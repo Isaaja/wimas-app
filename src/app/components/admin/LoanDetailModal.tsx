@@ -221,7 +221,7 @@ export default function LoanDetailModal({
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box p-0 max-w-2xl max-h-[80vh] flex flex-col bg-white border border-gray-200">
+      <div className="modal-box p-0 max-w-2xl max-h-[80vh] flex flex-col bg-white border border-gray-200 mt-14">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">

@@ -462,45 +462,55 @@ const createLoanMutationHook = (
   mutationFn: (loanId: string) => Promise<Loan>,
   successMessage: string
 ) => {
-  const queryClient = useQueryClient();
+  return () => {
+    const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn,
-    onSuccess: (data: Loan) => {
-      toast.success(successMessage);
+    return useMutation({
+      mutationFn,
+      onSuccess: (data: Loan) => {
+        toast.success(successMessage);
 
-      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
+        queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
 
-      const queriesToInvalidate = [
-        LOAN_QUERY_KEYS.lists(),
-        LOAN_QUERY_KEYS.history(),
-      ];
+        const queriesToInvalidate = [
+          LOAN_QUERY_KEYS.lists(),
+          LOAN_QUERY_KEYS.history(),
+        ];
 
-      queriesToInvalidate.forEach((queryKey) => {
-        queryClient.invalidateQueries({
-          queryKey,
-          exact: true,
-          refetchType: "active",
+        queriesToInvalidate.forEach((queryKey) => {
+          queryClient.invalidateQueries({
+            queryKey,
+            exact: true,
+            refetchType: "active",
+          });
         });
-      });
-    },
-    onError: (err: Error) => {
-      toast.error(err.message || `Gagal: ${successMessage}`);
-    },
-  });
+      },
+      onError: (err: Error) => {
+        toast.error(err.message || `Gagal: ${successMessage}`);
+      },
+    });
+  };
 };
 
-export const useApproveLoan = () =>
-  createLoanMutationHook(approveLoan, "Peminjaman berhasil disetujui!");
+export const useApproveLoan = createLoanMutationHook(
+  approveLoan, 
+  "Peminjaman berhasil disetujui!"
+);
 
-export const useRejectLoan = () =>
-  createLoanMutationHook(rejectLoan, "Peminjaman berhasil ditolak!");
+export const useRejectLoan = createLoanMutationHook(
+  rejectLoan, 
+  "Peminjaman berhasil ditolak!"
+);
 
-export const useReturnLoan = () =>
-  createLoanMutationHook(returnLoan, "Barang berhasil dikembalikan!");
+export const useReturnLoan = createLoanMutationHook(
+  returnLoan, 
+  "Barang berhasil dikembalikan!"
+);
 
-export const useDoneLoan = () =>
-  createLoanMutationHook(doneLoan, "Peminjaman berhasil diselesaikan!");
+export const useDoneLoan = createLoanMutationHook(
+  doneLoan, 
+  "Peminjaman berhasil diselesaikan!"
+);
 
 export function useDeleteLoan() {
   const queryClient = useQueryClient();
