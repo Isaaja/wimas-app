@@ -342,7 +342,7 @@ export default function AdminDashboard() {
                   <Clock className="w-4 h-4 text-blue-600" />
                   Peminjaman Menunggu Approval
                 </h2>
-                <Badge color="bg-yellow-100 text-yellow-800 text-xs">
+                <Badge color="bg-yellow-100 text-yellow-800 text-xs hidden lg:flex">
                   {pendingLoans.length} pending
                 </Badge>
               </div>
@@ -377,9 +377,9 @@ export default function AdminDashboard() {
             </div>
           </div>
 
-          <div className="flex gap-4 w-full">
+          <div className="flex flex-col lg:flex-row gap-4 w-full">
             {popularProductsData.length > 0 && (
-              <div className="bg-white rounded-lg shadow-lg border border-blue-100 w-1/2">
+              <div className="bg-white rounded-lg shadow-lg border border-blue-100 lg:w-1/2 w-full">
                 <div className="p-3 border-b border-blue-100">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-4 h-4 text-blue-600" />
@@ -415,7 +415,7 @@ export default function AdminDashboard() {
               </div>
             )}
             {/* Low Stock Products */}
-            <div className="bg-white rounded-lg shadow-lg border border-blue-100 w-1/2">
+            <div className="bg-white rounded-lg shadow-lg border border-blue-100 lg:w-1/2 w-full">
               <div className="p-3 border-b border-blue-100">
                 <div className="flex items-center justify-between">
                   <h2 className="font-semibold text-gray-800 text-sm flex items-center gap-2">

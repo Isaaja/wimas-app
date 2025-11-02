@@ -25,6 +25,7 @@ import {
 import { toast } from "react-toastify";
 import { FileText } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface LoanDetailModalProps {
   loan: Loan | null;
@@ -275,24 +276,24 @@ export default function LoanDetailModal({
             </div>
             {loan.status === "APPROVED" && (
               <div className="flex">
-                <button
+                <Link
+                  href={`/admin/nota/${loan.loan_id}`}
                   className="btn btn-ghost btn-xs text-green-600"
-                  onClick={() => onNota(loan.loan_id)}
                 >
                   <FileText className="w-4 h-4" />
                   Nota Peminjaman
-                </button>
+                </Link>
               </div>
             )}
             {(loan.status === "RETURNED" || loan.status === "DONE") && (
               <div className="flex">
-                <button
+                <Link
+                  href={`/admin/nota/${loan.loan_id}`}
                   className="btn btn-ghost btn-xs text-yellow-600"
-                  onClick={() => onNota(loan.loan_id)}
                 >
                   <FileText className="w-4 h-4" />
                   Nota Pengembalian
-                </button>
+                </Link>
               </div>
             )}
           </div>

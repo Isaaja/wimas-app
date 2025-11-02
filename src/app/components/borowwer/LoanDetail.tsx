@@ -13,6 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Loan {
   loan_id: string;
@@ -151,24 +152,24 @@ export default function LoanDetail({
             </div>
             {loan.status === "APPROVED" && (
               <div className="flex">
-                <button
+                <Link
+                  href={`/peminjam/nota/${loan.loan_id}`}
                   className="btn btn-ghost btn-xs text-green-600"
-                  onClick={() => onNota(loan.loan_id)}
                 >
                   <FileText className="w-4 h-4" />
                   Nota Peminjaman
-                </button>
+                </Link>
               </div>
             )}
             {(loan.status === "RETURNED" || loan.status === "DONE") && (
               <div className="flex">
-                <button
+                <Link
+                  href={`/peminjam/nota/${loan.loan_id}`}
                   className="btn btn-ghost btn-xs text-yellow-600"
-                  onClick={() => onNota(loan.loan_id)}
                 >
                   <FileText className="w-4 h-4" />
                   Nota Pengembalian
-                </button>
+                </Link>
               </div>
             )}
           </div>

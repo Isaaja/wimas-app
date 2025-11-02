@@ -25,7 +25,7 @@ export default function SuperAdminUserPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 9;
+  const usersPerPage = 7;
   const totalPages = Math.ceil(users.length / usersPerPage);
 
   const handleAdd = () => {
@@ -79,9 +79,9 @@ export default function SuperAdminUserPage() {
   if (isLoading) return <Loading />;
 
   return (
-    <div className="p-5">
-      <div className="flex justify-between mb-4">
-        <h1 className="text-2xl font-bold">Daftar User</h1>
+    <div className="lg:p-5 p-3">
+      <div className="flex justify-between mb-4 items-center">
+        <h1 className="lg:text-2xl text-xl font-bold">Daftar User</h1>
         <button className="btn btn-primary" onClick={handleAdd}>
           + Tambah User
         </button>
