@@ -30,21 +30,21 @@ export default function CategoryTable({
       <table className="table text-gray-700">
         <thead>
           <tr className="bg-gray-200 text-gray-700">
-            <th className="text-center text-xs lg:text-lg">No.</th>
-            <th className="text-center text-xs lg:text-lg">Nama Kategori</th>
-            <th className="text-center text-xs lg:text-lg">Aksi</th>
+            <th className="text-center text-xs lg:text-sm">No.</th>
+            <th className="text-center text-xs lg:text-sm">Nama Kategori</th>
+            <th className="text-center text-xs lg:text-sm">Aksi</th>
           </tr>
         </thead>
         <tbody>
           {categories.map((category, index) => (
             <tr key={category.category_id} className="hover">
-              <td className="border-t border-black/10 text-center text-xs lg:text-xl">
+              <td className="border-t border-black/10 text-center text-xs lg:text-sm">
                 {index + 1}
               </td>
-              <td className="border-t border-black/10 text-center text-xs lg:text-xl">
+              <td className="border-t border-black/10 text-center text-xs lg:text-sm">
                 <div className="font-bold">{category.category_name}</div>
               </td>
-              <td className="border-t border-black/10 text-center text-xs lg:text-xl">
+              <td className="border-t border-black/10 text-center text-xs lg:text-sm">
                 <div className="flex gap-2 justify-center">
                   <button
                     className="btn btn-ghost btn-xs"
