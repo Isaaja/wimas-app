@@ -16,6 +16,7 @@ import ReturnModal from "./ReturnModal";
 import Swal from "sweetalert2";
 import { useReturnLoan } from "@/hooks/useLoans";
 import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface Loan {
   loan_id: string;
@@ -114,8 +115,7 @@ export default function LoanTable({
         onSuccess: () => {
           setLoanToReturn(null);
         },
-        onError: (error) => {
-        },
+        onError: (error) => {},
       });
     }
   };
@@ -125,7 +125,7 @@ export default function LoanTable({
   };
 
   const handleViewNota = (loanId: string) => {
-    router.push(`/peminjam/nota/${loanId}`);
+    toast.success("Membuka nota peminjaman...");
   };
 
   const totalPages = Math.ceil(loans.length / itemsPerPage);
@@ -242,7 +242,7 @@ export default function LoanTable({
                             href={sptFileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn btn-ghost btn-xs text-blue-600 tooltip"
+                            className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
                             data-tip="Lihat Dokumen SPT"
                           >
                             <Eye className="w-4 h-4" />
@@ -252,7 +252,7 @@ export default function LoanTable({
                       ) : (
                         <div className="flex flex-col gap-1 items-center">
                           <span
-                            className="text-gray-400 tooltip"
+                            className="text-gray-400 lg:tooltip"
                             data-tip="Tidak Ada Dokumen SPT"
                           >
                             <EyeOff className="w-4 h-4" />
@@ -266,7 +266,7 @@ export default function LoanTable({
                     <td className="border-t border-black/10">
                       <div className="flex justify-center items-center gap-1">
                         <button
-                          className="btn btn-ghost btn-xs text-blue-500 tooltip"
+                          className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
                           data-tip="Lihat Detail"
                           onClick={() => handleViewDetail(loan)}
                         >
@@ -276,7 +276,7 @@ export default function LoanTable({
                         {loan.status === "APPROVED" && (
                           <>
                             <button
-                              className="btn btn-ghost btn-xs text-orange-600 tooltip"
+                              className="btn btn-ghost btn-xs text-orange-600 lg:tooltip"
                               data-tip="Kembalikan Barang"
                               onClick={() => handleReturn(loan)}
                               disabled={isProcessing}

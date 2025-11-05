@@ -20,7 +20,6 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Get valid image source
   const imageSrc =
     product.product_image && product.product_image.trim() !== ""
       ? product.product_image
@@ -73,12 +72,12 @@ export default function ProductCard({
           </div>
         )}
 
-        <figure className="px-6 pt-6 relative h-44">
+        <figure className="px-4 pt-4 relative h-28 sm:h-40 md:h-44">
           <Image
             src={imageSrc}
             alt={product.product_name}
             fill
-            className={`rounded-xl w-40 h-40 object-cover cursor-pointer ${
+            className={`rounded-xl object-cover cursor-pointer ${
               isOutOfStock
                 ? "grayscale"
                 : "hover:scale-105 transition-transform"
@@ -88,38 +87,38 @@ export default function ProductCard({
               const target = e.currentTarget;
               target.src = "/img/no-image.jpg";
             }}
+            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
           />
         </figure>
 
-        <div className="card-body text-center">
+        <div className="card-body p-4 text-center">
           <h2
-            className="font-bold text-lg cursor-pointer hover:text-blue-600 transition-colors"
+            className="font-bold text-sm sm:text-base md:text-lg cursor-pointer hover:text-blue-600 transition-colors line-clamp-2"
             onClick={openModal}
           >
             {product.product_name}
           </h2>
           <p
-            className={`font-medium ${
+            className={`font-medium text-xs sm:text-sm ${
               isOutOfStock ? "text-gray-500" : "text-gray-600"
             }`}
           >
             Tersedia: {product.product_avaible}
           </p>
-
           {isOutOfStock && (
-            <div className="badge badge-error badge-lg w-full justify-center py-3">
+            <div className="badge badge-error text-xs sm:text-sm w-full justify-center py-2 sm:py-3">
               ❌ STOK HABIS
             </div>
           )}
-
           {canBorrow && !isOutOfStock && (
-            <div className="card-actions justify-center mt-4">
+            <div className="card-actions justify-center mt-2 sm:mt-4">
               <button
-                className="btn btn-info btn-sm w-full"
+                className="btn btn-info btn-xs sm:btn-sm w-full text-xs sm:text-sm"
                 onClick={openModal}
               >
-                Lihat Detail
-                <ArrowRight className="w-4 h-4 mr-1" />
+                <span className="hidden xs:inline">Lihat Detail</span>
+                <span className="xs:hidden">Detail</span>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
               </button>
             </div>
           )}

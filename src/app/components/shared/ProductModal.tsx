@@ -143,13 +143,13 @@ export default function ProductModal({
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-2xl bg-white shadow-2xl rounded-t-2xl">
+      <div className="modal-box max-w-2xl bg-white shadow-2xl rounded-2xl mt-16 max-h-[70vh] overflow-y-auto py-0">
         <div
           className={`${
             isEditMode
               ? "bg-gradient-to-r from-green-500 to-green-600"
               : "bg-gradient-to-r from-blue-500 to-blue-600"
-          } -m-6 mb-6 p-6 rounded-t-2xl`}
+          } -mx-6 mb-6 p-6 rounded-t-2xl sticky top-0 z-10`}
         >
           <h3 className="font-bold text-2xl text-white">
             {isEditMode ? "Edit Produk" : "Tambah Produk Baru"}
@@ -160,7 +160,6 @@ export default function ProductModal({
               : "Isi form di bawah untuk menambahkan produk baru"}
           </p>
         </div>
-
         <form onSubmit={handleSubmit}>
           <div className="form-control mb-3">
             <label className="label">
@@ -270,7 +269,7 @@ export default function ProductModal({
             )}
           </div>
 
-          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200 sticky bottom-0 bg-white pb-2">
             <button
               type="button"
               className="btn btn-ghost hover:bg-gray-100 hover:text-black"

@@ -25,7 +25,6 @@ export default function AdminProfilePage() {
   const { user: authUser, updateUser: updateAuthUser } = useAuthContext();
   const { mutate: updateUserMutation, isPending: isUpdating } = useUpdateUser();
 
-  // Fetch user data from API
   const {
     data: userData,
     isLoading: isFetchingUser,
@@ -42,10 +41,8 @@ export default function AdminProfilePage() {
   });
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Track if we've already synced userData to prevent infinite loops
   const hasSyncedRef = useRef(false);
 
-  // Update form data when user data is fetched
   useEffect(() => {
     if (userData && !hasSyncedRef.current) {
       setFormData({
@@ -56,7 +53,6 @@ export default function AdminProfilePage() {
         password: "",
       });
 
-      // Sync with AuthContext for global state (only once on initial load)
       updateAuthUser({
         name: userData.name,
         username: userData.username,
@@ -89,7 +85,6 @@ export default function AdminProfilePage() {
     );
   }
 
-  // Use fetched data as the source of truth
   const user = userData || authUser;
 
   const validateForm = (): boolean => {
@@ -144,7 +139,6 @@ export default function AdminProfilePage() {
       { userId: authUser.userId, payload },
       {
         onSuccess: (updatedUser: any) => {
-          // Update AuthContext with new data
           updateAuthUser({
             name: updatedUser.name,
             username: updatedUser.username,
@@ -187,38 +181,39 @@ export default function AdminProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-full mx-auto px-4">
-        {/* Header */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mb-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">Profil Saya</h1>
-              <p className="text-gray-600 mt-1">
-                Kelola informasi profil Anda untuk mengontrol, melindungi dan
-                mengamankan akun
+    <div className="min-h-screen py-8">
+      <div className="w-full mx-auto px-4">
+        {/* Header Card */}
+        <div className="bg-white rounded-2xl shadow-xl border border-white/50 p-6 mb-6 backdrop-blur-sm">
+          <div className="flex flex-col lg:flex-row items-center justify-between">
+            <div className="text-center lg:text-left mb-4 lg:mb-0">
+              <h1 className="text-3xl font-bold">Profil Saya</h1>
+              <p className="text-gray-600 mt-2 max-w-md">
+                Kelola informasi profil Anda dengan mudah dan aman
               </p>
             </div>
             {!isEditing && (
               <button
                 onClick={handleEditClick}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="group flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
               >
-                <Edit className="w-4 h-4" />
+                <Edit className="w-4 h-4 group-hover:scale-110 transition-transform" />
                 Edit Profil
               </button>
             )}
           </div>
         </div>
 
-        {/* Profile Form */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6">
+        {/* Profile Card */}
+        <div className="bg-white rounded-2xl shadow-xl border border-white/50 p-6 backdrop-blur-sm">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Nama */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <User className="w-4 h-4" />
-                Nama Lengkap *
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <User className="w-4 h-4 text-blue-600" />
+                </div>
+                Nama Lengkap
               </label>
               {isEditing ? (
                 <div>
@@ -227,27 +222,35 @@ export default function AdminProfilePage() {
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.name ? "border-red-500" : "border-gray-300"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                      errors.name
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-200 focus:border-blue-500"
                     }`}
                     placeholder="Masukkan nama lengkap"
                   />
                   {errors.name && (
-                    <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-2">
+                      <span>⚠</span> {errors.name}
+                    </p>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-900 font-medium p-2 bg-gray-50 rounded">
-                  {user.name || "-"}
-                </p>
+                <div className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent">
+                  <p className="text-gray-900 font-medium">
+                    {user.name || "-"}
+                  </p>
+                </div>
               )}
             </div>
 
             {/* Username */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <User className="w-4 h-4" />
-                Username *
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <User className="w-4 h-4 text-green-600" />
+                </div>
+                Username
               </label>
               {isEditing ? (
                 <div>
@@ -256,82 +259,87 @@ export default function AdminProfilePage() {
                     name="username"
                     value={formData.username}
                     onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.username ? "border-red-500" : "border-gray-300"
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                      errors.username
+                        ? "border-red-300 focus:border-red-500"
+                        : "border-gray-200 focus:border-blue-500"
                     }`}
                     placeholder="Masukkan username"
                   />
                   {errors.username && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.username}
+                    <p className="text-red-500 text-sm mt-2 flex items-center gap-2">
+                      <span>⚠</span> {errors.username}
                     </p>
                   )}
                 </div>
               ) : (
-                <p className="text-gray-900 font-medium p-2 bg-gray-50 rounded">
-                  {user.username || "-"}
-                </p>
+                <div className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent">
+                  <p className="text-gray-900 font-medium">
+                    {user.username || "-"}
+                  </p>
+                </div>
               )}
             </div>
 
             {/* Email */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Mail className="w-4 h-4" />
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Mail className="w-4 h-4 text-purple-600" />
+                </div>
                 Email
               </label>
               {isEditing ? (
-                <div>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors.email ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="Masukkan email (opsional)"
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                  )}
-                </div>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
+                  placeholder="Masukkan email (opsional)"
+                />
               ) : (
-                <p className="text-gray-900 font-medium p-2 bg-gray-50 rounded">
-                  {user.email || "-"}
-                </p>
+                <div className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent">
+                  <p className="text-gray-900 font-medium">
+                    {user.email || "-"}
+                  </p>
+                </div>
               )}
             </div>
 
             {/* Nomor Handphone */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Phone className="w-4 h-4" />
+            <div className="space-y-3">
+              <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <Phone className="w-4 h-4 text-orange-600" />
+                </div>
                 Nomor Handphone
               </label>
               {isEditing ? (
-                <div>
-                  <input
-                    type="tel"
-                    name="noHandphone"
-                    value={formData.noHandphone}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Masukkan nomor handphone (opsional)"
-                  />
-                </div>
+                <input
+                  type="tel"
+                  name="noHandphone"
+                  value={formData.noHandphone}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
+                  placeholder="Masukkan nomor handphone (opsional)"
+                />
               ) : (
-                <p className="text-gray-900 font-medium p-2 bg-gray-50 rounded">
-                  {user.noHandphone || "-"}
-                </p>
+                <div className="px-4 py-3 bg-gray-50 rounded-xl border-2 border-transparent">
+                  <p className="text-gray-900 font-medium">
+                    {user.noHandphone || "-"}
+                  </p>
+                </div>
               )}
             </div>
 
-            {/* Password (hanya saat edit) */}
+            {/* Password */}
             {isEditing && (
-              <div className="space-y-2 md:col-span-2">
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                  <Key className="w-4 h-4" />
+              <div className="space-y-3 md:col-span-2">
+                <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <Key className="w-4 h-4 text-red-600" />
+                  </div>
                   Password Baru
                 </label>
                 <input
@@ -339,106 +347,111 @@ export default function AdminProfilePage() {
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 transition-all"
                   placeholder="Kosongkan jika tidak ingin mengubah password"
                 />
-                <p className="text-gray-500 text-xs">
-                  Biarkan kosong jika tidak ingin mengubah password
+                <p className="text-gray-500 text-sm flex items-center gap-2">
+                  <span>💡</span> Biarkan kosong jika tidak ingin mengubah
+                  password
                 </p>
               </div>
             )}
 
-            {/* Informasi Read-only */}
+            {/* Role */}
             {!isEditing && (
-              <>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                    <User className="w-4 h-4" />
-                    Role
-                  </label>
-                  <p className="text-gray-900 font-medium p-2 bg-gray-50 rounded">
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 text-sm font-semibold text-gray-700">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
+                    <User className="w-4 h-4 text-indigo-600" />
+                  </div>
+                  Role
+                </label>
+                <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border-2 border-indigo-100">
+                  <span
+                    className={`font-bold ${
+                      user.role === "ADMIN"
+                        ? "text-indigo-600"
+                        : user.role === "SUPERADMIN"
+                        ? "text-purple-600"
+                        : "text-gray-600"
+                    }`}
+                  >
                     {user.role === "ADMIN"
                       ? "Admin"
                       : user.role === "SUPERADMIN"
                       ? "Super Admin"
                       : user.role}
-                  </p>
+                  </span>
                 </div>
-              </>
+              </div>
             )}
           </div>
 
-          {/* Required fields info */}
-          {isEditing && (
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-700">
-                <span className="font-medium">Catatan:</span> Field dengan tanda
-                (*) wajib diisi. Email dan nomor handphone bersifat opsional.
-              </p>
-            </div>
-          )}
-
           {/* Action Buttons */}
           {isEditing && (
-            <div className="flex gap-3 mt-8 pt-6 border-t border-gray-200">
+            <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-gray-100">
               <button
                 onClick={handleSave}
                 disabled={isUpdating}
-                className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                className="group flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:hover:scale-100 hover:scale-105"
               >
                 {isUpdating ? (
-                  <span className="loading loading-spinner loading-sm"></span>
+                  <>
+                    <span className="loading loading-spinner loading-sm"></span>
+                    Menyimpan...
+                  </>
                 ) : (
-                  <Save className="w-4 h-4" />
+                  <>
+                    <Save className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Simpan Perubahan
+                  </>
                 )}
-                {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
               </button>
 
               <button
                 onClick={handleCancel}
                 disabled={isUpdating}
-                className="flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                className="flex-1 flex items-center justify-center gap-3 px-8 py-4 border-2 border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 disabled:opacity-50"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
                 Batal
               </button>
             </div>
           )}
         </div>
 
-        {/* Additional Info */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-6 mt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+        {/* Account Info Card */}
+        <div className="bg-white rounded-2xl shadow-xl border border-white/50 p-6 mt-6 backdrop-blur-sm">
+          <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg">
+              <User className="w-5 h-5 text-white" />
+            </div>
             Informasi Akun
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-gray-600">User ID</p>
-              <p className="text-gray-900 font-mono">
-                {userData && "user_id" in userData
-                  ? userData.user_id
-                  : authUser.userId}
-              </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500 mb-2">Tanggal Bergabung</p>
+                <p className="text-gray-900 font-medium bg-blue-50 px-4 py-3 rounded-xl border border-blue-100">
+                  {user.created_at
+                    ? new Date(user.created_at).toLocaleDateString("id-ID", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })
+                    : "-"}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="text-gray-600">Tanggal Bergabung</p>
-              <p className="text-gray-900">
-                {user.created_at
-                  ? new Date(user.created_at).toLocaleDateString("id-ID", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                    })
-                  : "-"}
-              </p>
-            </div>
+
             {user.updated_at && (
-              <div className="md:col-span-2">
-                <p className="text-gray-600">Terakhir Diperbarui</p>
-                <p className="text-gray-900">
+              <div>
+                <p className="text-sm text-gray-500 mb-2">
+                  Terakhir Diperbarui
+                </p>
+                <p className="text-gray-900 font-medium bg-green-50 px-4 py-3 rounded-xl border border-green-100">
                   {new Date(user.updated_at).toLocaleDateString("id-ID", {
-                    weekday: "long",
                     year: "numeric",
                     month: "long",
                     day: "numeric",

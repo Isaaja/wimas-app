@@ -52,7 +52,7 @@ const Page = () => {
         </div>
         <div className="flex flex-col justify-center px-4 sm:px-6 md:px-10 lg:px-14 rounded-2xl lg:w-1/2 pb-6 lg:pb-0">
           <div className="flex flex-col justify-center py-6 sm:py-8 lg:py-10 px-4 sm:px-5 lg:px-6 rounded-2xl border border-white/60 bg-white/45 backdrop-blur-xs shadow-lg">
-            <h1 className="text-center text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">
+            <h1 className="text-center text-2xl sm:text-3xl lg:text-4xl font-serif tracking-widest font-semibold mb-2">
               Login
             </h1>
             <form onSubmit={handleLogin}>

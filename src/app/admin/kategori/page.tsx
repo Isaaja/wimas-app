@@ -14,6 +14,7 @@ import CategoryTable from "@/app/components/borowwer/CategoryTable";
 import Loading from "@/app/components/common/Loading";
 import Swal from "sweetalert2";
 import { toast } from "react-toastify";
+import { CirclePlus, Plus } from "lucide-react";
 
 export default function CategoryPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -87,9 +88,21 @@ export default function CategoryPage() {
   return (
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Manajemen Kategori</h1>
-        <button className="btn btn-primary" onClick={handleAddClick}>
+        <h1 className="lg:text-2xl text-xl font-bold">Manajemen Kategori</h1>
+        <button
+          className="btn btn-info lg:flex hidden"
+          onClick={handleAddClick}
+        >
           Tambah Kategori Baru
+        </button>
+        <button
+          className="flex lg:hidden fixed bottom-8 right-8 bg-info/90 backdrop-blur-sm p-3 rounded-full shadow-2xl border border-white/20 hover:bg-info transition-all duration-300 hover:scale-110 hover:shadow-info/40"
+          onClick={handleAddClick}
+        >
+          <Plus
+            className="h-10 w-10 transition-transform duration-300 hover:rotate-180"
+            color="white"
+          />
         </button>
       </div>
 

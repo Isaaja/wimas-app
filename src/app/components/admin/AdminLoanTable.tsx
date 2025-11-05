@@ -355,7 +355,7 @@ export default function AdminLoanTable({
                           href={sptFileUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn btn-ghost btn-xs text-blue-600 tooltip p-1 h-auto min-h-0"
+                          className="btn btn-ghost btn-xs text-blue-600 lg:tooltip p-1 h-auto min-h-0"
                           data-tip="Lihat Dokumen SPT"
                         >
                           <Eye className="w-4 h-4" />
@@ -365,7 +365,7 @@ export default function AdminLoanTable({
                     ) : (
                       <div className="flex flex-col gap-0.5 items-center">
                         <span
-                          className="text-gray-400 tooltip p-1"
+                          className="text-gray-400 lg:tooltip p-1"
                           data-tip="Tidak Ada Dokumen SPT"
                         >
                           <Eye className="w-4 h-4" />
@@ -375,14 +375,14 @@ export default function AdminLoanTable({
                     )}
                   </td>
 
-                  <td className="border-t border-black/10 py-2 px-1">
+                  <td className="border-t border-black/10">
                     <div className="flex justify-center items-center gap-1">
                       {mode === "active" && loan.status === "REQUESTED" && (
                         <>
                           <button
                             onClick={() => onViewDetail(loan.loan_id)}
                             disabled={isProcessing}
-                            className="btn btn-success btn-xs tooltip"
+                            className="btn btn-success btn-xs lg:tooltip"
                             data-tip="Review & Approve"
                           >
                             {isProcessing &&
@@ -396,7 +396,7 @@ export default function AdminLoanTable({
                           <button
                             onClick={() => onReject?.(loan.loan_id)}
                             disabled={isProcessing}
-                            className="btn btn-error btn-xs tooltip"
+                            className="btn btn-error btn-xs lg:tooltip"
                             data-tip="Tolak Peminjaman"
                           >
                             {isProcessing &&
@@ -414,7 +414,7 @@ export default function AdminLoanTable({
                         <button
                           onClick={() => onDone?.(loan.loan_id)}
                           disabled={isProcessing}
-                          className="btn btn-info btn-xs tooltip"
+                          className="btn btn-info btn-xs lg:tooltip"
                           data-tip="Selesaikan Peminjaman"
                         >
                           {isProcessing && actioningLoanId === loan.loan_id ? (
@@ -432,7 +432,7 @@ export default function AdminLoanTable({
                           loan.status !== "RETURNED")) && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}
-                          className="btn btn-ghost btn-xs text-blue-600 tooltip"
+                          className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
                           data-tip="Lihat Detail"
                         >
                           <View className="w-4 h-4" />
@@ -443,7 +443,7 @@ export default function AdminLoanTable({
                       {loan.status === "RETURNED" && (
                         <button
                           onClick={() => onViewDetail(loan.loan_id)}
-                          className="btn btn-ghost btn-xs text-blue-600 tooltip"
+                          className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
                           data-tip="Lihat Detail"
                         >
                           <View className="w-4 h-4" />

@@ -133,10 +133,10 @@ export default function AlatPerangkatPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-700">Alat & Perangkat</h1>
-        <div className="flex gap-4">
+    <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col lg:flex-row lg:justify-between items-center gap-4">
+        <h1 className="lg:text-2xl text-xl font-bold">Alat & Perangkat</h1>
+        <div className="flex gap-4 items-center">
           <label className="input input-bordered bg-white rounded-2xl flex items-center gap-2 w-full md:max-w-md">
             <svg
               className="h-[1.2em] w-[1.2em] opacity-50"
@@ -164,7 +164,7 @@ export default function AlatPerangkatPage() {
           </label>
 
           <button
-            className="flex w-64 items-center justify-center bg-[#91C8E4] text-[#0B1D51] rounded-lg cursor-pointer hover:bg-[#91C8E4]/80 transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+            className="flex text-white w-64 px-1 py-2 lg:text-base text-xs items-center justify-center bg-[#33A1E0] rounded-lg cursor-pointer hover:bg-[#33A1E0]/80 transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
             onClick={handleAdd}
           >
             Tambah Perangkat

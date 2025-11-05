@@ -21,9 +21,7 @@ export default function PeminjamanPage() {
 
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-gray-700">
-        Daftar Peminjaman Aktif
-      </h1>
+      <h1 className="lg:text-2xl text-xl font-bold mb-4">Daftar Peminjaman Aktif</h1>
 
       <LoanTable
         loans={loans || []}

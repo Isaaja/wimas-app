@@ -30,7 +30,7 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
       </button>
 
       <div className="flex items-center space-x-3">
-        <div className="lg:w-12 lg:h-12 w-10 h-10 flex items-center justify-center">
+        <div className="lg:w-12 w-8 lg:h-12 h-8 flex items-center justify-center">
           <Image
             src="/img/komdigifix.png"
             width={500}
@@ -39,8 +39,12 @@ export default function Header({ onToggleSidebar }: HeaderProps) {
           />
         </div>
         <div>
-          <h1 className="lg:text-lg text-xs font-semibold text-gray-800">Warehouse Inventory Management System</h1>
-          <p className="lg:text-xs text-[8px] text-gray-500">Balai Monitor Spektrum Frekuensi Radio Kelas 1 Semarang</p>
+          <h1 className="lg:text-lg text-[10px] font-semibold text-gray-800">
+            Warehouse Inventory Management System
+          </h1>
+          <p className="lg:text-xs text-[8px] text-gray-500">
+            Balai Monitor Spektrum Frekuensi Radio Kelas 1 Semarang
+          </p>
         </div>
       </div>
 

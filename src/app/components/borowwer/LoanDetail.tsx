@@ -13,6 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 interface Loan {
   loan_id: string;
@@ -102,7 +103,7 @@ export default function LoanDetail({
 
   return (
     <div className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box p-0 max-w-2xl max-h-[80vh] flex flex-col bg-white border border-gray-200">
+      <div className="modal-box p-0 max-w-2xl max-h-[80vh] flex flex-col bg-white border border-gray-200 mt-12">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div>
@@ -151,24 +152,24 @@ export default function LoanDetail({
             </div>
             {loan.status === "APPROVED" && (
               <div className="flex">
-                <button
+                <Link
+                  href={`/peminjam/nota/${loan.loan_id}`}
                   className="btn btn-ghost btn-xs text-green-600"
-                  onClick={() => onNota(loan.loan_id)}
                 >
                   <FileText className="w-4 h-4" />
                   Nota Peminjaman
-                </button>
+                </Link>
               </div>
             )}
             {(loan.status === "RETURNED" || loan.status === "DONE") && (
               <div className="flex">
-                <button
+                <Link
+                  href={`/peminjam/nota/${loan.loan_id}`}
                   className="btn btn-ghost btn-xs text-yellow-600"
-                  onClick={() => onNota(loan.loan_id)}
                 >
                   <FileText className="w-4 h-4" />
                   Nota Pengembalian
-                </button>
+                </Link>
               </div>
             )}
           </div>

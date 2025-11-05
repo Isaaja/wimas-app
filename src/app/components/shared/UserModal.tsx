@@ -146,7 +146,7 @@ const UserModal: React.FC<UserModalProps> = ({
             <button type="button" className="btn" onClick={onClose}>
               Batal
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-info">
               {isEdit ? "Simpan" : "Tambah"}
             </button>
           </div>
