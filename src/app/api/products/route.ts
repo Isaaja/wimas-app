@@ -7,6 +7,9 @@ import { checkAuth } from "@/app/utils/auth";
 import { Prisma } from "@prisma/client";
 import { errorResponse, successResponse } from "@/app/utils/response";
 
+// =============================
+// GET ALL PRODUCTS
+// =============================
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -25,7 +28,7 @@ export async function GET(req: NextRequest) {
 
     const products = await prisma.product.findMany({
       where,
-      include: { category: true },
+      include: { category: true, units: true },
       orderBy: { [sort]: order === "asc" ? "asc" : "desc" },
     });
 
@@ -36,31 +39,41 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// =============================
+// CREATE PRODUCT + AUTO CREATE UNIT
+// =============================
 export async function POST(req: Request) {
   try {
     await checkAuth("ADMIN");
 
     const body = await req.json();
+    console.log("BODY API:", body);
+
     const {
       product_name,
       product_image,
       quantity,
       category_id,
       product_avaible,
+      units,
     } = body;
+
     ProductValidator.validateProductPayload(body);
-    const result = await addProduct(
+
+    const result = await addProduct({
       product_name,
       product_image,
       quantity,
       category_id,
-      product_avaible
-    );
+      product_avaible,
+      units,
+    });
 
     if (!result) throw new InvariantError("Failed to add product");
 
     return successResponse(result, "Product added successfully", 201);
   } catch (error: any) {
+    console.error("🔥 ERROR PRISMA:", error);
     return errorResponse(
       error.message || "An error occurred",
       error.statusCode || 400

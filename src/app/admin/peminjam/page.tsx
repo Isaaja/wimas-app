@@ -13,6 +13,7 @@ import AdminLoanTable from "@/app/components/admin/AdminLoanTable";
 import LoanDetailModal from "@/app/components/admin/LoanDetailModal";
 import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
+import DoneLoanModal from "@/app/components/admin/DoneLoanModal";
 
 export default function AdminPeminjamanPage() {
   const { loans, isLoading, isError, error, refetch } = useLoans("active");
@@ -25,6 +26,8 @@ export default function AdminPeminjamanPage() {
   const [itemsPerPage] = useState(5);
   const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDoneModalOpen, setIsDoneModalOpen] = useState(false);
+  const [loanToComplete, setLoanToComplete] = useState<Loan | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -82,23 +85,53 @@ export default function AdminPeminjamanPage() {
   };
 
   const handleDone = async (loanId: string) => {
-    const result = await Swal.fire({
-      title: "Konfirmasi Penyelesaian",
-      text: "Apakah Anda yakin ingin menyelesaikan peminjaman ini?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonColor: "#10b981",
-      cancelButtonColor: "#ef4444",
-      confirmButtonText: "Ya, Selesaikan!",
-      cancelButtonText: "Batal",
-    });
+    const loan = loans?.find((l) => l.loan_id === loanId);
+    if (!loan) return;
 
-    if (result.isConfirmed) {
-      setActioningLoanId(loanId);
-      doneLoan(loanId, {
-        onSettled: () => setActioningLoanId(null),
-      });
-    }
+    setLoanToComplete(loan);
+    setIsDoneModalOpen(true);
+  };
+
+  const handleConfirmDone = async (unitConditions: Record<string, string>) => {
+    if (!loanToComplete) return;
+
+    setActioningLoanId(loanToComplete.loan_id);
+
+    doneLoan(
+      {
+        loanId: loanToComplete.loan_id,
+        unitConditions,
+      },
+      {
+        onSuccess: () => {
+          Swal.fire({
+            title: "Berhasil!",
+            text: "Peminjaman berhasil diselesaikan dan kondisi unit telah diperbarui.",
+            icon: "success",
+            confirmButtonColor: "#10b981",
+          });
+          setIsDoneModalOpen(false);
+          setLoanToComplete(null);
+          refetch();
+        },
+        onError: (error) => {
+          Swal.fire({
+            title: "Error!",
+            text: error.message || "Gagal menyelesaikan peminjaman",
+            icon: "error",
+            confirmButtonColor: "#ef4444",
+          });
+        },
+        onSettled: () => {
+          setActioningLoanId(null);
+        },
+      }
+    );
+  };
+
+  const handleCloseDoneModal = () => {
+    setIsDoneModalOpen(false);
+    setLoanToComplete(null);
   };
 
   const handleViewDetailLoan = (loanId: string) => {
@@ -167,6 +200,14 @@ export default function AdminPeminjamanPage() {
         onDataUpdated={handleDataUpdated}
         isApproving={isApproving && actioningLoanId === selectedLoan?.loan_id}
         isRejecting={isRejecting && actioningLoanId === selectedLoan?.loan_id}
+      />
+
+      <DoneLoanModal
+        loan={loanToComplete}
+        isOpen={isDoneModalOpen}
+        isProcessing={isDoing && actioningLoanId === loanToComplete?.loan_id}
+        onClose={handleCloseDoneModal}
+        onConfirm={handleConfirmDone}
       />
     </div>
   );

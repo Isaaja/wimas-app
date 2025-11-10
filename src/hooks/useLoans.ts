@@ -13,7 +13,11 @@ export interface LoanItem {
 
 export interface LoanProduct extends LoanItem {
   product_name: string;
+  product_image?: string | null;
   loan_item_id?: string;
+  unit_id?: string;
+  serial_number?: string;
+  unit_status?: string;
 }
 
 export interface LoanUser {
@@ -32,7 +36,6 @@ export interface LoanReport {
   end_date: string;
 }
 
-// Base Loan interface
 export interface BaseLoan {
   loan_id: string;
   status: "REQUESTED" | "APPROVED" | "REJECTED" | "RETURNED" | "DONE";
@@ -45,10 +48,8 @@ export interface BaseLoan {
   report?: LoanReport;
 }
 
-// Extended Loan interface for API responses
 export interface Loan extends BaseLoan {}
 
-// Interface untuk optimistic update
 export interface OptimisticLoan extends Omit<BaseLoan, "items"> {
   items: LoanItem[];
   isOptimistic?: boolean;
@@ -66,7 +67,7 @@ export interface ApiResponse<T> {
 }
 
 export interface CreateLoanParams {
-  users: string[];
+  user: string[];
   items: LoanItem[];
   docs?: File | null;
   report?: Omit<LoanReport, "report_id" | "spt_file">;
@@ -140,6 +141,22 @@ export interface DoneLoanResponse {
   message?: string;
 }
 
+export interface DoneLoanParams {
+  loanId: string;
+  unitConditions: Record<string, string>;
+}
+
+// ==================== UNIT ASSIGNMENT INTERFACES ====================
+export interface UnitAssignment {
+  product_id: string;
+  unit_ids: string[];
+}
+
+export interface ApproveLoanWithUnitsParams {
+  loanId: string;
+  units: UnitAssignment[];
+}
+
 // ==================== OPTIMIZED CACHE CONFIGURATION ====================
 const CACHE_CONFIG = {
   SHORT_TERM: 2 * 60 * 1000,
@@ -158,7 +175,10 @@ export const LOAN_QUERY_KEYS = {
   details: () => [...LOAN_QUERY_KEYS.all, "detail"] as const,
   detail: (id: string) => [...LOAN_QUERY_KEYS.details(), id] as const,
   history: () => [...LOAN_QUERY_KEYS.all, "history"] as const,
+  historyDetail: (id: string) => [...LOAN_QUERY_KEYS.history(), id] as const,
   check: () => [...LOAN_QUERY_KEYS.all, "check"] as const,
+  userLoans: (userId: string) =>
+    [...LOAN_QUERY_KEYS.all, "user", userId] as const,
 } as const;
 
 // ==================== UTILITY FUNCTIONS ====================
@@ -175,7 +195,6 @@ const getAccessToken = (): string | null => {
   );
 };
 
-// Helper untuk create optimistic loan data
 const createOptimisticLoan = (
   params: CreateLoanParams,
   currentUser: any
@@ -187,18 +206,110 @@ const createOptimisticLoan = (
   borrower: {
     user_id: currentUser?.userId || "",
     username: currentUser?.username || "Current User",
+    name: currentUser?.name || "Current User",
   },
   owner: {
     user_id: currentUser?.userId || "",
     username: currentUser?.username || "Current User",
+    name: currentUser?.name || "Current User",
   },
-  invited_users: params.users.map((userId) => ({
+  invited_users: params.user.map((userId) => ({
     user_id: userId,
     username: `user-${userId}`,
+    name: `User ${userId}`,
   })),
-  items: params.items,
+  items: params.items.map((item) => ({
+    ...item,
+    product_name: "Loading...",
+    product_image: null,
+  })),
   isOptimistic: true,
 });
+
+// ==================== NEW UTILITY FUNCTIONS ====================
+
+export const hasUnitAssignments = (loan: Loan): boolean => {
+  return loan.items.some((item) => item.unit_id != null);
+};
+
+export const getProductQuantities = (loan: Loan): Record<string, number> => {
+  if (loan.status === "REQUESTED") {
+    return loan.items.reduce((acc: Record<string, number>, item) => {
+      acc[item.product_id] = item.quantity;
+      return acc;
+    }, {});
+  } else {
+    return loan.items.reduce((acc: Record<string, number>, item) => {
+      acc[item.product_id] = (acc[item.product_id] || 0) + 1;
+      return acc;
+    }, {});
+  }
+};
+
+export const getUniqueProducts = (loan: Loan): LoanProduct[] => {
+  if (loan.status === "REQUESTED") {
+    return loan.items;
+  } else {
+    const productMap = new Map<string, LoanProduct>();
+    loan.items.forEach((item) => {
+      if (!productMap.has(item.product_id)) {
+        productMap.set(item.product_id, {
+          ...item,
+          quantity: loan.items.filter((i) => i.product_id === item.product_id)
+            .length,
+        });
+      }
+    });
+    return Array.from(productMap.values());
+  }
+};
+
+export const getLoanItemsByStatus = (loan: Loan): LoanProduct[] => {
+  if (loan.status === "REQUESTED") {
+    return loan.items.map((item) => ({
+      ...item,
+      unit_id: undefined,
+      serial_number: undefined,
+      unit_status: undefined,
+    }));
+  } else {
+    return loan.items;
+  }
+};
+
+export const getAvailableUnitsCount = (
+  items: LoanProduct[]
+): Record<string, number> => {
+  return items.reduce((acc: Record<string, number>, item) => {
+    if (item.unit_id) {
+      const productUnits = items.filter(
+        (i) => i.product_id === item.product_id && i.unit_id
+      );
+      acc[item.product_id] = productUnits.length;
+    } else {
+      acc[item.product_id] = item.quantity;
+    }
+    return acc;
+  }, {});
+};
+
+export const transformLoanItems = (
+  loan: Loan
+): {
+  items: LoanProduct[];
+  totalItems: number;
+  productCount: number;
+} => {
+  const items = getLoanItemsByStatus(loan);
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const productCount = new Set(items.map((item) => item.product_id)).size;
+
+  return {
+    items,
+    totalItems,
+    productCount,
+  };
+};
 
 // ==================== OPTIMIZED API FUNCTIONS ====================
 const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
@@ -209,6 +320,7 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
       ...options.headers,
     },
     credentials: "include",
@@ -258,7 +370,7 @@ const createLoan = async (params: CreateLoanParams): Promise<Loan> => {
   if (!token) throw new Error("Token tidak ditemukan. Silakan login ulang.");
 
   const formData = new FormData();
-  formData.append("user", JSON.stringify(params.users));
+  formData.append("user", JSON.stringify(params.user));
   formData.append("items", JSON.stringify(params.items));
 
   if (params.report) {
@@ -271,7 +383,9 @@ const createLoan = async (params: CreateLoanParams): Promise<Loan> => {
 
   const response = await fetch("/api/loan", {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
     credentials: "include",
     body: formData,
   });
@@ -281,41 +395,51 @@ const createLoan = async (params: CreateLoanParams): Promise<Loan> => {
     throw new Error(errorText || "Gagal membuat pinjaman");
   }
 
-  return response.json();
+  const result = await response.json();
+  return result.data;
 };
 
 const approveLoan = async (loanId: string): Promise<Loan> => {
   return fetchWithAuth(`/api/loan/${loanId}/approve`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+  });
+};
+
+const approveLoanWithUnits = async ({
+  loanId,
+  units,
+}: ApproveLoanWithUnitsParams): Promise<Loan> => {
+  return fetchWithAuth(`/api/loan/${loanId}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ unitAssignments: units }),
   });
 };
 
 const rejectLoan = async (loanId: string): Promise<Loan> => {
   return fetchWithAuth(`/api/loan/${loanId}/reject`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
   });
 };
 
 const deleteLoan = async (loanId: string): Promise<void> => {
   await fetchWithAuth(`/api/loan/${loanId}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
   });
 };
 
 const returnLoan = async (loanId: string): Promise<Loan> => {
   return fetchWithAuth(`/api/loan/${loanId}/return`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
   });
 };
 
-const doneLoan = async (loanId: string): Promise<Loan> => {
+const doneLoan = async ({
+  loanId,
+  unitConditions,
+}: DoneLoanParams): Promise<Loan> => {
   return fetchWithAuth(`/api/loan/${loanId}/done`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ unitConditions }),
   });
 };
 
@@ -323,9 +447,26 @@ const fetchLoanHistory = async (): Promise<LoanHistoryResponse> => {
   return fetchWithAuth("/api/loan/history");
 };
 
+const fetchUserLoans = async (userId: string): Promise<Loan[]> => {
+  return fetchWithAuth(`/api/loan/user/${userId}`);
+};
+
+const updateLoanItems = async ({
+  loanId,
+  items,
+}: {
+  loanId: string;
+  items: LoanItem[];
+}): Promise<Loan> => {
+  return fetchWithAuth(`/api/loan/${loanId}/items`, {
+    method: "PUT",
+    body: JSON.stringify({ items }),
+  });
+};
+
 // ==================== OPTIMIZED QUERY HOOKS ====================
 
-export function useLoans(filter?: "active" | "history") {
+export function useLoans(filter?: "active" | "history" | "all") {
   const { user } = useAuthContext();
   const queryClient = useQueryClient();
 
@@ -348,18 +489,16 @@ export function useLoans(filter?: "active" | "history") {
   } = useQuery({
     queryKey: queryKeys.specificList,
     queryFn: fetchLoans,
-    staleTime: CACHE_CONFIG.STALE_SHORT, 
+    staleTime: CACHE_CONFIG.STALE_SHORT,
     gcTime: CACHE_CONFIG.MEDIUM_TERM,
     retry: (failureCount, error) =>
       failureCount < 2 && !error.message.includes("Token"),
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     enabled: !!user,
-    refetchOnWindowFocus: true,
-    refetchInterval: 30 * 1000, 
-    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: false,
     select: useCallback(
       (data: Loan[]) => {
-        if (!filter) return data;
+        if (!filter || filter === "all") return data;
 
         const filterMap: Record<"active" | "history", Loan["status"][]> = {
           active: ["REQUESTED", "APPROVED", "RETURNED"],
@@ -383,37 +522,27 @@ export function useLoans(filter?: "active" | "history") {
         await queryClient.cancelQueries({ queryKey: queryKeys.lists });
 
         const previousLoans = queryClient.getQueryData(queryKeys.lists);
-
         const optimisticLoan = createOptimisticLoan(newLoan, user);
 
         queryClient.setQueryData(queryKeys.lists, (old: Loan[] = []) => [
-          ...old,
           optimisticLoan as unknown as Loan,
+          ...old,
         ]);
 
         return { previousLoans };
       },
-      onSuccess: (data: Loan, variables: CreateLoanParams, context: any) => {
+      onSuccess: (data: Loan) => {
         toast.success("Peminjaman berhasil dibuat!");
 
-        queryClient.setQueryData(queryKeys.lists, (old: Loan[] = []) =>
-          old.filter((loan) => !(loan as any).isOptimistic)
-        );
+        queryClient.setQueryData(queryKeys.lists, (old: Loan[] = []) => {
+          const filtered = old.filter((loan) => !(loan as any).isOptimistic);
+          return [data, ...filtered];
+        });
 
         queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
-        queryClient.setQueryData(queryKeys.lists, (old: Loan[] = []) => [
-          ...old,
-          data,
-        ]);
 
-        const queriesToInvalidate = [queryKeys.check, queryKeys.history];
-        queriesToInvalidate.forEach((queryKey) => {
-          queryClient.invalidateQueries({
-            queryKey,
-            exact: true,
-            refetchType: "active",
-          });
-        });
+        queryClient.invalidateQueries({ queryKey: queryKeys.check });
+        queryClient.invalidateQueries({ queryKey: queryKeys.history });
       },
       onError: (err: Error, variables: CreateLoanParams, context: any) => {
         toast.error(err.message || "Gagal membuat peminjaman");
@@ -428,7 +557,7 @@ export function useLoans(filter?: "active" | "history") {
     loans,
     isLoading,
     isError,
-    error,
+    error: error as Error,
     refetch,
     createLoan: createLoanMutation,
     isCreating,
@@ -456,60 +585,208 @@ export function useLoanById(loanId: string) {
   });
 }
 
+export function useUserLoans(userId: string) {
+  const queryKey = useMemo(() => LOAN_QUERY_KEYS.userLoans(userId), [userId]);
+
+  return useQuery({
+    queryKey,
+    queryFn: () => fetchUserLoans(userId),
+    enabled: !!userId,
+    staleTime: CACHE_CONFIG.STALE_MEDIUM,
+    gcTime: CACHE_CONFIG.MEDIUM_TERM,
+  });
+}
+
 // ==================== OPTIMIZED MUTATION HOOKS ====================
 
 const createLoanMutationHook = (
   mutationFn: (loanId: string) => Promise<Loan>,
-  successMessage: string
+  successMessage: string,
+  errorMessage: string
 ) => {
   return () => {
     const queryClient = useQueryClient();
 
     return useMutation({
       mutationFn,
+      onMutate: async (loanId: string) => {
+        await queryClient.cancelQueries({
+          queryKey: LOAN_QUERY_KEYS.detail(loanId),
+        });
+        await queryClient.cancelQueries({ queryKey: LOAN_QUERY_KEYS.lists() });
+
+        const previousLoan = queryClient.getQueryData(
+          LOAN_QUERY_KEYS.detail(loanId)
+        );
+        const previousLoans = queryClient.getQueryData(LOAN_QUERY_KEYS.lists());
+
+        const newStatus =
+          mutationFn === approveLoan
+            ? "APPROVED"
+            : mutationFn === rejectLoan
+            ? "REJECTED"
+            : "RETURNED";
+
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.detail(loanId),
+          (old: Loan) => ({
+            ...old,
+            status: newStatus,
+            updated_at: new Date().toISOString(),
+          })
+        );
+
+        queryClient.setQueryData(LOAN_QUERY_KEYS.lists(), (old: Loan[] = []) =>
+          old.map((loan) =>
+            loan.loan_id === loanId
+              ? {
+                  ...loan,
+                  status: newStatus,
+                  updated_at: new Date().toISOString(),
+                }
+              : loan
+          )
+        );
+
+        return { previousLoan, previousLoans };
+      },
       onSuccess: (data: Loan) => {
         toast.success(successMessage);
 
         queryClient.setQueryData(LOAN_QUERY_KEYS.detail(data.loan_id), data);
 
-        const queriesToInvalidate = [
-          LOAN_QUERY_KEYS.lists(),
-          LOAN_QUERY_KEYS.history(),
-        ];
+        queryClient.setQueryData(LOAN_QUERY_KEYS.lists(), (old: Loan[] = []) =>
+          old.map((loan) => (loan.loan_id === data.loan_id ? data : loan))
+        );
 
-        queriesToInvalidate.forEach((queryKey) => {
+        queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.history() });
+        queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.check() });
+
+        if (mutationFn === returnLoan) {
           queryClient.invalidateQueries({
-            queryKey,
-            exact: true,
-            refetchType: "active",
+            queryKey: [...LOAN_QUERY_KEYS.all, "products"],
           });
-        });
+          queryClient.invalidateQueries({
+            queryKey: [...LOAN_QUERY_KEYS.all, "units"],
+          });
+        }
       },
-      onError: (err: Error) => {
-        toast.error(err.message || `Gagal: ${successMessage}`);
+      onError: (err: Error, loanId: string, context: any) => {
+        toast.error(err.message || errorMessage);
+
+        if (context?.previousLoan) {
+          queryClient.setQueryData(
+            LOAN_QUERY_KEYS.detail(loanId),
+            context.previousLoan
+          );
+        }
+        if (context?.previousLoans) {
+          queryClient.setQueryData(
+            LOAN_QUERY_KEYS.lists(),
+            context.previousLoans
+          );
+        }
       },
     });
   };
 };
 
+export const useDoneLoan = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: doneLoan,
+    onMutate: async ({ loanId, unitConditions }: DoneLoanParams) => {
+      await queryClient.cancelQueries({
+        queryKey: LOAN_QUERY_KEYS.detail(loanId),
+      });
+      await queryClient.cancelQueries({ queryKey: LOAN_QUERY_KEYS.lists() });
+
+      const previousLoan = queryClient.getQueryData(
+        LOAN_QUERY_KEYS.detail(loanId)
+      );
+      const previousLoans = queryClient.getQueryData(LOAN_QUERY_KEYS.lists());
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.detail(loanId),
+        (old: Loan | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            status: "DONE",
+            updated_at: new Date().toISOString(),
+          };
+        }
+      );
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.lists(),
+        (old: Loan[] | undefined = []) =>
+          old.map((loan) =>
+            loan.loan_id === loanId
+              ? {
+                  ...loan,
+                  status: "DONE",
+                  updated_at: new Date().toISOString(),
+                }
+              : loan
+          )
+      );
+
+      return { previousLoan, previousLoans, unitConditions };
+    },
+    onSuccess: (data: Loan, variables) => {
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(variables.loanId), data);
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.lists(),
+        (old: Loan[] | undefined = []) =>
+          old.map((loan) => (loan.loan_id === data.loan_id ? data : loan))
+      );
+
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.history() });
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.check() });
+
+      queryClient.invalidateQueries({
+        queryKey: [...LOAN_QUERY_KEYS.all, "products"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...LOAN_QUERY_KEYS.all, "units"],
+      });
+    },
+    onError: (err: Error, variables: DoneLoanParams, context: any) => {
+      if (context?.previousLoan) {
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.detail(variables.loanId),
+          context.previousLoan
+        );
+      }
+      if (context?.previousLoans) {
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.lists(),
+          context.previousLoans
+        );
+      }
+    },
+  });
+};
+
 export const useApproveLoan = createLoanMutationHook(
-  approveLoan, 
-  "Peminjaman berhasil disetujui!"
+  approveLoan,
+  "Peminjaman berhasil disetujui!",
+  "Gagal menyetujui peminjaman"
 );
 
 export const useRejectLoan = createLoanMutationHook(
-  rejectLoan, 
-  "Peminjaman berhasil ditolak!"
+  rejectLoan,
+  "Peminjaman berhasil ditolak!",
+  "Gagal menolak peminjaman"
 );
 
 export const useReturnLoan = createLoanMutationHook(
-  returnLoan, 
-  "Barang berhasil dikembalikan!"
-);
-
-export const useDoneLoan = createLoanMutationHook(
-  doneLoan, 
-  "Peminjaman berhasil diselesaikan!"
+  returnLoan,
+  "Barang berhasil dikembalikan!",
+  "Gagal mengembalikan barang"
 );
 
 export function useDeleteLoan() {
@@ -517,70 +794,207 @@ export function useDeleteLoan() {
 
   return useMutation({
     mutationFn: deleteLoan,
-    onSuccess: (_, loanId) => {
-      toast.success("Peminjaman berhasil dihapus!");
-      queryClient.removeQueries({ queryKey: LOAN_QUERY_KEYS.detail(loanId) });
-      queryClient.invalidateQueries({
-        queryKey: LOAN_QUERY_KEYS.lists(),
-        refetchType: "active",
-      });
+    onMutate: async (loanId: string) => {
+      await queryClient.cancelQueries({ queryKey: LOAN_QUERY_KEYS.lists() });
+
+      const previousLoans = queryClient.getQueryData(LOAN_QUERY_KEYS.lists());
+
+      queryClient.setQueryData(LOAN_QUERY_KEYS.lists(), (old: Loan[] = []) =>
+        old.filter((loan) => loan.loan_id !== loanId)
+      );
+
+      return { previousLoans };
     },
-    onError: (err: Error) => {
-      toast.error(err.message || "Gagal menghapus peminjaman");
+    onSuccess: (_, loanId) => {
+      queryClient.removeQueries({ queryKey: LOAN_QUERY_KEYS.detail(loanId) });
+
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.history() });
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.check() });
+    },
+    onError: (err: Error, loanId: string, context: any) => {
+      if (context?.previousLoans) {
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.lists(),
+          context.previousLoans
+        );
+      }
     },
   });
 }
 
-export const useUpdateLoanItems = () => {
+export function useUpdateLoanItems() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      loanId,
-      items,
-    }: {
-      loanId: string;
-      items: LoanItem[];
-    }) => {
-      return fetchWithAuth(`/api/loan/${loanId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items }),
+    mutationFn: updateLoanItems,
+    onMutate: async ({ loanId, items }) => {
+      await queryClient.cancelQueries({
+        queryKey: LOAN_QUERY_KEYS.detail(loanId),
       });
+      await queryClient.cancelQueries({ queryKey: LOAN_QUERY_KEYS.lists() });
+
+      const previousLoan = queryClient.getQueryData(
+        LOAN_QUERY_KEYS.detail(loanId)
+      );
+      const previousLoans = queryClient.getQueryData(LOAN_QUERY_KEYS.lists());
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.detail(loanId),
+        (old: Loan | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            items: items.map((item) => ({
+              product_id: item.product_id,
+              quantity: item.quantity,
+              product_name: old.items.find(
+                (i: any) => i.product_id === item.product_id
+              )?.product_name,
+            })),
+            updated_at: new Date().toISOString(),
+          };
+        }
+      );
+
+      return { previousLoan, previousLoans };
     },
     onSuccess: (data: Loan, variables) => {
       queryClient.setQueryData(LOAN_QUERY_KEYS.detail(variables.loanId), data);
-      queryClient.invalidateQueries({
-        queryKey: LOAN_QUERY_KEYS.lists(),
-        refetchType: "active",
-      });
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.lists(),
+        (old: Loan[] | undefined = []) =>
+          old.map((loan) => (loan.loan_id === data.loan_id ? data : loan))
+      );
+
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.history() });
     },
-    onError: (error: Error) => {
-      toast.error(error.message || "Gagal memperbarui item peminjaman");
+    onError: (err: Error, variables, context: any) => {
+      if (context?.previousLoan) {
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.detail(variables.loanId),
+          context.previousLoan
+        );
+      }
+      if (context?.previousLoans) {
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.lists(),
+          context.previousLoans
+        );
+      }
     },
   });
-};
+}
+
+export function useApproveLoanWithUnits() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: approveLoanWithUnits,
+    onMutate: async ({ loanId }: ApproveLoanWithUnitsParams) => {
+      await queryClient.cancelQueries({
+        queryKey: LOAN_QUERY_KEYS.detail(loanId),
+      });
+      await queryClient.cancelQueries({ queryKey: LOAN_QUERY_KEYS.lists() });
+
+      const previousLoan = queryClient.getQueryData(
+        LOAN_QUERY_KEYS.detail(loanId)
+      );
+      const previousLoans = queryClient.getQueryData(LOAN_QUERY_KEYS.lists());
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.detail(loanId),
+        (old: Loan | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            status: "APPROVED",
+            updated_at: new Date().toISOString(),
+          };
+        }
+      );
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.lists(),
+        (old: Loan[] | undefined = []) =>
+          old.map((loan) =>
+            loan.loan_id === loanId
+              ? {
+                  ...loan,
+                  status: "APPROVED",
+                  updated_at: new Date().toISOString(),
+                }
+              : loan
+          )
+      );
+
+      return { previousLoan, previousLoans };
+    },
+    onSuccess: (data: Loan, variables) => {
+      queryClient.setQueryData(LOAN_QUERY_KEYS.detail(variables.loanId), data);
+
+      queryClient.setQueryData(
+        LOAN_QUERY_KEYS.lists(),
+        (old: Loan[] | undefined = []) =>
+          old.map((loan) => (loan.loan_id === data.loan_id ? data : loan))
+      );
+
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.history() });
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.check() });
+      queryClient.invalidateQueries({
+        queryKey: [...LOAN_QUERY_KEYS.all, "products"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...LOAN_QUERY_KEYS.all, "units"],
+      });
+    },
+    onError: (
+      err: Error,
+      variables: ApproveLoanWithUnitsParams,
+      context: any
+    ) => {
+      if (context?.previousLoan) {
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.detail(variables.loanId),
+          context.previousLoan
+        );
+      }
+      if (context?.previousLoans) {
+        queryClient.setQueryData(
+          LOAN_QUERY_KEYS.lists(),
+          context.previousLoans
+        );
+      }
+    },
+  });
+}
 
 // ==================== OPTIMIZED HISTORY HOOKS ====================
 
 export function useLoanHistory() {
+  const { user } = useAuthContext();
+
   return useQuery({
     queryKey: LOAN_QUERY_KEYS.history(),
     queryFn: fetchLoanHistory,
     staleTime: CACHE_CONFIG.STALE_MEDIUM,
     gcTime: CACHE_CONFIG.LONG_TERM,
+    enabled: !!user,
     retry: 2,
   });
 }
 
-export function useFilteredLoanHistory(filter?: "active" | "completed") {
+export function useFilteredLoanHistory(
+  filter?: "active" | "completed" | "all"
+) {
   const { data, isLoading, isError, error } = useLoanHistory();
 
   const filteredData = useMemo(() => {
     if (!data?.loans) return { loans: [], total: 0 };
+
     let filteredLoans = data.loans;
 
-    if (filter) {
+    if (filter && filter !== "all") {
       switch (filter) {
         case "active":
           filteredLoans = data.loans.filter(
@@ -610,7 +1024,7 @@ export function useFilteredLoanHistory(filter?: "active" | "completed") {
     ...filteredData,
     isLoading,
     isError,
-    error,
+    error: error as Error,
     originalData: data,
   };
 }
@@ -635,7 +1049,7 @@ export function useLoanHistoryById(loanId: string) {
     loan,
     isLoading: cachedLoan ? false : isLoading,
     isError,
-    error,
+    error: error as Error,
   };
 }
 
@@ -653,7 +1067,7 @@ export function useLoanHistoryByRole(role?: "OWNER" | "INVITED") {
     total: loansByRole?.length || 0,
     isLoading,
     isError,
-    error,
+    error: error as Error,
   };
 }
 
@@ -669,3 +1083,108 @@ export function useCheckUserLoan() {
     retry: 1,
   });
 }
+
+// ==================== COMPOSED HOOKS ====================
+
+export function useLoanStats() {
+  const { loans, isLoading: loansLoading } = useLoans("all");
+  const { data: historyData, isLoading: historyLoading } = useLoanHistory();
+
+  const stats = useMemo(() => {
+    const activeLoans = loans.filter(
+      (loan) => loan.status === "REQUESTED" || loan.status === "APPROVED"
+    ).length;
+
+    const pendingApproval = loans.filter(
+      (loan) => loan.status === "REQUESTED"
+    ).length;
+
+    const totalHistory = historyData?.total || 0;
+
+    return {
+      activeLoans,
+      pendingApproval,
+      totalHistory,
+      totalLoans: loans.length,
+    };
+  }, [loans, historyData]);
+
+  return {
+    stats,
+    isLoading: loansLoading || historyLoading,
+  };
+}
+
+export function useRealtimeLoans(interval: number = 30000) {
+  const { loans, isLoading, refetch } = useLoans("all");
+
+  useQuery({
+    queryKey: [...LOAN_QUERY_KEYS.lists(), "realtime"],
+    queryFn: () => fetchLoans(),
+    refetchInterval: interval,
+    refetchIntervalInBackground: true,
+    enabled: !isLoading,
+  });
+
+  return {
+    loans,
+    isLoading,
+    refetch,
+  };
+}
+
+export const getProductUnits = (loan: Loan, productId: string): any[] => {
+  if (!loan.items) return [];
+
+  const productItems = loan.items.filter(
+    (item) => item.product_id === productId
+  );
+
+  const itemsWithUnits = productItems.filter((item) => item.unit_id);
+
+  if (itemsWithUnits.length > 0) {
+    return itemsWithUnits.map((item) => ({
+      unit_id: item.unit_id,
+      serial_number: item.serial_number || `Unit-${item.unit_id?.slice(-4)}`,
+      unit_status: item.unit_status || "ASSIGNED",
+    }));
+  }
+
+  const quantity = getProductQuantities(loan)[productId] || 0;
+  return Array.from({ length: quantity }, (_, index) => ({
+    unit_id: `unit-${productId}-${index + 1}`,
+    serial_number: `SN-${productId.slice(-4)}-${index + 1}`,
+    unit_status: "PENDING",
+  }));
+};
+
+export const productHasUnits = (loan: Loan, productId: string): boolean => {
+  if (!loan.items) return false;
+  return loan.items.some(
+    (item) => item.product_id === productId && item.unit_id
+  );
+};
+
+export default {
+  useLoans,
+  useLoanById,
+  useUserLoans,
+  useApproveLoan,
+  useApproveLoanWithUnits,
+  useRejectLoan,
+  useReturnLoan,
+  useDoneLoan,
+  useDeleteLoan,
+  useUpdateLoanItems,
+  useLoanHistory,
+  useFilteredLoanHistory,
+  useLoanHistoryById,
+  useLoanHistoryByRole,
+  useCheckUserLoan,
+  useLoanStats,
+  useRealtimeLoans,
+  hasUnitAssignments,
+  getProductQuantities,
+  getUniqueProducts,
+  getLoanItemsByStatus,
+};

@@ -81,9 +81,13 @@ export default function AlatPerangkatPage() {
       quantity: c.quantity,
     }));
 
+    console.log("✅ invitedUserIds:", invitedUserIds);
+    console.log("✅ items:", items);
+    console.log("✅ reportData:", reportData);
+
     try {
       await createLoan({
-        users: invitedUserIds,
+        user: invitedUserIds,
         items: items,
         docs: docsFile,
         report: reportData,
@@ -142,7 +146,9 @@ export default function AlatPerangkatPage() {
 
   return (
     <>
-      <h1 className="px-4 mt-4 lg:text-2xl text-xl font-bold text-center lg:text-left">Alat & Perangkat</h1>
+      <h1 className="px-4 mt-4 lg:text-2xl text-xl font-bold text-center lg:text-left">
+        Alat & Perangkat
+      </h1>
       <div className="flex flex-col max-h-screen bg-gray-200 m-4 rounded-2xl shadow-xl p-4">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 lg:px-4 px-2 gap-4">
           <label className="input input-bordered bg-white rounded-2xl flex items-center gap-2 w-full md:max-w-md">

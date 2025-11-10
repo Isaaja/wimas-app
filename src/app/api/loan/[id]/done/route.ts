@@ -9,7 +9,11 @@ export async function POST(
   try {
     checkAuth("ADMIN");
     const { id } = await context.params;
-    const result = await doneLoan(id);
+
+    const body = await req.json();
+    const { unitConditions = {} } = body;
+
+    const result = await doneLoan(id, unitConditions);
     return successResponse(result);
   } catch (error) {
     return errorResponse(error);

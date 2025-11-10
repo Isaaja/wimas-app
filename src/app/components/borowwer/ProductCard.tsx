@@ -13,12 +13,19 @@ interface ProductCardProps {
   canBorrow?: boolean;
 }
 
+const calculateAvailableUnits = (units: any[] = []): number => {
+  return units.filter((unit) => unit.status === "AVAILABLE").length;
+};
+
 export default function ProductCard({
   product,
   onAdd,
   canBorrow = true,
 }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const availableUnits = calculateAvailableUnits(product.units);
+  const isOutOfStock = availableUnits === 0;
 
   const imageSrc =
     product.product_image && product.product_image.trim() !== ""
@@ -37,7 +44,7 @@ export default function ProductCard({
       toast.error("Anda tidak dapat meminjam karena memiliki pinjaman aktif");
       return;
     }
-    if (product.product_avaible === 0) {
+    if (availableUnits === 0) {
       toast.error("Stok produk habis");
       return;
     }
@@ -48,7 +55,6 @@ export default function ProductCard({
     setIsModalOpen(false);
   };
 
-  const isOutOfStock = product.product_avaible === 0;
   const isDisabled = !canBorrow || isOutOfStock;
 
   return (
@@ -103,7 +109,7 @@ export default function ProductCard({
               isOutOfStock ? "text-gray-500" : "text-gray-600"
             }`}
           >
-            Tersedia: {product.product_avaible}
+            Tersedia: {availableUnits}
           </p>
           {isOutOfStock && (
             <div className="badge badge-error text-xs sm:text-sm w-full justify-center py-2 sm:py-3">
@@ -131,6 +137,7 @@ export default function ProductCard({
         onClose={closeModal}
         onAddToCart={handleAddToCart}
         canBorrow={canBorrow}
+        availableUnits={availableUnits}
       />
     </>
   );

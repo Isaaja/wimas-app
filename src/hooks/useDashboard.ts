@@ -40,11 +40,10 @@ export interface PendingLoan {
     username: string;
   };
   items: Array<{
-    product: {
-      product_name: string;
-    };
+    product_name: string;
     quantity: number;
   }>;
+  totalItems: number;
 }
 
 export interface LoanForStats {
@@ -53,11 +52,15 @@ export interface LoanForStats {
   created_at: string;
   items: Array<{
     product_id: string;
+    product_name: string;
     quantity: number;
-    product: {
-      product_name: string;
-    };
   }>;
+}
+
+export interface MostBorrowedProduct {
+  product_id: string;
+  product_name: string;
+  borrow_count: number;
 }
 
 export interface RecentUser {
@@ -73,6 +76,7 @@ export interface DashboardData {
   lowStockProducts: LowStockProduct[];
   pendingLoans: PendingLoan[];
   allLoans: LoanForStats[];
+  mostBorrowedProducts: MostBorrowedProduct[];
   recentUsers: RecentUser[];
 }
 
@@ -99,16 +103,6 @@ export const DASHBOARD_QUERY_KEYS = {
     [
       ...DASHBOARD_QUERY_KEYS.all,
       "stats",
-      ...(filters ? [filters] : []),
-    ] as const,
-  lowStock: () => [...DASHBOARD_QUERY_KEYS.all, "low-stock"] as const,
-  pendingLoans: () => [...DASHBOARD_QUERY_KEYS.all, "pending-loans"] as const,
-  recentUsers: () => [...DASHBOARD_QUERY_KEYS.all, "recent-users"] as const,
-  charts: (type: string, filters?: DashboardFilters) =>
-    [
-      ...DASHBOARD_QUERY_KEYS.all,
-      "charts",
-      type,
       ...(filters ? [filters] : []),
     ] as const,
 } as const;
@@ -175,35 +169,6 @@ const fetchDashboardStats = async (
   return fetchWithAuth(url);
 };
 
-const fetchLowStockProducts = async (): Promise<LowStockProduct[]> => {
-  return fetchWithAuth("/api/dashboard/low-stock-products");
-};
-
-const fetchPendingLoans = async (): Promise<PendingLoan[]> => {
-  return fetchWithAuth("/api/dashboard/pending-loans");
-};
-
-const fetchRecentUsers = async (): Promise<RecentUser[]> => {
-  return fetchWithAuth("/api/dashboard/recent-users");
-};
-
-const fetchChartData = async (
-  type: string,
-  filters?: DashboardFilters
-): Promise<any> => {
-  const queryParams = new URLSearchParams();
-  queryParams.append("type", type);
-
-  if (filters?.timeframe) queryParams.append("timeframe", filters.timeframe);
-  if (filters?.category_id)
-    queryParams.append("category_id", filters.category_id);
-
-  const queryString = queryParams.toString();
-  const url = `/api/dashboard/charts${queryString ? `?${queryString}` : ""}`;
-
-  return fetchWithAuth(url);
-};
-
 // ==================== OPTIMIZED QUERY HOOKS ====================
 
 interface UseDashboardStatsOptions {
@@ -235,50 +200,52 @@ export function useDashboardStats({
   });
 }
 
+// ==================== INDIVIDUAL DATA HOOKS ====================
+// Hooks untuk akses data spesifik dari dashboard stats
+
 export function useLowStockProducts() {
-  return useQuery({
-    queryKey: DASHBOARD_QUERY_KEYS.lowStock(),
-    queryFn: fetchLowStockProducts,
-    staleTime: DASHBOARD_CACHE_CONFIG.STALE_SHORT,
-    gcTime: DASHBOARD_CACHE_CONFIG.SHORT_TERM,
-    retry: 1,
-  });
+  const { data, ...queryInfo } = useDashboardStats();
+
+  return {
+    data: data?.lowStockProducts || [],
+    ...queryInfo,
+  };
 }
 
 export function usePendingLoans() {
-  return useQuery({
-    queryKey: DASHBOARD_QUERY_KEYS.pendingLoans(),
-    queryFn: fetchPendingLoans,
-    staleTime: DASHBOARD_CACHE_CONFIG.STALE_SHORT,
-    gcTime: DASHBOARD_CACHE_CONFIG.SHORT_TERM,
-    retry: 1,
-  });
+  const { data, ...queryInfo } = useDashboardStats();
+
+  return {
+    data: data?.pendingLoans || [],
+    ...queryInfo,
+  };
 }
 
 export function useRecentUsers() {
-  return useQuery({
-    queryKey: DASHBOARD_QUERY_KEYS.recentUsers(),
-    queryFn: fetchRecentUsers,
-    staleTime: DASHBOARD_CACHE_CONFIG.STALE_MEDIUM,
-    gcTime: DASHBOARD_CACHE_CONFIG.MEDIUM_TERM,
-    retry: 1,
-  });
+  const { data, ...queryInfo } = useDashboardStats();
+
+  return {
+    data: data?.recentUsers || [],
+    ...queryInfo,
+  };
 }
 
-export function useChartData(type: string, filters?: DashboardFilters) {
-  const queryKey = useMemo(
-    () => DASHBOARD_QUERY_KEYS.charts(type, filters),
-    [type, filters]
-  );
+export function useMostBorrowedProducts() {
+  const { data, ...queryInfo } = useDashboardStats();
 
-  return useQuery({
-    queryKey,
-    queryFn: () => fetchChartData(type, filters),
-    staleTime: DASHBOARD_CACHE_CONFIG.STALE_MEDIUM,
-    gcTime: DASHBOARD_CACHE_CONFIG.LONG_TERM,
-    enabled: !!type,
-    retry: 1,
-  });
+  return {
+    data: data?.mostBorrowedProducts || [],
+    ...queryInfo,
+  };
+}
+
+export function useAllLoans() {
+  const { data, ...queryInfo } = useDashboardStats();
+
+  return {
+    data: data?.allLoans || [],
+    ...queryInfo,
+  };
 }
 
 // ==================== OPTIMIZED SPECIALIZED HOOKS ====================
@@ -412,7 +379,7 @@ export function useCriticalAlerts() {
 }
 
 export function useRealTimeStats(refetchInterval?: number) {
-  const defaultRefetchInterval = 30000; 
+  const defaultRefetchInterval = 30000;
 
   return useDashboardStats({
     queryOptions: {
@@ -438,26 +405,7 @@ export function usePreloadDashboard() {
           staleTime: DASHBOARD_CACHE_CONFIG.STALE_MEDIUM,
         }),
 
-      lowStock: () =>
-        queryClient.prefetchQuery({
-          queryKey: DASHBOARD_QUERY_KEYS.lowStock(),
-          queryFn: fetchLowStockProducts,
-          staleTime: DASHBOARD_CACHE_CONFIG.STALE_SHORT,
-        }),
-
-      pendingLoans: () =>
-        queryClient.prefetchQuery({
-          queryKey: DASHBOARD_QUERY_KEYS.pendingLoans(),
-          queryFn: fetchPendingLoans,
-          staleTime: DASHBOARD_CACHE_CONFIG.STALE_SHORT,
-        }),
-
-      all: (filters?: DashboardFilters) =>
-        Promise.all([
-          preload.stats(filters),
-          preload.lowStock(),
-          preload.pendingLoans(),
-        ]),
+      all: (filters?: DashboardFilters) => preload.stats(filters),
     }),
     [queryClient]
   );
@@ -473,23 +421,11 @@ export function useRefreshDashboard() {
   const refresh = useMemo(
     () => ({
       all: () =>
-        Promise.all([
-          queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEYS.all }),
-        ]),
+        queryClient.invalidateQueries({ queryKey: DASHBOARD_QUERY_KEYS.all }),
 
       stats: (filters?: DashboardFilters) =>
         queryClient.invalidateQueries({
           queryKey: DASHBOARD_QUERY_KEYS.stats(filters),
-        }),
-
-      lowStock: () =>
-        queryClient.invalidateQueries({
-          queryKey: DASHBOARD_QUERY_KEYS.lowStock(),
-        }),
-
-      pendingLoans: () =>
-        queryClient.invalidateQueries({
-          queryKey: DASHBOARD_QUERY_KEYS.pendingLoans(),
         }),
 
       withLoading: async () => {
@@ -513,7 +449,7 @@ export function useLoanAnalytics(timeframe?: "week" | "month" | "year") {
   const analytics = useMemo(() => {
     if (!data?.stats) return null;
 
-    const { stats, allLoans = [] } = data;
+    const { stats, allLoans = [], mostBorrowedProducts = [] } = data;
 
     const totalActiveLoans = stats.pendingLoans + stats.approvedLoans;
     const completionRate =
@@ -521,17 +457,12 @@ export function useLoanAnalytics(timeframe?: "week" | "month" | "year") {
         ? ((stats.doneLoans + stats.returnedLoans) / stats.totalLoans) * 100
         : 0;
 
-    const productUsage = allLoans.reduce((acc, loan) => {
-      loan.items.forEach((item) => {
-        const productId = item.product_id;
-        acc[productId] = (acc[productId] || 0) + item.quantity;
-      });
-      return acc;
-    }, {} as Record<string, number>);
-
-    const popularProducts = Object.entries(productUsage)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5);
+    // Gunakan mostBorrowedProducts dari API
+    const popularProducts = mostBorrowedProducts.map((product) => ({
+      product_id: product.product_id,
+      product_name: product.product_name,
+      borrow_count: product.borrow_count,
+    }));
 
     return {
       totalActiveLoans,
@@ -548,6 +479,49 @@ export function useLoanAnalytics(timeframe?: "week" | "month" | "year") {
       },
     };
   }, [data, timeframe]);
+
+  return {
+    analytics,
+    rawData: data,
+    ...queryInfo,
+  };
+}
+
+// ==================== PRODUCT ANALYTICS HOOKS ====================
+
+export function useProductAnalytics() {
+  const { data, ...queryInfo } = useDashboardStats();
+
+  const analytics = useMemo(() => {
+    if (!data) return null;
+
+    const { stats, lowStockProducts = [], mostBorrowedProducts = [] } = data;
+
+    return {
+      inventory: {
+        total: stats.totalProducts,
+        available: stats.totalAvailableProducts,
+        outOfStock: stats.outOfStockProducts,
+        lowStock: stats.lowStockProducts,
+        utilizationRate:
+          stats.totalProducts > 0
+            ? ((stats.totalProducts - stats.totalAvailableProducts) /
+                stats.totalProducts) *
+              100
+            : 0,
+      },
+      criticalProducts: lowStockProducts,
+      popularProducts: mostBorrowedProducts,
+      stockHealth: {
+        good:
+          stats.totalProducts -
+          stats.lowStockProducts -
+          stats.outOfStockProducts,
+        warning: stats.lowStockProducts,
+        critical: stats.outOfStockProducts,
+      },
+    };
+  }, [data]);
 
   return {
     analytics,

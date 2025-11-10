@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Product } from "@/hooks/useProducts";
 import { X } from "lucide-react";
 import Image from "next/image";
@@ -11,6 +11,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number) => void;
   canBorrow?: boolean;
+  availableUnits: number; // Tambahkan prop ini
 }
 
 export default function ProductDetailModal({
@@ -19,8 +20,16 @@ export default function ProductDetailModal({
   onClose,
   onAddToCart,
   canBorrow = true,
+  availableUnits, // Gunakan availableUnits dari props
 }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState<number>(1);
+
+  // Reset quantity ketika modal dibuka atau availableUnits berubah
+  useEffect(() => {
+    if (isOpen) {
+      setQuantity(1);
+    }
+  }, [isOpen, availableUnits]);
 
   const handleAddToCart = () => {
     if (!canBorrow) return;
@@ -33,6 +42,12 @@ export default function ProductDetailModal({
   const handleClose = () => {
     setQuantity(1);
     onClose();
+  };
+
+  // Validasi quantity tidak melebihi availableUnits
+  const handleQuantityChange = (value: number) => {
+    const newQuantity = Math.max(1, Math.min(value, availableUnits));
+    setQuantity(newQuantity);
   };
 
   if (!isOpen) return null;
@@ -75,13 +90,13 @@ export default function ProductDetailModal({
             <div className="lg:hidden text-center">
               <div
                 className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
-                  product.product_avaible > 0
+                  availableUnits > 0
                     ? "bg-green-500 text-white"
                     : "bg-red-500 text-white"
                 }`}
               >
-                {product.product_avaible > 0
-                  ? `Tersedia: ${product.product_avaible} unit`
+                {availableUnits > 0
+                  ? `Tersedia: ${availableUnits} unit`
                   : "Stok Habis"}
               </div>
             </div>
@@ -101,13 +116,13 @@ export default function ProductDetailModal({
             <div className="hidden lg:block text-center">
               <div
                 className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
-                  product.product_avaible > 0
+                  availableUnits > 0
                     ? "bg-green-500 text-white"
                     : "bg-red-500 text-white"
                 }`}
               >
-                {product.product_avaible > 0
-                  ? `Tersedia: ${product.product_avaible} unit`
+                {availableUnits > 0
+                  ? `Tersedia: ${availableUnits} unit`
                   : "Stok Habis"}
               </div>
             </div>
@@ -128,13 +143,11 @@ export default function ProductDetailModal({
                 </span>
               </div>
 
-              <div className="py-1">
-                <span className="text-gray-600 font-medium block mb-1">
-                  Deskripsi:
+              <div className="flex justify-between items-center py-1">
+                <span className="text-gray-600 font-medium">Tersedia:</span>
+                <span className="font-semibold text-gray-800">
+                  {availableUnits} unit
                 </span>
-                <p className="text-gray-700 bg-gray-50 rounded-lg p-2 text-xs line-clamp-3">
-                  &quot;Tidak ada deskripsi&quot;
-                </p>
               </div>
             </div>
 
@@ -146,8 +159,8 @@ export default function ProductDetailModal({
               <div className="flex items-center justify-center gap-3">
                 <button
                   className="btn btn-circle btn-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  disabled={!canBorrow || product.product_avaible === 0}
+                  onClick={() => handleQuantityChange(quantity - 1)}
+                  disabled={!canBorrow || availableUnits === 0 || quantity <= 1}
                 >
                   -
                 </button>
@@ -156,32 +169,24 @@ export default function ProductDetailModal({
                   className="input input-bordered input-sm w-16 text-center font-semibold text-gray-800 bg-white"
                   value={quantity}
                   min={1}
-                  max={product.product_avaible}
-                  onChange={(e) =>
-                    setQuantity(
-                      Math.max(
-                        1,
-                        Math.min(
-                          Number(e.target.value),
-                          product.product_avaible
-                        )
-                      )
-                    )
-                  }
-                  disabled={!canBorrow || product.product_avaible === 0}
+                  max={availableUnits}
+                  onChange={(e) => handleQuantityChange(Number(e.target.value))}
+                  disabled={!canBorrow || availableUnits === 0}
                 />
                 <button
                   className="btn btn-circle btn-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
-                  onClick={() =>
-                    setQuantity((q) => Math.min(q + 1, product.product_avaible))
+                  onClick={() => handleQuantityChange(quantity + 1)}
+                  disabled={
+                    !canBorrow ||
+                    availableUnits === 0 ||
+                    quantity >= availableUnits
                   }
-                  disabled={!canBorrow || product.product_avaible === 0}
                 >
                   +
                 </button>
               </div>
               <p className="text-xs text-center text-gray-500 mt-2">
-                Maks: {product.product_avaible} unit
+                Maks: {availableUnits} unit
               </p>
             </div>
 
@@ -194,7 +199,7 @@ export default function ProductDetailModal({
               </div>
             )}
 
-            {product.product_avaible === 0 && (
+            {availableUnits === 0 && (
               <div className="alert alert-error py-2 px-3 bg-red-50 border-red-200">
                 <span className="text-red-800 text-xs sm:text-sm">
                   ❌ Stok habis
@@ -203,7 +208,7 @@ export default function ProductDetailModal({
             )}
 
             {/* Summary */}
-            {canBorrow && product.product_avaible > 0 && (
+            {canBorrow && availableUnits > 0 && (
               <div className="alert alert-info py-2 px-3 bg-blue-50 border-blue-200">
                 <span className="text-blue-800 text-xs sm:text-sm">
                   Akan pinjam: <strong>{quantity} unit</strong>
@@ -224,13 +229,13 @@ export default function ProductDetailModal({
                 onClick={handleAddToCart}
                 disabled={
                   !canBorrow ||
-                  product.product_avaible === 0 ||
-                  quantity > product.product_avaible
+                  availableUnits === 0 ||
+                  quantity > availableUnits
                 }
               >
                 {!canBorrow
                   ? "Tidak Bisa Pinjam"
-                  : product.product_avaible === 0
+                  : availableUnits === 0
                   ? "Stok Habis"
                   : "Pinjam Sekarang"}
               </button>

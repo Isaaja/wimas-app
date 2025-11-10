@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useLoanById } from "@/hooks/useLoans";
+import { useLoanById, getProductUnits } from "@/hooks/useLoans";
 import Loading from "@/app/components/common/Loading";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -31,6 +31,58 @@ export default function AdminNotaPeminjamanPage() {
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return "-";
     return format(date, "dd MMM yyyy, HH:mm", { locale: id });
+  };
+
+  // Fungsi untuk mendapatkan unit dengan serial number
+  const getProductUnitsWithSerial = (productId: string) => {
+    if (!loan) return [];
+    return getProductUnits(loan, productId);
+  };
+
+  // Fungsi untuk mendapatkan produk yang unik (group by product_id)
+  const getUniqueProducts = () => {
+    if (!loan?.items) return [];
+
+    const productMap = new Map();
+
+    loan.items.forEach((item) => {
+      if (!productMap.has(item.product_id)) {
+        productMap.set(item.product_id, {
+          ...item,
+          // Hitung total quantity untuk produk ini
+          totalQuantity: loan.items.filter(
+            (i) => i.product_id === item.product_id
+          ).length,
+        });
+      }
+    });
+
+    return Array.from(productMap.values());
+  };
+
+  // Fungsi untuk mendapatkan semua unit dari loan tanpa duplikat
+  const getAllLoanUnits = () => {
+    if (!loan?.items) return [];
+
+    const allUnits: any[] = [];
+    const processedUnitIds = new Set<string>();
+
+    loan.items.forEach((item) => {
+      const productUnits = getProductUnitsWithSerial(item.product_id);
+
+      productUnits.forEach((unit) => {
+        if (unit.unit_id && !processedUnitIds.has(unit.unit_id)) {
+          processedUnitIds.add(unit.unit_id);
+          allUnits.push({
+            ...unit,
+            product_name: item.product_name,
+            product_id: item.product_id,
+          });
+        }
+      });
+    });
+
+    return allUnits;
   };
 
   const handlePrint = useReactToPrint({
@@ -113,6 +165,9 @@ export default function AdminNotaPeminjamanPage() {
 
   const totalItems =
     loan.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+
+  const uniqueProducts = getUniqueProducts();
+  const allUnits = getAllLoanUnits();
 
   return (
     <div className="">
@@ -330,55 +385,108 @@ export default function AdminNotaPeminjamanPage() {
               </div>
             )}
 
-            {/* Daftar Barang */}
+            {/* Daftar Barang - Versi dengan Serial Number */}
             <div>
               <h3 className="font-semibold text-gray-700 mb-1 text-sm">
                 {isReturned
                   ? "BARANG YANG DIKEMBALIKAN"
                   : "BARANG YANG DIPINJAM"}{" "}
-                ({totalItems} items)
+                ({totalItems} items, {allUnits.length} unit)
               </h3>
-              <div className="border border-gray-300 rounded overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300 w-8">
-                        No
-                      </th>
-                      <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300">
-                        Nama Barang
-                      </th>
-                      <th className="px-2 py-1 text-center font-medium text-gray-700 border-b border-gray-300 w-12">
-                        Jumlah
-                      </th>
-                      <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300 w-20">
-                        Keterangan
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loan.items?.map((item: any, index: number) => (
-                      <tr
-                        key={item.product_id}
-                        className="border-b border-gray-200 last:border-b-0"
-                      >
-                        <td className="px-2 py-1 text-gray-600">{index + 1}</td>
-                        <td className="px-2 py-1 text-gray-800">
-                          {item.product_name}
-                        </td>
-                        <td className="px-2 py-1 text-gray-600 text-center">
-                          {item.quantity}
-                        </td>
-                        <td className="px-2 py-1 text-gray-600">
-                          {item.quantity > 1
-                            ? `${item.quantity} unit`
-                            : "1 unit"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+
+              {/* Tampilkan produk yang unik dengan detail unit */}
+              {uniqueProducts.map((product: any, productIndex: number) => {
+                const productUnits = getProductUnitsWithSerial(
+                  product.product_id
+                );
+                const uniqueProductUnits = productUnits.filter(
+                  (unit, index, self) =>
+                    index === self.findIndex((u) => u.unit_id === unit.unit_id)
+                );
+
+                return (
+                  <div key={product.product_id} className="mb-3 last:mb-0">
+                    {/* Product Header */}
+                    <div className="bg-gray-50 p-2 border border-gray-300 rounded-t">
+                      <div className="flex justify-between items-center">
+                        <div className="font-medium text-gray-800">
+                          {productIndex + 1}. {product.product_name}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {product.totalQuantity} unit
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Unit Details */}
+                    {uniqueProductUnits.length > 0 ? (
+                      <div className="border border-gray-300 border-t-0 rounded-b">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-100">
+                            <tr>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300 w-8">
+                                No
+                              </th>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300">
+                                Serial Number
+                              </th>
+                              <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300">
+                                Unit ID
+                              </th>
+                              <th className="px-2 py-1 text-center font-medium text-gray-700 border-b border-gray-300 w-16">
+                                Status
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {uniqueProductUnits.map((unit, unitIndex) => (
+                              <tr
+                                key={unit.unit_id}
+                                className="border-b border-gray-200 last:border-b-0"
+                              >
+                                <td className="px-2 py-1 text-gray-600 text-center">
+                                  {unitIndex + 1}
+                                </td>
+                                <td className="px-2 py-1 text-gray-800 font-mono text-xs">
+                                  {unit.serial_number || "N/A"}
+                                </td>
+                                <td className="px-2 py-1 text-gray-600 font-mono text-xs">
+                                  {unit.unit_id?.slice(-8)}
+                                </td>
+                                <td className="px-2 py-1 text-center">
+                                  <span
+                                    className={`badge badge-xs ${
+                                      unit.unit_status === "AVAILABLE"
+                                        ? "badge-success"
+                                        : unit.unit_status === "LOANED"
+                                        ? "badge-warning"
+                                        : unit.unit_status === "DAMAGED"
+                                        ? "badge-error"
+                                        : "badge-ghost"
+                                    }`}
+                                  >
+                                    {unit.unit_status === "AVAILABLE"
+                                      ? "Tersedia"
+                                      : unit.unit_status === "LOANED"
+                                      ? "Dipinjam"
+                                      : unit.unit_status === "DAMAGED"
+                                      ? "Rusak"
+                                      : unit.unit_status || "Unknown"}
+                                  </span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="border border-gray-300 border-t-0 rounded-b p-2 text-center text-gray-500 text-sm">
+                        Tidak ada detail unit tersedia
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Daftar Peserta Undangan */}

@@ -2,10 +2,16 @@ import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
 import { nanoid } from "nanoid";
+
+// =====================================
+// GET PRODUCT BY ID
+// =====================================
 export async function getProductById(id: string) {
   const item = await prisma.product.findUnique({
-    where: {
-      product_id: id,
+    where: { product_id: id },
+    include: {
+      category: true,
+      units: true,
     },
   });
 
@@ -16,31 +22,9 @@ export async function getProductById(id: string) {
   return item;
 }
 
-export async function addProduct(
-  product_name: string,
-  product_image: string | undefined,
-  quantity: number,
-  category_id: string,
-  product_avaible: number
-) {
-  await checkProduckName(product_name);
-  const defaultImage =
-    product_image && product_image.trim() !== "" ? product_image : null;
-  const product_id = `product-${nanoid(16)}`;
-  const product = await prisma.product.create({
-    data: {
-      product_id: product_id,
-      product_name,
-      product_image: defaultImage,
-      quantity,
-      category_id,
-      product_avaible,
-    },
-  });
-
-  return product;
-}
-
+// =====================================
+// CHECK NAME
+// =====================================
 async function checkProduckName(product_name: string) {
   const existingProduct = await prisma.product.findFirst({
     where: {
@@ -50,31 +34,233 @@ async function checkProduckName(product_name: string) {
       },
     },
   });
+
   if (existingProduct) {
     throw new InvariantError("Nama Produk sudah ada");
   }
 }
+
+// =====================================
+// ✅ CREATE PRODUCT + CREATE UNITS
+// =====================================
+
+/**
+ * Sekarang Product CREATE:
+ * - Buat product dulu
+ * - Lalu buat productUnit sebanyak quantity
+ * - serialNumber manual (user input)
+ */
+export async function addProduct(payload: any) {
+  const {
+    product_name,
+    product_image,
+    quantity,
+    category_id,
+    product_avaible,
+    units,
+  } = payload;
+
+  await checkProduckName(product_name);
+
+  if (units.length !== quantity) {
+    throw new InvariantError(
+      "Jumlah serial number (units) harus sama dengan quantity"
+    );
+  }
+
+  const product_id = `product-${nanoid(16)}`;
+  const defaultImage =
+    product_image && product_image.trim() !== "" ? product_image : null;
+
+  return prisma.$transaction(async (tx) => {
+    const product = await tx.product.create({
+      data: {
+        product_id,
+        product_name,
+        product_image: defaultImage,
+        quantity,
+        category_id,
+        product_avaible,
+      },
+    });
+
+    for (const u of units) {
+      await tx.productUnit.create({
+        data: {
+          unit_id: `unit-${nanoid(16)}`,
+          product_id: product_id,
+          serialNumber: u.serialNumber,
+          status: "AVAILABLE",
+          condition: "GOOD",
+        },
+      });
+    }
+
+    return product;
+  });
+}
+
+// =====================================
+// ✅ UPDATE PRODUCT (unit tidak disentuh)
+// =====================================
 export async function updateProductById(
   id: string,
   data: {
-    product_name: string;
+    product_name?: string;
     product_image?: string;
-    quantity: number;
-    category_id: string;
-    product_avaible: number;
+    quantity?: number;
+    category_id?: string;
+    product_avaible?: number;
+    units?: { serialNumber: string }[];
   }
 ) {
   try {
-    const updatedProduct = await prisma.product.update({
+    // ====== Pisahkan units dari field Product ======
+    const { units = [], ...productData } = data;
+
+    // ====== Ambil semua unit yang sudah ada ======
+    const existingUnits = await prisma.productUnit.findMany({
       where: { product_id: id },
-      data,
     });
 
-    return updatedProduct;
+    const existingSerials = existingUnits.map((u) => u.serialNumber);
+
+    // ====== SerialNumber yang dikirim dari FE ======
+    const newSerials = units.map((u) => u.serialNumber);
+
+    // ====== Unit yang perlu dihapus ======
+    const unitsToDelete = existingUnits
+      .filter((u) => !newSerials.includes(u.serialNumber))
+      .map((u) => u.unit_id);
+
+    // ====== Unit yang perlu dibuat ======
+    const unitsToCreate = units
+      .filter((u) => !existingSerials.includes(u.serialNumber))
+      .map((u) => ({
+        unit_id: crypto.randomUUID().replace(/-/g, ""),
+        serialNumber: u.serialNumber,
+      }));
+
+    // ====== Unit yang perlu di-update ======
+    const unitsToUpdate = existingUnits
+      .filter((u) => newSerials.includes(u.serialNumber))
+      .map((u) => ({
+        unit_id: u.unit_id,
+        serialNumber: u.serialNumber,
+      }));
+
+    // ====== Eksekusi update ======
+    const result = await prisma.product.update({
+      where: { product_id: id },
+      data: {
+        ...productData, // hanya field Product
+        units: {
+          deleteMany: {
+            unit_id: { in: unitsToDelete },
+          },
+          create: unitsToCreate,
+          update: unitsToUpdate.map((u) => ({
+            where: { unit_id: u.unit_id },
+            data: {
+              serialNumber: u.serialNumber,
+            },
+          })),
+        },
+      },
+      include: { units: true },
+    });
+
+    return result;
   } catch (error: any) {
+    console.log("prisma:error", error);
     throw new InvariantError(error.message || "Failed to update Product");
   }
 }
+
+export async function updateUnitCondition(
+  unit_id: string,
+  condition: "GOOD" | "DAMAGED",
+  note?: string
+) {
+  try {
+    const unit = await prisma.productUnit.findUnique({
+      where: { unit_id },
+      include: { product: true },
+    });
+
+    if (!unit) {
+      throw new NotFoundError("Unit tidak ditemukan");
+    }
+
+    const updatedUnit = await prisma.productUnit.update({
+      where: { unit_id },
+      data: {
+        condition,
+        status: "AVAILABLE",
+        note: note || unit.note,
+        updatedAt: new Date(),
+      },
+      include: {
+        product: true,
+      },
+    });
+
+    if (unit.status !== "AVAILABLE" && condition === "GOOD") {
+      await prisma.product.update({
+        where: { product_id: unit.product_id },
+        data: {
+          product_avaible: {
+            increment: 1,
+          },
+        },
+      });
+    }
+
+    return updatedUnit;
+  } catch (error: any) {
+    throw new InvariantError(error.message || "Gagal memperbarui kondisi unit");
+  }
+}
+
+export async function deleteUnit(unit_id: string) {
+  try {
+    const unit = await prisma.productUnit.findUnique({
+      where: { unit_id },
+      include: { product: true },
+    });
+
+    if (!unit) {
+      throw new NotFoundError("Unit tidak ditemukan");
+    }
+
+    const deletedUnit = await prisma.productUnit.delete({
+      where: { unit_id },
+    });
+
+    const newQuantity = unit.product.quantity - 1;
+
+    const newAvailable =
+      unit.status === "AVAILABLE"
+        ? Math.max(0, unit.product.product_avaible - 1)
+        : unit.product.product_avaible;
+
+    await prisma.product.update({
+      where: { product_id: unit.product_id },
+      data: {
+        quantity: newQuantity,
+        product_avaible: newAvailable,
+      },
+    });
+
+    return deletedUnit;
+  } catch (error: any) {
+    throw new InvariantError(error.message || "Gagal menghapus unit");
+  }
+}
+
+// =====================================
+// ✅ DELETE PRODUCT + CASCADE DELETE UNIT
+// =====================================
 export async function deleteProductById(id: string) {
   try {
     const result = await prisma.product.delete({
@@ -86,6 +272,10 @@ export async function deleteProductById(id: string) {
   }
 }
 
+// =====================================
+// ✅ GET PRODUCT WITH CUSTOM QUANTITY
+// (untuk loan request)
+// =====================================
 export async function getProductsWithQuantity(
   items: { product_id: string; quantity: number }[]
 ) {
@@ -117,6 +307,7 @@ export async function getProductsWithQuantity(
     const product = productMap[item.product_id];
     if (!product)
       throw new NotFoundError(`Product ${item.product_id} not found`);
+
     return {
       ...product,
       quantity: item.quantity,

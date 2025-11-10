@@ -1,30 +1,44 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { format } from "date-fns";
+import { id } from "date-fns/locale";
+import {
+  X,
+  Download,
+  User,
+  Users,
+  Package,
+  FileText,
+  Calendar,
+  Hash,
+  CheckCircle,
+  Copy,
+  Edit,
+  Save,
+  Plus,
+  Search,
+  CheckCheck,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  AlertTriangle,
+} from "lucide-react";
 import {
   Loan,
   LoanProduct,
   useUpdateLoanItems,
   useLoanById,
+  useApproveLoanWithUnits,
+  getProductQuantities,
+  getUniqueProducts,
+  hasUnitAssignments,
+  getProductUnits,
+  productHasUnits,
 } from "@/hooks/useLoans";
 import { useProducts, Product } from "@/hooks/useProducts";
-import { format } from "date-fns";
-import { id } from "date-fns/locale";
-import {
-  X,
-  Edit,
-  Save,
-  Download,
-  Plus,
-  Search,
-  UserPen,
-  Users,
-  Box,
-  Mail,
-} from "lucide-react";
 import { toast } from "react-toastify";
-import { FileText } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 interface LoanDetailModalProps {
@@ -32,30 +46,47 @@ interface LoanDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   onNota: (loanId: string) => void;
-  onApprove?: (loanId: string) => void;
+  onApprove?: (
+    loanId: string,
+    units?: Array<{ product_id: string; unit_ids: string[] }>
+  ) => void;
   onReject?: (loanId: string) => void;
   isApproving?: boolean;
   isRejecting?: boolean;
   onDataUpdated?: () => void;
 }
 
+type EditingItem = any;
+
 export default function LoanDetailModal({
   loan,
   isOpen,
   onClose,
-  onApprove,
   onNota,
+  onApprove,
   onReject,
-  isApproving = false,
+  isApproving: externalIsApproving = false,
   isRejecting = false,
   onDataUpdated,
 }: LoanDetailModalProps) {
+  const [isVisible, setIsVisible] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [editedItems, setEditedItems] = useState<LoanProduct[]>([]);
+  const [editedItems, setEditedItems] = useState<EditingItem[]>([]);
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [shouldFetchLatest, setShouldFetchLatest] = useState(false);
-  const router = useRouter();
+  const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
+  const [unitsCache, setUnitsCache] = useState<Record<string, any[]>>({});
+  const [copiedUnitId, setCopiedUnitId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsVisible(true);
+    } else {
+      const timer = setTimeout(() => setIsVisible(false), 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const {
     data: latestLoan,
@@ -65,7 +96,11 @@ export default function LoanDetailModal({
 
   const { mutate: updateLoanItems, isPending: isUpdating } =
     useUpdateLoanItems();
+  const { mutate: approveLoanWithUnits, isPending: isSubmittingApproval } =
+    useApproveLoanWithUnits();
   const { data: products = [], isLoading: productsLoading } = useProducts();
+
+  const [isLoadingUnits, setIsLoadingUnits] = useState(false);
 
   useEffect(() => {
     if (isOpen && loan?.loan_id) {
@@ -76,14 +111,28 @@ export default function LoanDetailModal({
   }, [isOpen, loan?.loan_id]);
 
   useEffect(() => {
-    if (latestLoan && Array.isArray(latestLoan.items)) {
-      setEditedItems([...latestLoan.items]);
-    } else if (loan && Array.isArray(loan.items)) {
-      setEditedItems([...loan.items]);
+    const currentLoan = latestLoan || loan;
+    if (currentLoan && Array.isArray(currentLoan.items)) {
+      const items = currentLoan.items.map((item: any) => ({
+        ...item,
+        selected_units: [],
+        available_units: unitsCache[item.product_id] || [],
+      }));
+      setEditedItems(items);
     } else {
       setEditedItems([]);
     }
-  }, [loan, latestLoan]);
+  }, [loan, latestLoan, unitsCache]);
+
+  const getCurrentItems = (): LoanProduct[] => {
+    const currentLoan = latestLoan || loan;
+    if (currentLoan && Array.isArray(currentLoan.items)) {
+      return currentLoan.items;
+    }
+    return [];
+  };
+
+  const isApproving = isSubmittingApproval || externalIsApproving;
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -92,90 +141,11 @@ export default function LoanDetailModal({
     return format(date, "dd MMM yyyy, HH:mm", { locale: id });
   };
 
-  const handleEditClick = () => {
-    const currentItems =
-      latestLoan && Array.isArray(latestLoan.items)
-        ? [...latestLoan.items]
-        : loan && Array.isArray(loan.items)
-        ? [...loan.items]
-        : [];
-
-    setEditedItems(currentItems);
-    setIsEditing(true);
-  };
-
-  const handleSaveClick = () => {
-    if (loan) {
-      const itemsToUpdate = editedItems.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-      }));
-
-      updateLoanItems(
-        { loanId: loan.loan_id, items: itemsToUpdate },
-        {
-          onSuccess: () => {
-            setIsEditing(false);
-            setShowAddProduct(false);
-            refetchLoan();
-            toast.success("Berhasil mengubah perangkat yang dipinjam");
-            onDataUpdated?.();
-          },
-          onError: (error) => {
-            toast.error("Gagal mengubah perangkat yang dipinjam");
-          },
-        }
-      );
-    }
-  };
-
-  const handleCancelEdit = () => {
-    const currentItems =
-      latestLoan && Array.isArray(latestLoan.items)
-        ? [...latestLoan.items]
-        : loan && Array.isArray(loan.items)
-        ? [...loan.items]
-        : [];
-
-    setEditedItems(currentItems);
-    setIsEditing(false);
-    setShowAddProduct(false);
-  };
-
-  const updateItemQuantity = (index: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
-    setEditedItems((prev) =>
-      prev.map((item, i) =>
-        i === index ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeItem = (index: number) => {
-    setEditedItems((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const addProduct = (product: Product) => {
-    const existingItemIndex = editedItems.findIndex(
-      (item) => item.product_id === product.product_id
-    );
-
-    if (existingItemIndex >= 0) {
-      updateItemQuantity(
-        existingItemIndex,
-        editedItems[existingItemIndex].quantity + 1
-      );
-    } else {
-      const newItem: LoanProduct = {
-        product_id: product.product_id,
-        product_name: product.product_name,
-        quantity: 1,
-        loan_item_id: `temp-${Date.now()}`,
-      };
-      setEditedItems((prev) => [...prev, newItem]);
-    }
-    setShowAddProduct(false);
-    setSearchTerm("");
+  const formatDateOnly = (dateString: string | null | undefined) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "-";
+    return format(date, "dd MMM yyyy", { locale: id });
   };
 
   const getSptFileUrl = (sptFile: string | null | undefined): string | null => {
@@ -188,45 +158,389 @@ export default function LoanDetailModal({
     return `/${sptFile}`;
   };
 
+  const getAccessToken = (): string | null => {
+    if (typeof window === "undefined") return null;
+    return (
+      localStorage.getItem("accessToken") ||
+      document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("accessToken="))
+        ?.split("=")[1] ||
+      null
+    );
+  };
+
+  const fetchWithToken = async (url: string, options: RequestInit = {}) => {
+    const token = getAccessToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+
+    if (options.headers) {
+      if (options.headers instanceof Headers) {
+        options.headers.forEach((value, key) => {
+          headers[key] = value;
+        });
+      } else if (Array.isArray(options.headers)) {
+        options.headers.forEach(([key, value]) => {
+          headers[key] = value;
+        });
+      } else {
+        Object.entries(options.headers).forEach(([key, value]) => {
+          headers[key] = value as string;
+        });
+      }
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(
+        errorData.error || `HTTP error! status: ${response.status}`
+      );
+    }
+    return response;
+  };
+
+  const copyToClipboard = async (text: string, unitId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedUnitId(unitId);
+      setTimeout(() => setCopiedUnitId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy text: ", err);
+    }
+  };
+
+  const loadAvailableUnitsForAll = async (items: any[]) => {
+    setIsLoadingUnits(true);
+    try {
+      const updatedCache: Record<string, any[]> = { ...unitsCache };
+
+      await Promise.all(
+        items.map(async (item) => {
+          try {
+            const response = await fetchWithToken(
+              `/api/products/${item.product_id}/units?status=AVAILABLE`
+            );
+            if (!response.ok) throw new Error(`Failed to fetch units`);
+            const data = await response.json();
+            updatedCache[item.product_id] = data.data || [];
+          } catch (error) {
+            console.error(
+              `Error fetching units for product ${item.product_id}:`,
+              error
+            );
+            updatedCache[item.product_id] = [];
+          }
+        })
+      );
+
+      setUnitsCache(updatedCache);
+      setEditedItems((prev) =>
+        prev.map((item) => ({
+          ...item,
+          available_units: updatedCache[item.product_id] || [],
+        }))
+      );
+    } catch (error) {
+      console.error("Error loading units:", error);
+      toast.error("Gagal memuat unit perangkat");
+    } finally {
+      setIsLoadingUnits(false);
+    }
+  };
+
+  const handleEditClick = async () => {
+    const currentItems = getCurrentItems();
+    const itemsWithUnits = currentItems.map((item: any) => ({
+      ...item,
+      selected_units: [],
+      available_units: unitsCache[item.product_id] || [],
+    }));
+
+    setEditedItems(itemsWithUnits);
+    setIsEditing(true);
+    await loadAvailableUnitsForAll(itemsWithUnits);
+  };
+
+  const refreshUnitsForProduct = async (productId: string) => {
+    setIsLoadingUnits(true);
+    try {
+      const response = await fetchWithToken(
+        `/api/products/${productId}/units?status=AVAILABLE`
+      );
+      if (!response.ok) throw new Error(`Failed to fetch units`);
+      const data = await response.json();
+
+      const updatedCache = {
+        ...unitsCache,
+        [productId]: data.data || [],
+      };
+
+      setUnitsCache(updatedCache);
+      setEditedItems((prev) =>
+        prev.map((item) =>
+          item.product_id === productId
+            ? { ...item, available_units: data.data || [] }
+            : item
+        )
+      );
+      toast.success("Unit berhasil diperbarui");
+    } catch (error) {
+      console.error(`Error refreshing units for product ${productId}:`, error);
+      toast.error("Gagal memuat unit perangkat");
+    } finally {
+      setIsLoadingUnits(false);
+    }
+  };
+
+  const handleSaveClick = () => {
+    if (!loan) return;
+
+    if (editedItems.length === 0) {
+      toast.error("Minimal harus ada 1 perangkat yang dipinjam");
+      return;
+    }
+
+    const itemsToUpdate = editedItems.map((item: any) => ({
+      product_id: item.product_id,
+      quantity: item.quantity,
+    }));
+
+    updateLoanItems(
+      { loanId: loan.loan_id, items: itemsToUpdate },
+      {
+        onSuccess: () => {
+          toast.success("Berhasil mengubah perangkat yang dipinjam");
+          setShowAddProduct(false);
+          refetchLoan();
+          onDataUpdated?.();
+          loadAvailableUnitsForAll(editedItems);
+        },
+        onError: (error) => {
+          console.error("Error updating loan items:", error);
+          toast.error(
+            error.message || "Gagal mengubah perangkat yang dipinjam"
+          );
+        },
+      }
+    );
+  };
+
+  const handleCancelEdit = () => {
+    const currentItems = getCurrentItems();
+    const resetItems = currentItems.map((item: any) => ({
+      ...item,
+      selected_units: [],
+      available_units: [],
+    }));
+    setEditedItems(resetItems);
+    setIsEditing(false);
+    setShowAddProduct(false);
+    setExpandedProduct(null);
+    setUnitsCache({});
+  };
+
+  const toggleUnitSelection = (productId: string, unitId: string) => {
+    setEditedItems((prev: any) =>
+      prev.map((item: any) => {
+        if (item.product_id !== productId) return item;
+
+        const isSelected = item.selected_units.includes(unitId);
+        const newSelected = isSelected
+          ? item.selected_units.filter((id: string) => id !== unitId)
+          : item.selected_units.length < item.quantity
+          ? [...item.selected_units, unitId]
+          : item.selected_units;
+
+        return { ...item, selected_units: newSelected };
+      })
+    );
+  };
+
+  const handleApproveWithUnits = () => {
+    if (!loan) return;
+
+    if (editedItems.length === 0) {
+      toast.error("Tidak ada barang yang dipinjam");
+      return;
+    }
+
+    const incomplete = editedItems.find(
+      (item: any) => item.selected_units.length !== item.quantity
+    );
+
+    if (incomplete) {
+      toast.error(
+        `❌ Pilih tepat ${incomplete.quantity} unit untuk ${incomplete.product_name} (Terpilih: ${incomplete.selected_units.length})`
+      );
+      return;
+    }
+
+    const unitAssignments = editedItems.map((item: any) => ({
+      product_id: item.product_id,
+      unit_ids: item.selected_units,
+    }));
+
+    approveLoanWithUnits(
+      { loanId: loan.loan_id, units: unitAssignments },
+      {
+        onSuccess: () => {
+          toast.success(
+            "✅ Peminjaman berhasil disetujui dengan unit terpilih!"
+          );
+          setIsEditing(false);
+          setExpandedProduct(null);
+          setUnitsCache({});
+          refetchLoan();
+          onDataUpdated?.();
+          onClose();
+        },
+        onError: (error: Error) => {
+          console.error("❌ Approval error:", error);
+          toast.error(error.message || "Gagal menyetujui peminjaman");
+        },
+      }
+    );
+  };
+
+  const toggleProductExpand = (productId: string) => {
+    setExpandedProduct(expandedProduct === productId ? null : productId);
+  };
+
+  const updateItemQuantity = (index: number, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setEditedItems((prev: any) => {
+      return prev.map((item: any, i: number) =>
+        i === index
+          ? {
+              ...item,
+              quantity: newQuantity,
+              selected_units: item.selected_units.slice(0, newQuantity),
+            }
+          : item
+      );
+    });
+  };
+
+  const removeItem = (index: number) => {
+    setEditedItems((prev: any) =>
+      prev.filter((_: any, i: number) => i !== index)
+    );
+    const removedProductId = editedItems[index]?.product_id;
+    if (removedProductId === expandedProduct) {
+      setExpandedProduct(null);
+    }
+  };
+
+  const addProduct = (product: Product) => {
+    const existingItemIndex = editedItems.findIndex(
+      (item: any) => item.product_id === product.product_id
+    );
+
+    if (existingItemIndex >= 0) {
+      updateItemQuantity(
+        existingItemIndex,
+        editedItems[existingItemIndex].quantity + 1
+      );
+    } else {
+      const newItem = {
+        product_id: product.product_id,
+        product_name: product.product_name,
+        quantity: 1,
+        loan_item_id: `temp-${Date.now()}`,
+        selected_units: [],
+        available_units: unitsCache[product.product_id] || [],
+      };
+      setEditedItems((prev: any) => [...prev, newItem]);
+
+      if (!unitsCache[product.product_id]) {
+        loadSingleProductUnits(product.product_id);
+      }
+    }
+    setShowAddProduct(false);
+    setSearchTerm("");
+  };
+
+  const loadSingleProductUnits = async (productId: string) => {
+    try {
+      const response = await fetchWithToken(
+        `/api/products/${productId}/units?status=AVAILABLE`
+      );
+      if (!response.ok) throw new Error(`Failed to fetch units`);
+      const data = await response.json();
+
+      const updatedCache = {
+        ...unitsCache,
+        [productId]: data.data || [],
+      };
+
+      setUnitsCache(updatedCache);
+      setEditedItems((prev: any) =>
+        prev.map((item: any) =>
+          item.product_id === productId
+            ? { ...item, available_units: data.data || [] }
+            : item
+        )
+      );
+    } catch (error) {
+      console.error(`Error loading units for product ${productId}:`, error);
+    }
+  };
+
   const filteredProducts = products.filter(
     (product) =>
       product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
       product.product_avaible > 0
   );
 
-  const selectedProductIds = editedItems.map((item) => item.product_id);
+  const selectedProductIds = editedItems.map((item: any) => item.product_id);
   const availableProducts = filteredProducts.filter(
     (product) => !selectedProductIds.includes(product.product_id)
   );
 
-  if (!isOpen || !loan) return null;
+  const allItemsHaveUnits = editedItems.every(
+    (item: any) => item.selected_units?.length === item.quantity
+  );
 
-  const displayLoan = loan;
-  const currentItems = isEditing
-    ? editedItems
-    : latestLoan && Array.isArray(latestLoan.items)
-    ? latestLoan.items
-    : loan && Array.isArray(loan.items)
-    ? loan.items
-    : [];
+  const hasItemsWithoutUnits = editedItems.some(
+    (item: any) => (item.selected_units?.length || 0) !== item.quantity
+  );
 
-  const sptFileUrl = displayLoan.report
-    ? getSptFileUrl(displayLoan.report.spt_file)
-    : null;
-  const ownerName =
-    displayLoan.owner?.name || displayLoan.owner?.username || "-";
-  const borrowerName =
-    displayLoan.borrower?.name || displayLoan.borrower?.username || "-";
+  if (!isVisible || !loan) return null;
+
+  const displayLoan = latestLoan || loan;
+  const itemsToDisplay = isEditing ? editedItems : getCurrentItems();
+
+  // ✅ Safe access dengan default values seperti di borrower
+  const sptFileUrl = getSptFileUrl(displayLoan.report?.spt_file);
+  const hasUnits = hasUnitAssignments(displayLoan);
+  const productQuantities = getProductQuantities(displayLoan);
+  const uniqueProducts = getUniqueProducts(displayLoan);
   const invitedUsers = displayLoan.invited_users || [];
+  const items = displayLoan.items || [];
+
+  const borrowerName =
+    displayLoan.borrower?.name || displayLoan.borrower?.username || "Unknown";
 
   return (
-    <div className="modal modal-open">
-      <div className="modal-box p-0 max-w-2xl max-h-[80vh] flex flex-col bg-white border border-gray-200 mt-14">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+    <div className={`modal ${isOpen ? "modal-open" : ""}`}>
+      <div className="modal-box p-0 max-w-4xl max-h-[85vh] flex flex-col bg-white border border-gray-200 mt-12">
+        {/* Header - Sama seperti borrower */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
-              Detail Peminjaman
+              Detail Peminjaman {isEditing && "- Mode Edit & Pilih Unit"}
             </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              ID: {displayLoan.loan_id}
+            </p>
             {loanLoading && (
               <div className="flex items-center gap-1 mt-1">
                 <span className="loading loading-spinner loading-xs text-info"></span>
@@ -238,15 +552,18 @@ export default function LoanDetailModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            disabled={isUpdating || isApproving}
+            className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
           >
             <X className="w-4 h-4 text-gray-600" />
           </button>
         </div>
 
+        {/* Content - Mengikuti struktur borrower */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          <div className="flex justify-between items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-            <div className="flex gap-2 items-center">
+          {/* Status & Actions - Sama seperti borrower */}
+          <div className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200">
+            <div className="flex items-center gap-4">
               <span
                 className={`px-3 py-1 rounded-full text-xs font-medium ${
                   displayLoan.status === "REQUESTED"
@@ -256,7 +573,7 @@ export default function LoanDetailModal({
                     : displayLoan.status === "REJECTED"
                     ? "bg-red-100 text-red-800 border border-red-200"
                     : displayLoan.status === "RETURNED"
-                    ? "bg-red-100 text-indigo-500- border border-indigo-200"
+                    ? "bg-indigo-100 text-indigo-800 border border-indigo-200"
                     : "bg-blue-100 text-blue-800 border border-blue-200"
                 }`}
               >
@@ -270,81 +587,123 @@ export default function LoanDetailModal({
                   ? "Dikembalikan"
                   : "Selesai"}
               </span>
+              {hasUnits && (
+                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs border border-purple-200">
+                  ✓ Ada Unit Assignment
+                </span>
+              )}
               <span className="text-xs text-gray-600">
                 {formatDate(displayLoan.updated_at)}
               </span>
             </div>
-            {loan.status === "APPROVED" && (
+            {(displayLoan.status === "APPROVED" ||
+              displayLoan.status === "RETURNED" ||
+              displayLoan.status === "DONE") && (
               <div className="flex">
                 <Link
-                  href={`/admin/nota/${loan.loan_id}`}
+                  href={`/admin/nota/${displayLoan.loan_id}`}
                   className="btn btn-ghost btn-xs text-green-600"
                 >
                   <FileText className="w-4 h-4" />
-                  Nota Peminjaman
-                </Link>
-              </div>
-            )}
-            {(loan.status === "RETURNED" || loan.status === "DONE") && (
-              <div className="flex">
-                <Link
-                  href={`/admin/nota/${loan.loan_id}`}
-                  className="btn btn-ghost btn-xs text-yellow-600"
-                >
-                  <FileText className="w-4 h-4" />
-                  Nota Pengembalian
+                  Lihat Nota
                 </Link>
               </div>
             )}
           </div>
 
-          {/* User Info */}
-          <div className="grid grid-cols-2 gap-3 p-3 bg-white rounded-lg border border-gray-200">
-            <div>
-              <div className="flex gap-2 items-center text-xs text-gray-500 font-medium">
-                <UserPen className="w-4 h-4" color="black" />
-                <label>Peminjam</label>
-              </div>
-              <p className="text-sm text-gray-800 font-medium mt-1">
-                {borrowerName}
-              </p>
-            </div>
-          </div>
-
-          {/* Participants */}
-          {invitedUsers.length > 0 && (
-            <div className="p-3 bg-white rounded-lg border border-gray-200">
-              <div className="flex gap-2 text-xs text-gray-500 font-medium">
-                <Users className="w-4 h-4" color="black" />
-                <label className=" mb-2 block">
-                  Pengguna Diundang ({invitedUsers.length})
-                </label>
-              </div>
-              <div className="flex flex-wrap gap-1">
-                {invitedUsers.map((user) => (
-                  <span
-                    key={user.user_id}
-                    className="px-2 py-1 bg-gray-100 text-gray-700 rounded text-xs border border-gray-300"
-                  >
-                    {user.name || user.username || user.user_id}
-                  </span>
-                ))}
+          {/* Warning Banner untuk admin */}
+          {isEditing && hasItemsWithoutUnits && (
+            <div className="flex items-start gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-orange-800">
+                  Perhatian: Ada perangkat yang belum dipilih unitnya
+                </p>
+                <p className="text-xs text-orange-700 mt-1">
+                  Anda harus memilih unit untuk semua perangkat sebelum dapat
+                  menyetujui peminjaman.
+                </p>
               </div>
             </div>
           )}
 
-          {/* Items Section */}
+          {/* Informasi Peminjam - Sama seperti borrower */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Peminjam Utama */}
+            <div className="p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <User className="w-4 h-4 text-gray-600" />
+                <label className="text-xs text-gray-500 font-medium">
+                  Peminjam Utama
+                </label>
+              </div>
+
+              <div className="space-y-2">
+                <div>
+                  <p className="text-xs text-gray-500">Nama</p>
+                  <p className="text-sm text-gray-800 font-medium">
+                    {borrowerName}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Username</p>
+                  <p className="text-sm text-gray-800">
+                    {displayLoan.borrower?.username || "Unknown"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">ID</p>
+                  <p className="text-sm text-gray-800 font-mono">
+                    {displayLoan.borrower?.user_id || "Unknown"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Peserta Lain */}
+            {invitedUsers.length > 0 && (
+              <div className="p-3 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-4 h-4 text-gray-600" />
+                  <label className="text-xs text-gray-500 font-medium">
+                    Peserta Lain ({invitedUsers.length})
+                  </label>
+                </div>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {invitedUsers.map((user) => (
+                    <div
+                      key={user.user_id}
+                      className="px-3 py-2 bg-gray-50 rounded border border-gray-200"
+                    >
+                      <p className="text-sm font-medium text-gray-800">
+                        {user.name || user.username || "Unknown"}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {user.user_id}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Barang yang Dipinjam - Sama seperti borrower dengan tambahan edit mode */}
           <div className="p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-2">
-                <Box className="w-4 h-4" color="black" />
+              <div className="flex items-center gap-2">
+                <Package className="w-4 h-4 text-gray-600" />
                 <label className="text-xs text-gray-500 font-medium">
-                  Perangkat ({currentItems.length})
+                  Perangkat ({uniqueProducts.length} jenis, {items.length}{" "}
+                  total)
                   {isUpdating && (
                     <span className="ml-2 text-orange-500">(Menyimpan...)</span>
                   )}
                   {loanLoading && (
                     <span className="ml-2 text-blue-500">(Memperbarui...)</span>
+                  )}
+                  {isLoadingUnits && (
+                    <span className="ml-2 text-blue-500">(Memuat unit...)</span>
                   )}
                 </label>
               </div>
@@ -355,22 +714,21 @@ export default function LoanDetailModal({
                     onClick={handleEditClick}
                     className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs font-medium border border-blue-200 transition-colors"
                   >
-                    <Edit className="w-3 h-3" />
-                    Edit Perangkat
+                    <Edit className="w-3 h-3" /> Edit Perangkat & Pilih Unit
                   </button>
                 )}
             </div>
 
-            {/* Edit Mode Controls */}
+            {/* Edit Mode Controls untuk admin */}
             {isEditing && (
               <div className="mb-3">
                 {!showAddProduct ? (
                   <button
                     onClick={() => setShowAddProduct(true)}
-                    className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
+                    disabled={isUpdating}
+                    className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium disabled:opacity-50"
                   >
-                    <Plus className="w-3 h-3" />
-                    Tambah Perangkat
+                    <Plus className="w-3 h-3" /> Tambah Perangkat
                   </button>
                 ) : (
                   <div className="space-y-2">
@@ -421,112 +779,447 @@ export default function LoanDetailModal({
                           : "Semua produk sudah dipilih"}
                       </p>
                     )}
+
+                    <button
+                      onClick={() => {
+                        setShowAddProduct(false);
+                        setSearchTerm("");
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-xs"
+                    >
+                      Tutup
+                    </button>
                   </div>
                 )}
               </div>
             )}
 
-            {/* Items List */}
-            <div className="space-y-2">
-              {currentItems.length === 0 ? (
-                <p className="text-gray-500 text-center py-4 text-sm">
+            <div className="space-y-3">
+              {itemsToDisplay.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
                   Tidak ada barang yang dipinjam
-                </p>
+                </div>
               ) : (
-                currentItems.map((item, index) => (
-                  <div
-                    key={item.loan_item_id || `${item.product_id}-${index}`}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-800 truncate">
-                        {item.product_name}
-                      </p>
-                    </div>
+                itemsToDisplay
+                  .filter(
+                    (item, index, self) =>
+                      index ===
+                      self.findIndex((t) => t.product_id === item.product_id)
+                  )
+                  .map((item: any, index: number) => {
+                    const quantity = productQuantities[item.product_id] || 0;
+                    const productUnits = getProductUnits(
+                      displayLoan,
+                      item.product_id
+                    );
+                    const hasAssignedUnits = productHasUnits(
+                      displayLoan,
+                      item.product_id
+                    );
 
-                    {isEditing ? (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1 bg-white border border-gray-300 rounded">
-                          <button
-                            onClick={() =>
-                              updateItemQuantity(index, item.quantity - 1)
-                            }
-                            className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 transition-colors"
-                            disabled={item.quantity <= 1}
-                          >
-                            -
-                          </button>
-                          <span className="w-8 text-center text-sm font-medium text-gray-800">
-                            {item.quantity}
-                          </span>
-                          <button
-                            onClick={() =>
-                              updateItemQuantity(index, item.quantity + 1)
-                            }
-                            className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition-colors"
-                          >
-                            +
-                          </button>
+                    // Gunakan kombinasi key yang unik
+                    const uniqueKey = `${item.product_id}-${
+                      item.loan_item_id || index
+                    }-${Date.now()}`;
+
+                    return (
+                      <div
+                        key={uniqueKey}
+                        className="border border-gray-200 rounded-lg overflow-hidden"
+                      >
+                        {/* Product Header */}
+                        <div className="bg-gray-50 p-3 border-b border-gray-200">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {item.product_image ? (
+                                <div className="w-10 h-10 relative rounded border border-gray-300">
+                                  <img
+                                    src={item.product_image}
+                                    alt={item.product_name}
+                                    className="w-full h-full object-cover rounded"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 bg-gray-200 rounded border border-gray-300 flex items-center justify-center">
+                                  <Package className="w-5 h-5 text-gray-400" />
+                                </div>
+                              )}
+                              <div>
+                                <h4 className="text-sm font-medium text-gray-900">
+                                  {item.product_name}
+                                </h4>
+                                <p className="text-xs text-gray-500">
+                                  {quantity} unit
+                                  {hasAssignedUnits &&
+                                    ` • ${productUnits.length} unit assigned`}
+                                  {isEditing && (
+                                    <span className="ml-2">
+                                      •{" "}
+                                      <span
+                                        className={
+                                          item.selected_units?.length ===
+                                          item.quantity
+                                            ? "text-green-600 font-medium"
+                                            : "text-orange-600"
+                                        }
+                                      >
+                                        {item.selected_units?.length || 0}{" "}
+                                        terpilih
+                                      </span>
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isEditing ? (
+                                <>
+                                  <div className="flex items-center gap-1 bg-white border border-gray-300 rounded">
+                                    <button
+                                      onClick={() =>
+                                        updateItemQuantity(
+                                          index,
+                                          item.quantity - 1
+                                        )
+                                      }
+                                      className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                                      disabled={
+                                        item.quantity <= 1 || isUpdating
+                                      }
+                                    >
+                                      -
+                                    </button>
+                                    <span className="w-8 text-center text-sm font-medium text-gray-800">
+                                      {item.quantity}
+                                    </span>
+                                    <button
+                                      onClick={() =>
+                                        updateItemQuantity(
+                                          index,
+                                          item.quantity + 1
+                                        )
+                                      }
+                                      className="w-6 h-6 flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50"
+                                      disabled={isUpdating}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+
+                                  <button
+                                    onClick={() =>
+                                      toggleProductExpand(item.product_id)
+                                    }
+                                    disabled={isUpdating}
+                                    className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs border border-blue-200 transition-colors disabled:opacity-50"
+                                  >
+                                    {expandedProduct === item.product_id ? (
+                                      <ChevronUp className="w-3 h-3" />
+                                    ) : (
+                                      <ChevronDown className="w-3 h-3" />
+                                    )}
+                                    Pilih Unit
+                                  </button>
+
+                                  <button
+                                    onClick={() => removeItem(index)}
+                                    disabled={isUpdating}
+                                    className="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-xs border border-red-200 transition-colors disabled:opacity-50"
+                                  >
+                                    Hapus
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                                  {quantity}x
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <button
-                          onClick={() => removeItem(index)}
-                          className="px-2 py-1 text-red-600 hover:bg-red-50 rounded text-xs border border-red-200 transition-colors"
-                        >
-                          Hapus
-                        </button>
+
+                        {/* Unit Details - Sama seperti borrower dengan tambahan edit mode */}
+                        {(displayLoan.status !== "REQUESTED" || isEditing) && (
+                          <div className="p-3 bg-white">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Hash className="w-3 h-3 text-gray-400" />
+                              <span className="text-xs font-medium text-gray-700">
+                                Detail Unit ({productUnits.length} unit):
+                              </span>
+                              {isEditing &&
+                                expandedProduct === item.product_id && (
+                                  <button
+                                    onClick={() =>
+                                      refreshUnitsForProduct(item.product_id)
+                                    }
+                                    disabled={isLoadingUnits}
+                                    className="flex items-center gap-1 px-2 py-1 text-green-600 hover:bg-green-50 rounded text-xs border border-green-200 transition-colors disabled:opacity-50 ml-auto"
+                                  >
+                                    <RefreshCw
+                                      className={`w-3 h-3 ${
+                                        isLoadingUnits ? "animate-spin" : ""
+                                      }`}
+                                    />{" "}
+                                    Refresh Unit
+                                  </button>
+                                )}
+                            </div>
+
+                            {isEditing &&
+                            expandedProduct === item.product_id ? (
+                              // Edit Mode: Pilih Unit
+                              <>
+                                {item.available_units?.length === 0 ? (
+                                  <div className="text-center py-4 bg-red-50 rounded border border-red-200">
+                                    <XCircle className="w-6 h-6 text-red-500 mx-auto mb-2" />
+                                    <p className="text-sm text-red-700 font-medium">
+                                      Tidak ada unit tersedia
+                                    </p>
+                                    <p className="text-xs text-red-600 mt-1">
+                                      Stok perangkat ini habis
+                                    </p>
+                                  </div>
+                                ) : item.available_units?.length <
+                                  item.quantity ? (
+                                  <div className="mb-3 p-2 bg-yellow-50 rounded border border-yellow-200">
+                                    <p className="text-xs text-yellow-800">
+                                      ⚠️ Stok tidak mencukupi: Tersedia{" "}
+                                      {item.available_units?.length} unit,
+                                      dibutuhkan {item.quantity} unit
+                                    </p>
+                                  </div>
+                                ) : null}
+
+                                {item.available_units?.length > 0 && (
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+                                    {item.available_units.map((unit: any) => {
+                                      const isSelected =
+                                        item.selected_units?.includes(
+                                          unit.unit_id
+                                        );
+                                      const isDisabled =
+                                        !isSelected &&
+                                        (item.selected_units?.length || 0) >=
+                                          item.quantity;
+
+                                      return (
+                                        <button
+                                          key={unit.unit_id}
+                                          onClick={() =>
+                                            toggleUnitSelection(
+                                              item.product_id,
+                                              unit.unit_id
+                                            )
+                                          }
+                                          disabled={isDisabled}
+                                          className={`flex items-center gap-2 p-2 rounded border-2 transition-all text-left ${
+                                            isSelected
+                                              ? "border-green-500 bg-green-50"
+                                              : isDisabled
+                                              ? "border-gray-200 bg-gray-50 opacity-50 cursor-not-allowed"
+                                              : "border-gray-300 bg-white hover:border-blue-400 hover:bg-blue-50"
+                                          }`}
+                                        >
+                                          <div
+                                            className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 ${
+                                              isSelected
+                                                ? "border-green-600 bg-green-600"
+                                                : "border-gray-300 bg-white"
+                                            }`}
+                                          >
+                                            {isSelected && (
+                                              <svg
+                                                className="w-2 h-2 text-white"
+                                                fill="none"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="3"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                              >
+                                                <path d="M5 13l4 4L19 7"></path>
+                                              </svg>
+                                            )}
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1">
+                                              <Hash className="w-3 h-3 text-gray-400" />
+                                              <p className="text-sm font-medium text-gray-800 truncate">
+                                                {unit.serialNumber}
+                                              </p>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                              {unit.unit_id}
+                                            </p>
+                                          </div>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </>
+                            ) : // View Mode: Tampilkan Unit seperti borrower
+                            productUnits.length > 0 ? (
+                              <div className="space-y-2">
+                                {productUnits.map(
+                                  (unit: any, unitIndex: any) => (
+                                    <div
+                                      key={unit.unit_id}
+                                      className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200"
+                                    >
+                                      <div className="flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                                          <span className="text-sm text-gray-700">
+                                            Serial:{" "}
+                                            <span className="font-mono">
+                                              {unit.serial_number || "N/A"}
+                                            </span>
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-xs text-gray-500 font-mono">
+                                            ID: {unit.unit_id}
+                                          </span>
+                                          <button
+                                            onClick={() =>
+                                              copyToClipboard(
+                                                unit.unit_id,
+                                                unit.unit_id
+                                              )
+                                            }
+                                            className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                            title="Copy Unit ID"
+                                          >
+                                            <Copy
+                                              className={`w-3 h-3 ${
+                                                copiedUnitId === unit.unit_id
+                                                  ? "text-green-600"
+                                                  : "text-gray-400"
+                                              }`}
+                                            />
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
+                                        Unit #{unitIndex + 1}
+                                      </div>
+                                    </div>
+                                  )
+                                )}
+
+                                {/* Summary seperti borrower */}
+                                <div className="mt-3 pt-3 border-t border-gray-200">
+                                  <div className="flex justify-between items-center text-xs">
+                                    <span className="text-gray-600">
+                                      Total Unit:
+                                    </span>
+                                    <span
+                                      className={`font-medium ${
+                                        productUnits.length === quantity
+                                          ? "text-green-600"
+                                          : productUnits.length > quantity
+                                          ? "text-blue-600"
+                                          : "text-orange-600"
+                                      }`}
+                                    >
+                                      {productUnits.length} dari {quantity} unit
+                                    </span>
+                                  </div>
+                                  {productUnits.length < quantity && (
+                                    <div className="mt-1 text-xs text-orange-600">
+                                      ⚠️ {quantity - productUnits.length} unit
+                                      belum ditugaskan
+                                    </div>
+                                  )}
+                                  {productUnits.length > quantity && (
+                                    <div className="mt-1 text-xs text-blue-600">
+                                      ℹ️ Lebih banyak unit yang ditugaskan
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ) : displayLoan.status === "REQUESTED" ? (
+                              <div className="text-center py-4 text-gray-500">
+                                <span className="text-xs">
+                                  Menunggu persetujuan dan penugasan {quantity}{" "}
+                                  unit
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-gray-500">
+                                <span className="text-xs">
+                                  Belum ada unit yang ditugaskan untuk produk
+                                  ini
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium border border-blue-200">
-                        {item.quantity}x
-                      </span>
-                    )}
-                  </div>
-                ))
+                    );
+                  })
               )}
             </div>
           </div>
 
-          {/* Report */}
+          {/* Informasi SPT - Sama seperti borrower */}
           {displayLoan.report && (
-            <div className="p-3 bg-white rounded-lg border border-gray-200 space-y-3">
-              <div className="flex gap-2 text-xs text-gray-500 font-medium ">
-                <Mail className="w-4 h-4" color="black" />
-                <label className="block">Informasi SPT</label>
+            <div className="p-3 bg-white rounded-lg border border-gray-200">
+              <div className="flex items-center gap-2 mb-3">
+                <FileText className="w-4 h-4 text-gray-600" />
+                <label className="text-xs text-gray-500 font-medium">
+                  Informasi SPT
+                </label>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-xs text-gray-500">No. SPT</p>
-                  <p className="text-sm text-gray-800 font-medium">
-                    {displayLoan.report.spt_number}
-                  </p>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500">No. SPT</p>
+                    <p className="text-sm text-gray-800 font-medium">
+                      {displayLoan.report.spt_number}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Tujuan</p>
+                    <p className="text-sm text-gray-800">
+                      {displayLoan.report.destination}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500">Tujuan</p>
-                  <p className="text-sm text-gray-800 line-clamp-3">
-                    {displayLoan.report.destination}
-                  </p>
-                </div>
+
                 <div>
                   <p className="text-xs text-gray-500">Tempat Pelaksanaan</p>
                   <p className="text-sm text-gray-800">
                     {displayLoan.report.place_of_execution}
                   </p>
                 </div>
-                <div>
-                  <p className="text-xs text-gray-500">Tempat Pelaksanaan</p>
-                  <p className="text-sm text-gray-800">
-                    {formatDate(displayLoan.report.end_date)}
-                  </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Tanggal Mulai</p>
+                    <p className="text-sm text-gray-800 font-medium">
+                      {formatDateOnly(displayLoan.report.start_date)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Tanggal Selesai</p>
+                    <p className="text-sm text-gray-800 font-medium">
+                      {formatDateOnly(displayLoan.report.end_date)}
+                    </p>
+                  </div>
                 </div>
+
                 {sptFileUrl && (
-                  <div className="col-span-2">
+                  <div className="pt-2 border-t border-gray-200">
                     <a
                       href={sptFileUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
                     >
-                      <Download className="w-3 h-3" />
+                      <Download className="w-4 h-4" />
                       Download SPT
                     </a>
                   </div>
@@ -535,39 +1228,76 @@ export default function LoanDetailModal({
             </div>
           )}
 
-          {/* Timeline */}
-          <div className="p-3 bg-white rounded-lg border border-gray-200 text-xs text-gray-600 space-y-1">
-            <p>
-              <span className="font-medium">Dibuat:</span>{" "}
-              {formatDate(displayLoan.created_at)}
-            </p>
-            <p>
-              <span className="font-medium">Diupdate:</span>{" "}
-              {formatDate(displayLoan.updated_at)}
-            </p>
+          {/* Timeline - Sama seperti borrower */}
+          <div className="p-3 bg-white rounded-lg border border-gray-200">
+            <div className="flex items-center gap-2 mb-3">
+              <Calendar className="w-4 h-4 text-gray-600" />
+              <label className="text-xs text-gray-500 font-medium">
+                Informasi Waktu
+              </label>
+            </div>
+
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Dibuat:</span>
+                <span>{formatDate(displayLoan.created_at)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-medium">Diupdate:</span>
+                <span>{formatDate(displayLoan.updated_at)}</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-white gap-2">
-          <div className="flex gap-2">
+        {/* Footer dengan tombol aksi admin */}
+        <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-white sticky bottom-0 gap-2">
+          <div className="flex gap-2 flex-wrap">
             {isEditing ? (
               <>
                 <button
                   onClick={handleSaveClick}
-                  disabled={isUpdating}
-                  className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
+                  disabled={isUpdating || editedItems.length === 0}
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
                 >
                   {isUpdating ? (
                     <span className="loading loading-spinner loading-xs"></span>
                   ) : (
                     <Save className="w-3 h-3" />
                   )}
-                  {isUpdating ? "Menyimpan..." : "Simpan"}
+                  {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
                 </button>
+
+                <button
+                  onClick={handleApproveWithUnits}
+                  disabled={
+                    isApproving ||
+                    isLoadingUnits ||
+                    !allItemsHaveUnits ||
+                    editedItems.length === 0
+                  }
+                  className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
+                  title={
+                    !allItemsHaveUnits
+                      ? "Pilih unit untuk semua perangkat terlebih dahulu"
+                      : "Setujui peminjaman dengan unit yang dipilih"
+                  }
+                >
+                  {isApproving ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>{" "}
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-3 h-3" /> Setujui & Simpan Unit
+                    </>
+                  )}
+                </button>
+
                 <button
                   onClick={handleCancelEdit}
-                  disabled={isUpdating}
+                  disabled={isUpdating || isApproving}
                   className="px-3 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
                 >
                   Batal
@@ -576,25 +1306,37 @@ export default function LoanDetailModal({
             ) : (
               displayLoan.status === "REQUESTED" &&
               !isUpdating && (
-                <button
-                  onClick={() => onApprove?.(displayLoan.loan_id)}
-                  disabled={isApproving}
-                  className="px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
-                >
-                  {isApproving ? (
-                    <span className="loading loading-spinner loading-xs"></span>
-                  ) : (
-                    "Setujui"
+                <>
+                  <button
+                    onClick={handleEditClick}
+                    disabled={isApproving}
+                    className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
+                  >
+                    <CheckCircle className="w-3 h-3" /> Review & Approve
+                  </button>
+                  {onReject && (
+                    <button
+                      onClick={() => onReject?.(displayLoan.loan_id)}
+                      disabled={isRejecting}
+                      className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
+                    >
+                      {isRejecting ? (
+                        <span className="loading loading-spinner loading-xs"></span>
+                      ) : (
+                        <XCircle className="w-3 h-3" />
+                      )}
+                      {isRejecting ? "Menolak..." : "Tolak"}
+                    </button>
                   )}
-                </button>
+                </>
               )
             )}
           </div>
 
           <button
             onClick={onClose}
-            disabled={isUpdating}
-            className="px-3 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
+            disabled={isUpdating || isApproving}
+            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50"
           >
             Tutup
           </button>

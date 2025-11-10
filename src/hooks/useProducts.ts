@@ -1,10 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 export interface Product {
   product_id: string;
   product_name: string;
-  product_image: string;
+  product_image: string | null;
   quantity: number;
   category_id: string;
   product_avaible: number;
@@ -12,8 +12,16 @@ export interface Product {
     category_id: string;
     category_name: string;
   };
-  created_at?: Date;
-  updated_at?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+  units?: {
+    serialNumber: string;
+    status?: string;
+    condition?: string;
+    note?: string;
+    unit_id?: string;
+    product_id?: string;
+  }[];
 }
 
 export interface CreateProductPayload {
@@ -22,6 +30,7 @@ export interface CreateProductPayload {
   quantity: number;
   category_id: string;
   product_avaible: number;
+  units: { serialNumber: string }[];
 }
 
 export interface ApiResponse<T> {
@@ -34,6 +43,27 @@ export interface GetProductsParams {
   product_name?: string;
   sort?: string;
   order?: "asc" | "desc";
+}
+
+// ==================== PRODUCT UNIT INTERFACES ====================
+export interface ProductUnit {
+  unit_id: string;
+  serialNumber: string;
+  status: string;
+  product_id: string;
+  createdAt: string;
+}
+
+export interface GetProductUnitsParams {
+  productId: string;
+  status?: string;
+}
+
+interface RepairUnitPayload {
+  product_id: string;
+  unit_id: string;
+  condition: "GOOD" | "DAMAGED";
+  note?: string;
 }
 
 // ==================== OPTIMIZED CACHE CONFIGURATION ====================
@@ -55,6 +85,13 @@ export const PRODUCT_QUERY_KEYS = {
   details: () => [...PRODUCT_QUERY_KEYS.all, "detail"] as const,
   detail: (id: string) => [...PRODUCT_QUERY_KEYS.details(), id] as const,
   categories: () => [...PRODUCT_QUERY_KEYS.all, "categories"] as const,
+  units: () => [...PRODUCT_QUERY_KEYS.all, "units"] as const,
+  productUnits: (productId: string, status?: string) =>
+    [
+      ...PRODUCT_QUERY_KEYS.units(),
+      productId,
+      ...(status ? [status] : []),
+    ] as const,
 } as const;
 
 // ==================== OPTIMIZED UTILITY FUNCTIONS ====================
@@ -121,18 +158,21 @@ const fetchProducts = async (
 };
 
 const fetchProductById = async (id: string): Promise<Product> => {
-  const data = await fetchWithAuth(`/api/products/${id}`);
-  return data?.item || data;
+  const result = await fetchWithAuth(`/api/products/${id}`);
+  return result;
 };
 
 const createProduct = async (
   payload: CreateProductPayload
 ): Promise<Product> => {
-  const data = await fetchWithAuth("/api/products", {
+  const result = await fetchWithAuth("/api/products", {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
-  return data?.result || data;
+  return result;
 };
 
 const updateProduct = async ({
@@ -142,18 +182,271 @@ const updateProduct = async ({
   id: string;
   payload: Partial<Product>;
 }): Promise<Product> => {
-  const data = await fetchWithAuth(`/api/products/${id}`, {
+  const result = await fetchWithAuth(`/api/products/${id}`, {
     method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
-  return data?.result || data;
+
+  return result;
 };
 
 const deleteProduct = async (id: string): Promise<string> => {
-  const data = await fetchWithAuth(`/api/products/${id}`, {
+  const result = await fetchWithAuth(`/api/products/${id}`, {
     method: "DELETE",
   });
-  return data?.message || "Produk berhasil dihapus";
+
+  return result?.message || "Produk berhasil dihapus";
+};
+
+// ==================== PRODUCT UNITS API FUNCTIONS ====================
+
+const fetchProductUnits = async ({
+  productId,
+  status,
+}: GetProductUnitsParams): Promise<ProductUnit[]> => {
+  const queryParams = new URLSearchParams();
+
+  if (status) {
+    queryParams.append("status", status);
+  }
+
+  const queryString = queryParams.toString();
+  const url = `/api/products/${productId}/units${
+    queryString ? `?${queryString}` : ""
+  }`;
+
+  return fetchWithAuth(url);
+};
+
+const fetchAvailableProductUnits = async (
+  productId: string
+): Promise<ProductUnit[]> => {
+  return fetchProductUnits({ productId, status: "AVAILABLE" });
+};
+
+// ==================== PRODUCT UNITS QUERY HOOKS ====================
+
+export const useProductUnits = ({
+  productId,
+  status,
+}: GetProductUnitsParams) => {
+  const queryKey = useMemo(
+    () => PRODUCT_QUERY_KEYS.productUnits(productId, status),
+    [productId, status]
+  );
+
+  return useQuery({
+    queryKey,
+    queryFn: () => fetchProductUnits({ productId, status }),
+    enabled: !!productId,
+    staleTime: CACHE_CONFIG.STALE_SHORT,
+    gcTime: CACHE_CONFIG.SHORT_TERM,
+    retry: (failureCount, error) => {
+      if (
+        error.message.includes("tidak ditemukan") ||
+        error.message.includes("not found") ||
+        error.message.includes("required")
+      ) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+  });
+};
+
+export const useAvailableProductUnits = (productId: string) => {
+  return useProductUnits({ productId, status: "AVAILABLE" });
+};
+
+export const useLoanedProductUnits = (productId: string) => {
+  return useProductUnits({ productId, status: "LOANED" });
+};
+
+export const useAllProductUnits = (productId: string) => {
+  return useProductUnits({ productId });
+};
+
+// ==================== PRODUCT UNITS MUTATION HOOKS ====================
+
+export const useUpdateUnitStatus = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      unitId,
+      status,
+      productId,
+    }: {
+      unitId: string;
+      status: string;
+      productId: string;
+    }) => {
+      return fetchWithAuth(`/api/units/${unitId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+      });
+    },
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({
+        queryKey: PRODUCT_QUERY_KEYS.productUnits(variables.productId),
+      });
+
+      const previousUnits = queryClient.getQueryData(
+        PRODUCT_QUERY_KEYS.productUnits(variables.productId)
+      );
+
+      queryClient.setQueryData(
+        PRODUCT_QUERY_KEYS.productUnits(variables.productId),
+        (old: ProductUnit[] = []) =>
+          old.map((unit) =>
+            unit.unit_id === variables.unitId
+              ? { ...unit, status: variables.status }
+              : unit
+          )
+      );
+
+      return { previousUnits };
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: PRODUCT_QUERY_KEYS.productUnits(variables.productId),
+      });
+
+      queryClient.invalidateQueries({
+        queryKey: PRODUCT_QUERY_KEYS.detail(variables.productId),
+      });
+    },
+    onError: (error, variables, context) => {
+      console.error("❌ Failed to update unit status:", error.message);
+
+      if (context?.previousUnits) {
+        queryClient.setQueryData(
+          PRODUCT_QUERY_KEYS.productUnits(variables.productId),
+          context.previousUnits
+        );
+      }
+    },
+  });
+};
+
+// ==================== SPECIALIZED PRODUCT UNITS HOOKS ====================
+
+/**
+ * Hook untuk select units dalam loan approval process
+ */
+export const useUnitSelection = (productId: string) => {
+  const {
+    data: availableUnits,
+    isLoading,
+    error,
+  } = useAvailableProductUnits(productId);
+
+  const [selectedUnits, setSelectedUnits] = useState<string[]>([]);
+
+  const selectUnit = useCallback((unitId: string) => {
+    setSelectedUnits((prev: any) => [...prev, unitId]);
+  }, []);
+
+  const deselectUnit = useCallback((unitId: string) => {
+    setSelectedUnits((prev: any) => prev.filter((id: any) => id !== unitId));
+  }, []);
+
+  const toggleUnit = useCallback((unitId: string) => {
+    setSelectedUnits((prev: any) =>
+      prev.includes(unitId)
+        ? prev.filter((id: any) => id !== unitId)
+        : [...prev, unitId]
+    );
+  }, []);
+
+  const clearSelection = useCallback(() => {
+    setSelectedUnits([]);
+  }, []);
+
+  const isUnitSelected = useCallback(
+    (unitId: string) => {
+      return selectedUnits.includes(unitId);
+    },
+    [selectedUnits]
+  );
+
+  return {
+    availableUnits: availableUnits || [],
+    selectedUnits,
+    selectUnit,
+    deselectUnit,
+    toggleUnit,
+    clearSelection,
+    isUnitSelected,
+    isLoading,
+    error: error as Error,
+    selectedCount: selectedUnits.length,
+  };
+};
+
+export const useProductUnitsByStatus = (productId: string) => {
+  const { data: allUnits, isLoading, error } = useAllProductUnits(productId);
+
+  const groupedUnits = useMemo(() => {
+    if (!allUnits) return {};
+
+    return allUnits.reduce((acc, unit) => {
+      if (!acc[unit.status]) {
+        acc[unit.status] = [];
+      }
+      acc[unit.status].push(unit);
+      return acc;
+    }, {} as Record<string, ProductUnit[]>);
+  }, [allUnits]);
+
+  return {
+    groupedUnits,
+    allUnits: allUnits || [],
+    isLoading,
+    error: error as Error,
+  };
+};
+
+export const useProductUnitStats = (productId: string) => {
+  const { data: allUnits, isLoading } = useAllProductUnits(productId);
+
+  const stats = useMemo(() => {
+    if (!allUnits) {
+      return {
+        total: 0,
+        available: 0,
+        loaned: 0,
+        maintenance: 0,
+        availablePercentage: 0,
+      };
+    }
+
+    const total = allUnits.length;
+    const available = allUnits.filter(
+      (unit) => unit.status === "AVAILABLE"
+    ).length;
+    const loaned = allUnits.filter((unit) => unit.status === "LOANED").length;
+    const maintenance = allUnits.filter(
+      (unit) => unit.status === "MAINTENANCE"
+    ).length;
+    const availablePercentage = total > 0 ? (available / total) * 100 : 0;
+
+    return {
+      total,
+      available,
+      loaned,
+      maintenance,
+      availablePercentage: Math.round(availablePercentage),
+    };
+  }, [allUnits]);
+
+  return {
+    stats,
+    isLoading,
+  };
 };
 
 // ==================== OPTIMIZED QUERY HOOKS ====================
@@ -201,20 +494,21 @@ export const useCreateProduct = () => {
   return useMutation({
     mutationFn: createProduct,
     onMutate: async (newProduct: CreateProductPayload) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: PRODUCT_QUERY_KEYS.lists() });
 
-      // Snapshot previous values
       const previousProducts = queryClient.getQueryData(
         PRODUCT_QUERY_KEYS.lists()
       );
 
-      // Optimistically update to the new value
       const optimisticProduct: Product & { isOptimistic?: boolean } = {
-        ...newProduct,
         product_id: `temp-${Date.now()}`,
-        created_at: new Date(),
-        updated_at: new Date(),
+        product_name: newProduct.product_name,
+        product_image: newProduct.product_image,
+        quantity: newProduct.quantity,
+        category_id: newProduct.category_id,
+        product_avaible: newProduct.product_avaible,
+        createdAt: new Date(),
+        updatedAt: new Date(),
         isOptimistic: true,
       };
 
@@ -230,14 +524,12 @@ export const useCreateProduct = () => {
       variables: CreateProductPayload,
       context: any
     ) => {
-      // Remove optimistic product and replace with real data
       queryClient.setQueryData(
         PRODUCT_QUERY_KEYS.lists(),
         (old: (Product & { isOptimistic?: boolean })[] = []) =>
           old.filter((product) => !product.isOptimistic)
       );
 
-      // PERBAIKAN: Gunakan setQueryData individual, bukan setQueriesData dengan computed properties
       queryClient.setQueryData(
         PRODUCT_QUERY_KEYS.detail(data.product_id),
         data
@@ -248,7 +540,6 @@ export const useCreateProduct = () => {
         (old: Product[] = []) => [...old, data]
       );
 
-      // Smart invalidation untuk queries dengan params berbeda
       queryClient.invalidateQueries({
         queryKey: PRODUCT_QUERY_KEYS.lists(),
         refetchType: "inactive",
@@ -257,7 +548,6 @@ export const useCreateProduct = () => {
     onError: (error: Error, variables: CreateProductPayload, context: any) => {
       console.error("❌ Failed to create product:", error.message);
 
-      // Rollback optimistic update
       if (context?.previousProducts) {
         queryClient.setQueryData(
           PRODUCT_QUERY_KEYS.lists(),
@@ -267,6 +557,58 @@ export const useCreateProduct = () => {
     },
   });
 };
+
+export function useRepairUnit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: RepairUnitPayload) => {
+      const { product_id, unit_id, condition, note } = payload;
+
+      const data = await fetchWithAuth(
+        `/api/products/${product_id}/units/repairs`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ unit_id, condition, note }),
+        }
+      );
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+export function useDeleteUnit() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: { product_id: string; unit_id: string }) => {
+      const { product_id, unit_id } = payload;
+
+      const data = await fetchWithAuth(
+        `/api/products/${product_id}/units/retire`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ unit_id }),
+        }
+      );
+
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
 
 export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
@@ -529,4 +871,253 @@ export const useProductBatchOperations = () => {
     isPending:
       updateProductMutation.isPending || deleteProductMutation.isPending,
   };
+};
+// Tambahkan hooks ini di bagian akhir file useProducts.ts, sebelum export default
+
+// ==================== BATCH UNITS LOADING HOOKS ====================
+
+/**
+ * Hook untuk load available units untuk multiple products sekaligus
+ * Berguna untuk loan approval flow
+ */
+export const useBatchLoadAvailableUnits = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [unitsCache, setUnitsCache] = useState<Record<string, ProductUnit[]>>(
+    {}
+  );
+
+  const loadUnitsForProducts = useCallback(async (productIds: string[]) => {
+    setIsLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        productIds.map(async (productId) => {
+          try {
+            const units = await fetchAvailableProductUnits(productId);
+            return { productId, units };
+          } catch (error) {
+            console.error(`Failed to load units for ${productId}:`, error);
+            return { productId, units: [] };
+          }
+        })
+      );
+
+      const newCache: Record<string, ProductUnit[]> = {};
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          newCache[result.value.productId] = result.value.units;
+        }
+      });
+
+      setUnitsCache((prev) => ({ ...prev, ...newCache }));
+      return newCache;
+    } catch (error) {
+      console.error("Error loading batch units:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const loadUnitsForSingleProduct = useCallback(async (productId: string) => {
+    setIsLoading(true);
+    try {
+      const units = await fetchAvailableProductUnits(productId);
+      setUnitsCache((prev) => ({ ...prev, [productId]: units }));
+      return units;
+    } catch (error) {
+      console.error(`Error loading units for product ${productId}:`, error);
+      setUnitsCache((prev) => ({ ...prev, [productId]: [] }));
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const refreshUnitsForProduct = useCallback(
+    async (productId: string) => {
+      return loadUnitsForSingleProduct(productId);
+    },
+    [loadUnitsForSingleProduct]
+  );
+
+  const getUnitsForProduct = useCallback(
+    (productId: string) => {
+      return unitsCache[productId] || [];
+    },
+    [unitsCache]
+  );
+
+  const clearCache = useCallback(() => {
+    setUnitsCache({});
+  }, []);
+
+  return {
+    isLoading,
+    unitsCache,
+    loadUnitsForProducts,
+    loadUnitsForSingleProduct,
+    refreshUnitsForProduct,
+    getUnitsForProduct,
+    clearCache,
+  };
+};
+
+/**
+ * Hook untuk manage unit selection dengan integrated loading
+ * Cocok untuk loan approval modal
+ */
+export const useLoanUnitsManager = () => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [unitsCache, setUnitsCache] = useState<Record<string, ProductUnit[]>>(
+    {}
+  );
+  const [selectedUnits, setSelectedUnits] = useState<Record<string, string[]>>(
+    {}
+  );
+
+  const loadUnitsForProducts = useCallback(async (productIds: string[]) => {
+    setIsLoading(true);
+    try {
+      const results = await Promise.allSettled(
+        productIds.map(async (productId) => {
+          try {
+            const units = await fetchAvailableProductUnits(productId);
+            return { productId, units };
+          } catch (error) {
+            console.error(`Failed to load units for ${productId}:`, error);
+            return { productId, units: [] };
+          }
+        })
+      );
+
+      const newCache: Record<string, ProductUnit[]> = {};
+      results.forEach((result) => {
+        if (result.status === "fulfilled") {
+          newCache[result.value.productId] = result.value.units;
+        }
+      });
+
+      setUnitsCache((prev) => ({ ...prev, ...newCache }));
+      return newCache;
+    } catch (error) {
+      console.error("Error loading batch units:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const refreshUnitsForProduct = useCallback(async (productId: string) => {
+    setIsLoading(true);
+    try {
+      const units = await fetchAvailableProductUnits(productId);
+      setUnitsCache((prev) => ({ ...prev, [productId]: units }));
+      return units;
+    } catch (error) {
+      console.error(`Error refreshing units for product ${productId}:`, error);
+      setUnitsCache((prev) => ({ ...prev, [productId]: [] }));
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const toggleUnitSelection = useCallback(
+    (productId: string, unitId: string, maxQuantity: number) => {
+      setSelectedUnits((prev) => {
+        const currentSelected = prev[productId] || [];
+        const isSelected = currentSelected.includes(unitId);
+
+        if (isSelected) {
+          // Deselect
+          return {
+            ...prev,
+            [productId]: currentSelected.filter((id) => id !== unitId),
+          };
+        } else {
+          // Select (if not exceeding max)
+          if (currentSelected.length < maxQuantity) {
+            return {
+              ...prev,
+              [productId]: [...currentSelected, unitId],
+            };
+          }
+          return prev;
+        }
+      });
+    },
+    []
+  );
+
+  const getUnitsForProduct = useCallback(
+    (productId: string) => {
+      return unitsCache[productId] || [];
+    },
+    [unitsCache]
+  );
+
+  const getSelectedUnitsForProduct = useCallback(
+    (productId: string) => {
+      return selectedUnits[productId] || [];
+    },
+    [selectedUnits]
+  );
+
+  const isUnitSelected = useCallback(
+    (productId: string, unitId: string) => {
+      return (selectedUnits[productId] || []).includes(unitId);
+    },
+    [selectedUnits]
+  );
+
+  const clearSelections = useCallback(() => {
+    setSelectedUnits({});
+  }, []);
+
+  const clearCache = useCallback(() => {
+    setUnitsCache({});
+    setSelectedUnits({});
+  }, []);
+
+  return {
+    isLoading,
+    unitsCache,
+    selectedUnits,
+    loadUnitsForProducts,
+    refreshUnitsForProduct,
+    toggleUnitSelection,
+    getUnitsForProduct,
+    getSelectedUnitsForProduct,
+    isUnitSelected,
+    clearSelections,
+    clearCache,
+  };
+};
+
+// Update export default
+export default {
+  useProducts,
+  useProductById,
+  useCreateProduct,
+  useUpdateProduct,
+  useDeleteProduct,
+
+  useProductSearch,
+  useAvailableProducts,
+  useProductsByCategory,
+
+  useProductUnits,
+  useAvailableProductUnits,
+  useLoanedProductUnits,
+  useAllProductUnits,
+  useUpdateUnitStatus,
+  useUnitSelection,
+  useProductUnitsByStatus,
+  useProductUnitStats,
+
+  useProductBatchOperations,
+
+  // New batch units hooks
+  useBatchLoadAvailableUnits,
+  useLoanUnitsManager,
 };

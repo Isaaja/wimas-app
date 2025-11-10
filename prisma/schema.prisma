@@ -9,16 +9,16 @@ datasource db {
 }
 
 model User {
+  user_id          String            @id @db.VarChar(32)
   name             String
-  createdAt        DateTime          @default(now())
+  username         String            @unique
   password         String
   role             Role              @default(BORROWER)
-  updatedAt        DateTime          @updatedAt
-  user_id          String            @id @db.VarChar(32)
-  username         String            @unique
   email            String?
   noHandphone      String?
   status           LoanStatus?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   loans            Loan[]            @relation("UserLoans")
   loanParticipants LoanParticipant[]
 
@@ -35,57 +35,85 @@ model Category {
 }
 
 model Product {
-  product_id      String     @id @db.VarChar(32)
-  product_name    String     @unique
+  product_id      String            @id @db.VarChar(32)
+  product_name    String            @unique
   product_image   String?
   quantity        Int
-  category_id     String
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
   product_avaible Int
+  category_id     String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   loanItems       LoanItem[]
-  category        Category   @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  requestItems    LoanRequestItem[]
+  category        Category          @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  units           ProductUnit[]
 
   @@index([category_id])
   @@index([product_avaible])
 }
 
+model ProductUnit {
+  unit_id      String        @id @db.VarChar(32)
+  product_id   String
+  serialNumber String        @unique
+  status       UnitStatus    @default(AVAILABLE)
+  condition    ItemCondition @default(GOOD)
+  note         String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  loanItems    LoanItem[]
+  product      Product       @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+
+  @@index([product_id])
+  @@index([status])
+}
+
 model Loan {
   loan_id      String            @id @db.VarChar(32)
   borrower_id  String
+  status       LoanStatus        @default(REQUESTED)
   created_at   DateTime          @default(now())
   updated_at   DateTime          @updatedAt
-  status       LoanStatus        @default(REQUESTED)
   borrower     User              @relation("UserLoans", fields: [borrower_id], references: [user_id], onDelete: Cascade)
   items        LoanItem[]
   participants LoanParticipant[]
+  requestItems LoanRequestItem[]
   report       Report?
 
   @@index([borrower_id])
   @@index([status])
   @@index([created_at])
-  @@index([borrower_id, status])
 }
 
 model LoanItem {
-  loan_item_id String  @id @db.VarChar(32)
-  product_id   String
-  quantity     Int
+  loan_item_id String      @id @db.VarChar(32)
   loan_id      String
-  loan         Loan    @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
-  product      Product @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  product_id   String
+  unit_id      String
+  loan         Loan        @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
+  product      Product     @relation(fields: [product_id], references: [product_id], onDelete: Cascade)
+  unit         ProductUnit @relation(fields: [unit_id], references: [unit_id], onDelete: Cascade)
 }
 
 model LoanParticipant {
   id         String          @id @db.VarChar(32)
   loan_id    String
   user_id    String
-  created_at DateTime        @default(now())
   role       ParticipantRole
+  created_at DateTime        @default(now())
   loan       Loan            @relation(fields: [loan_id], references: [loan_id], onDelete: Cascade)
   user       User            @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@unique([loan_id, user_id])
+}
+
+model LoanRequestItem {
+  id         String  @id @db.VarChar(32)
+  loan_id    String
+  product_id String
+  quantity   Int
+  loan       Loan    @relation(fields: [loan_id], references: [loan_id])
+  product    Product @relation(fields: [product_id], references: [product_id])
 }
 
 model Report {
@@ -118,4 +146,15 @@ enum LoanStatus {
 enum ParticipantRole {
   OWNER
   INVITED
+}
+
+enum UnitStatus {
+  AVAILABLE
+  LOANED
+  DAMAGED
+}
+
+enum ItemCondition {
+  GOOD
+  DAMAGED
 }
