@@ -7,9 +7,6 @@ import ProductValidator from "@/validator/products";
 import { checkAuth } from "@/app/utils/auth";
 import { successResponse, errorResponse } from "@/app/utils/response";
 
-// =============================
-// GET PRODUCT BY ID
-// =============================
 export async function GET(
   req: Request,
   context: { params: Promise<{ id: string }> }
@@ -24,9 +21,6 @@ export async function GET(
   }
 }
 
-// =============================
-// UPDATE PRODUCT
-// =============================
 export async function PUT(
   req: Request,
   context: { params: Promise<{ id: string }> }
@@ -36,12 +30,10 @@ export async function PUT(
 
     const body = await req.json();
 
-    // ✅ Validasi body termasuk units
     await ProductValidator.validateProductPayload(body);
 
     const { id } = await context.params;
 
-    // ✅ Pisahkan product fields dan units
     const {
       product_name,
       product_image,
@@ -57,7 +49,7 @@ export async function PUT(
       quantity,
       category_id,
       product_avaible,
-      units, // ✅ pass units ke service
+      units,
     });
 
     return successResponse(result, "Product updated successfully", 200);
@@ -66,9 +58,6 @@ export async function PUT(
   }
 }
 
-// =============================
-// DELETE PRODUCT
-// =============================
 export async function DELETE(
   req: Request,
   context: { params: Promise<{ id: string }> }

@@ -27,7 +27,6 @@ export default function ProductsTable({
   };
   return (
     <>
-      {/* Desktop Table */}
       <div className="hidden lg:block bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="table text-gray-700 w-full">

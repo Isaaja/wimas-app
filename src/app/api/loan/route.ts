@@ -29,7 +29,6 @@ export async function POST(req: Request) {
     const items = itemsRaw ? JSON.parse(itemsRaw) : [];
     const report = reportRaw ? JSON.parse(reportRaw) : null;
 
-    // ✅ Upload dokumen dan simpan URL ke dalam report
     const spt_file = docs ? await handleFileUpload(docs) : null;
 
     const loanCheck = await checkUserLoan(userId);

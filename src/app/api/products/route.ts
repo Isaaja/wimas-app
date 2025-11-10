@@ -7,9 +7,6 @@ import { checkAuth } from "@/app/utils/auth";
 import { Prisma } from "@prisma/client";
 import { errorResponse, successResponse } from "@/app/utils/response";
 
-// =============================
-// GET ALL PRODUCTS
-// =============================
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
@@ -39,9 +36,6 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// =============================
-// CREATE PRODUCT + AUTO CREATE UNIT
-// =============================
 export async function POST(req: Request) {
   try {
     await checkAuth("ADMIN");

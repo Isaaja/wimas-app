@@ -18,7 +18,6 @@ export async function DELETE(
       );
     }
 
-    // Verifikasi bahwa unit_id belong to product_id
     const unit = await prisma.productUnit.findFirst({
       where: {
         unit_id,

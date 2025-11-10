@@ -1,4 +1,3 @@
-// app/components/admin/DoneLoanModal.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -29,18 +28,15 @@ export default function DoneLoanModal({
 }: DoneLoanModalProps) {
   const [unitConditions, setUnitConditions] = useState<UnitCondition[]>([]);
 
-  // Initialize unit conditions when loan data is available
   useEffect(() => {
     if (loan && isOpen) {
       const conditions: UnitCondition[] = [];
-      const processedUnitIds = new Set<string>(); // Untuk track unit yang sudah diproses
+      const processedUnitIds = new Set<string>();
 
-      // Loop through all products and their units
       loan.items?.forEach((item) => {
         const productUnits = getProductUnits(loan, item.product_id);
 
         productUnits.forEach((unit) => {
-          // Cek apakah unit_id sudah diproses untuk menghindari duplikasi
           if (unit.unit_id && !processedUnitIds.has(unit.unit_id)) {
             processedUnitIds.add(unit.unit_id);
 
@@ -48,7 +44,7 @@ export default function DoneLoanModal({
               unit_id: unit.unit_id,
               serial_number: unit.serial_number || "N/A",
               product_name: item.product_name,
-              condition: "GOOD", // Default condition
+              condition: "GOOD",
             });
           }
         });
@@ -58,7 +54,6 @@ export default function DoneLoanModal({
     }
   }, [loan, isOpen]);
 
-  // Atau gunakan approach yang lebih robust dengan filter langsung
   const getUniqueUnits = (loan: Loan): UnitCondition[] => {
     if (!loan.items) return [];
 
@@ -82,7 +77,6 @@ export default function DoneLoanModal({
     return Array.from(uniqueUnits.values());
   };
 
-  // Update useEffect dengan approach yang lebih robust
   useEffect(() => {
     if (loan && isOpen) {
       const uniqueUnits = getUniqueUnits(loan);
@@ -102,7 +96,6 @@ export default function DoneLoanModal({
   };
 
   const handleConfirm = () => {
-    // Convert array to record format for API
     const conditionsRecord: Record<string, string> = {};
     unitConditions.forEach((unit) => {
       conditionsRecord[unit.unit_id] = unit.condition;
@@ -129,7 +122,6 @@ export default function DoneLoanModal({
     return { good, damaged };
   };
 
-  // Debug log untuk melihat data
   useEffect(() => {
     if (unitConditions.length > 0) {
       console.log("Unit Conditions:", unitConditions);
@@ -147,7 +139,6 @@ export default function DoneLoanModal({
   return (
     <div className="modal modal-open">
       <div className="modal-box max-w-4xl max-h-[70vh] flex flex-col bg-white p-0">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
@@ -167,9 +158,7 @@ export default function DoneLoanModal({
           </button>
         </div>
 
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {/* Information Banner */}
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 mt-0.5">
@@ -198,7 +187,6 @@ export default function DoneLoanModal({
             </div>
           </div>
 
-          {/* Condition Summary */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h3 className="text-base font-semibold mb-3 text-gray-800 flex items-center gap-2">
               <Package className="w-4 h-4" />
@@ -226,7 +214,6 @@ export default function DoneLoanModal({
             </div>
           </div>
 
-          {/* Unit Conditions */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h3 className="text-base font-semibold mb-4 text-gray-800">
               Kondisi Unit Perangkat ({unitConditions.length} unit unik)
@@ -290,7 +277,6 @@ export default function DoneLoanModal({
                       </button>
                     </div>
 
-                    {/* Status info */}
                     <div className="mt-2 text-xs text-gray-500">
                       {unit.condition === "GOOD" ? (
                         <span>
@@ -310,7 +296,6 @@ export default function DoneLoanModal({
             )}
           </div>
 
-          {/* Warning if all units are damaged */}
           {damaged === unitConditions.length && unitConditions.length > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-center gap-2">
@@ -324,7 +309,6 @@ export default function DoneLoanModal({
           )}
         </div>
 
-        {/* Footer */}
         <div className="flex justify-end gap-3 p-4 border-t border-gray-200 bg-white">
           <button
             onClick={onClose}
@@ -353,7 +337,6 @@ export default function DoneLoanModal({
         </div>
       </div>
 
-      {/* Backdrop */}
       <div
         className="modal-backdrop bg-black/50"
         onClick={isProcessing ? undefined : onClose}

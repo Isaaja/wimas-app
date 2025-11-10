@@ -11,7 +11,7 @@ interface ProductDetailModalProps {
   onClose: () => void;
   onAddToCart: (product: Product, quantity: number) => void;
   canBorrow?: boolean;
-  availableUnits: number; // Tambahkan prop ini
+  availableUnits: number;
 }
 
 export default function ProductDetailModal({
@@ -20,11 +20,10 @@ export default function ProductDetailModal({
   onClose,
   onAddToCart,
   canBorrow = true,
-  availableUnits, // Gunakan availableUnits dari props
+  availableUnits,
 }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState<number>(1);
 
-  // Reset quantity ketika modal dibuka atau availableUnits berubah
   useEffect(() => {
     if (isOpen) {
       setQuantity(1);
@@ -44,7 +43,6 @@ export default function ProductDetailModal({
     onClose();
   };
 
-  // Validasi quantity tidak melebihi availableUnits
   const handleQuantityChange = (value: number) => {
     const newQuantity = Math.max(1, Math.min(value, availableUnits));
     setQuantity(newQuantity);
@@ -55,7 +53,6 @@ export default function ProductDetailModal({
   return (
     <dialog className="modal modal-open">
       <div className="modal-box max-w-3xl w-11/12 sm:w-10/12 md:w-9/12 lg:max-w-3xl p-0 bg-white rounded-lg max-h-[80vh] sm:max-h-[85vh] lg:max-h-[80vh] overflow-hidden flex flex-col mt-12">
-        {/* Header */}
         <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <h3 className="font-bold text-base sm:text-lg text-gray-800">
             Detail Produk
@@ -68,11 +65,8 @@ export default function ProductDetailModal({
           </button>
         </div>
 
-        {/* Content Area with Scroll */}
         <div className="flex flex-col lg:flex-row flex-1 overflow-y-auto">
-          {/* Left Column - Image (Mobile: Full width, Desktop: 2/3) */}
           <div className="flex flex-col w-full lg:w-2/3 p-3 sm:p-4 gap-3 lg:border-r lg:border-gray-200">
-            {/* Image Container */}
             <div className="bg-gray-50 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex justify-center items-center min-h-[200px] sm:min-h-[250px] lg:min-h-0 lg:flex-1">
               <Image
                 src={product.product_image || "/img/no-image.jpg"}
@@ -86,7 +80,6 @@ export default function ProductDetailModal({
               />
             </div>
 
-            {/* Stock Badge - Mobile only */}
             <div className="lg:hidden text-center">
               <div
                 className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
@@ -102,9 +95,7 @@ export default function ProductDetailModal({
             </div>
           </div>
 
-          {/* Right Column - Product Details */}
           <div className="flex flex-col w-full lg:w-1/2 p-3 sm:p-4 gap-3 sm:gap-4">
-            {/* Product Title */}
             <div>
               <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-1 line-clamp-2">
                 {product.product_name}
@@ -112,7 +103,6 @@ export default function ProductDetailModal({
               <div className="w-12 h-1 bg-blue-500 rounded-full"></div>
             </div>
 
-            {/* Stock Badge - Desktop only */}
             <div className="hidden lg:block text-center">
               <div
                 className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
@@ -127,7 +117,6 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            {/* Product Details */}
             <div className="space-y-2 sm:space-y-3 text-sm">
               <div className="flex justify-between items-center py-1">
                 <span className="text-gray-600 font-medium">Kategori:</span>
@@ -151,7 +140,6 @@ export default function ProductDetailModal({
               </div>
             </div>
 
-            {/* Quantity Selector */}
             <div className="bg-blue-50 rounded-lg p-3">
               <label className="block text-xs font-semibold mb-2 text-gray-700 text-center">
                 JUMLAH PINJAM
@@ -190,7 +178,6 @@ export default function ProductDetailModal({
               </p>
             </div>
 
-            {/* Status Messages */}
             {!canBorrow && (
               <div className="alert alert-warning py-2 px-3 bg-yellow-50 border-yellow-200">
                 <span className="text-yellow-800 text-xs sm:text-sm">
@@ -207,7 +194,6 @@ export default function ProductDetailModal({
               </div>
             )}
 
-            {/* Summary */}
             {canBorrow && availableUnits > 0 && (
               <div className="alert alert-info py-2 px-3 bg-blue-50 border-blue-200">
                 <span className="text-blue-800 text-xs sm:text-sm">
@@ -216,7 +202,6 @@ export default function ProductDetailModal({
               </div>
             )}
 
-            {/* Action Buttons - Sticky di mobile */}
             <div className="flex gap-2 mt-2 pt-2 bg-white sticky bottom-0 -mx-3 -mb-3 px-3 pb-3 sm:static sm:mx-0 sm:mb-0 sm:px-0 sm:pb-0">
               <button
                 className="btn btn-outline btn-sm flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs py-2 h-auto"
@@ -244,7 +229,6 @@ export default function ProductDetailModal({
         </div>
       </div>
 
-      {/* Modal Backdrop */}
       <form method="dialog" className="modal-backdrop bg-black/50">
         <button onClick={handleClose}>close</button>
       </form>

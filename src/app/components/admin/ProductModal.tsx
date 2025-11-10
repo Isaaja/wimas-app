@@ -164,7 +164,6 @@ export default function ProductModal({
           </h3>
         </div>
 
-        {/* FORM CONTENT - SCROLLABLE */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
           <form id="product-form" onSubmit={handleSubmit}>
             <div className="form-control mb-3">
@@ -181,7 +180,6 @@ export default function ProductModal({
               />
             </div>
 
-            {/* GAMBAR */}
             <div className="form-control mb-3">
               <label className="label">
                 <span className="font-semibold">URL Gambar (Opsional)</span>
@@ -195,7 +193,6 @@ export default function ProductModal({
               />
             </div>
 
-            {/* KATEGORI */}
             <div className="form-control mb-3">
               <label className="label">
                 <span className="font-semibold">Kategori</span>
@@ -223,7 +220,6 @@ export default function ProductModal({
               )}
             </div>
 
-            {/* QUANTITY + INFO KETERSEDIAAN */}
             <div className="form-control mb-3">
               <label className="label">
                 <span className="font-semibold">Jumlah Stok</span>
@@ -255,7 +251,6 @@ export default function ProductModal({
               )}
             </div>
 
-            {/* SERIAL NUMBERS */}
             {formData.quantity > 0 && (
               <div className="form-control mb-3">
                 <label className="label">

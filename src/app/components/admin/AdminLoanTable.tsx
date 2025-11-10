@@ -11,14 +11,8 @@ import {
   Filter,
   CheckCheck,
   EyeOff,
-  FileText,
 } from "lucide-react";
-import {
-  Loan,
-  getProductQuantities,
-  hasUnitAssignments,
-  getUniqueProducts,
-} from "@/hooks/useLoans"; // Import getUniqueProducts
+import { Loan, hasUnitAssignments, getUniqueProducts } from "@/hooks/useLoans";
 import Loading from "../common/Loading";
 import { useState, useMemo } from "react";
 
@@ -123,29 +117,23 @@ export default function AdminLoanTable({
     return loan.borrower?.name || loan.borrower?.username || "Unknown";
   };
 
-  // PERBAIKAN: Fungsi untuk menghitung total barang (semua unit)
   const getTotalItems = (loan: Loan) => {
     if (!loan.items) return 0;
 
     if (loan.status === "REQUESTED") {
-      // Untuk status REQUESTED, hitung dari quantity
       return loan.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
     } else {
-      // Untuk status APPROVED+, hitung dari jumlah item (setiap item = 1 unit)
       return loan.items.length;
     }
   };
 
-  // PERBAIKAN: Fungsi untuk menghitung jumlah jenis produk
   const getProductTypesCount = (loan: Loan) => {
     if (!loan.items) return 0;
 
     if (loan.status === "REQUESTED") {
-      // Untuk status REQUESTED, hitung unique product_id
       const uniqueProducts = new Set(loan.items.map((item) => item.product_id));
       return uniqueProducts.size;
     } else {
-      // Untuk status APPROVED+, gunakan getUniqueProducts
       const uniqueProducts = getUniqueProducts(loan);
       return uniqueProducts.length;
     }
@@ -231,7 +219,6 @@ export default function AdminLoanTable({
 
   return (
     <div className="space-y-4">
-      {/* Filter Section */}
       <div className="bg-gray-100 p-3 rounded-lg border border-gray-200 shadow-lg">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
           <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
@@ -250,7 +237,6 @@ export default function AdminLoanTable({
               )}
             </button>
 
-            {/* Quick Filters */}
             <div className="flex flex-wrap gap-1">
               {quickFilters.map((filter, index) => (
                 <button
@@ -264,7 +250,6 @@ export default function AdminLoanTable({
             </div>
           </div>
 
-          {/* Right Side - Clear Filter & Results Info */}
           <div className="flex items-center gap-3">
             <div className="text-sm text-gray-600">
               {filteredLoans.length} data
@@ -281,7 +266,6 @@ export default function AdminLoanTable({
           </div>
         </div>
 
-        {/* Compact Date Picker */}
         {showDatePicker && (
           <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-blue-50">
             <div className="flex gap-4">
@@ -327,7 +311,6 @@ export default function AdminLoanTable({
         )}
       </div>
 
-      {/* Table Section - Updated to match borrower table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="table w-full">
@@ -351,8 +334,8 @@ export default function AdminLoanTable({
                   actioningLoanId === loan.loan_id;
                 const sptFileUrl = getSptFileUrl(loan.report?.spt_file);
                 const mainBorrower = getMainBorrower(loan);
-                const totalItems = getTotalItems(loan); // Total semua unit
-                const productTypesCount = getProductTypesCount(loan); // Jumlah jenis produk
+                const totalItems = getTotalItems(loan);
+                const productTypesCount = getProductTypesCount(loan);
                 const invitedUsersCount = getInvitedUsersCount(loan);
                 const hasUnits = hasUnitAssignments(loan);
 
@@ -395,7 +378,7 @@ export default function AdminLoanTable({
                       </div>
                     </td>
 
-                    {/* PERBAIKAN: Kolom Total Barang */}
+                    {/* Kolom Total Barang */}
                     <td className="border-t border-black/10">
                       <div className="text-sm font-medium">
                         {totalItems} barang
@@ -447,7 +430,6 @@ export default function AdminLoanTable({
                       )}
                     </td>
 
-                    {/* Kolom Aksi */}
                     <td className="border-t border-black/10">
                       <div className="flex justify-center items-center gap-1">
                         {/* Tombol Review & Approve untuk status REQUESTED */}
@@ -508,21 +490,6 @@ export default function AdminLoanTable({
                         >
                           <View className="w-4 h-4" />
                         </button>
-
-                        {/* Tombol Lihat Nota untuk status yang sudah selesai */}
-                        {(loan.status === "APPROVED" ||
-                          loan.status === "RETURNED" ||
-                          loan.status === "DONE") && (
-                          <button
-                            className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
-                            data-tip="Lihat Nota"
-                            onClick={() => {
-                              /* Add nota handler if needed */
-                            }}
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                        )}
                       </div>
                     </td>
                   </tr>

@@ -9,7 +9,6 @@ import ReturnModal from "./ReturnModal";
 import Swal from "sweetalert2";
 import {
   useReturnLoan,
-  getProductQuantities,
   hasUnitAssignments,
   type Loan,
   type LoanHistory,

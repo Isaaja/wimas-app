@@ -23,7 +23,6 @@ export async function GET() {
       recentUsers,
       outOfStockCount,
     ] = await Promise.all([
-      // Total products dan available products
       prisma.product.aggregate({
         _count: true,
         _sum: {
@@ -31,19 +30,16 @@ export async function GET() {
         },
       }),
 
-      // User stats by role
       prisma.user.groupBy({
         by: ["role"],
         _count: true,
       }),
 
-      // Loan stats by status
       prisma.loan.groupBy({
         by: ["status"],
         _count: true,
       }),
 
-      // Ambil semua products dengan units untuk filtering manual
       prisma.product.findMany({
         select: {
           product_id: true,
@@ -68,7 +64,6 @@ export async function GET() {
         } as any,
       }),
 
-      // Pending loans (REQUESTED status)
       prisma.loan.findMany({
         select: {
           loan_id: true,
@@ -100,7 +95,6 @@ export async function GET() {
         },
       }),
 
-      // Recent loans count (last 7 days)
       prisma.loan.count({
         where: {
           created_at: {
@@ -109,7 +103,6 @@ export async function GET() {
         },
       }),
 
-      // All loans for stats (last 6 months) - IMPROVED
       prisma.loan.findMany({
         select: {
           loan_id: true,
@@ -152,7 +145,6 @@ export async function GET() {
         },
       }),
 
-      // Recent users
       prisma.user.findMany({
         select: {
           user_id: true,
@@ -167,7 +159,6 @@ export async function GET() {
         take: 6,
       }),
 
-      // Out of stock count
       prisma.product.count({
         where: {
           units: {
@@ -180,7 +171,6 @@ export async function GET() {
       }),
     ]);
 
-    // Process low stock products
     const lowStockProducts = allProducts
       .map((product) => ({
         product_id: product.product_id,
@@ -192,7 +182,6 @@ export async function GET() {
       .sort((a, b) => a.product_avaible - b.product_avaible)
       .slice(0, 5);
 
-    // Process loan stats
     const loanStats = loansData.reduce(
       (acc, curr) => {
         acc[curr.status.toLowerCase()] = curr._count;
@@ -207,7 +196,6 @@ export async function GET() {
       } as Record<string, number>
     );
 
-    // Process user stats
     const userStats = usersData.reduce(
       (acc, curr) => {
         if (curr.role === "ADMIN") acc.admin = curr._count;
@@ -217,7 +205,6 @@ export async function GET() {
       { admin: 0, borrower: 0 }
     );
 
-    // Transform pending loans
     const transformedPendingLoans = pendingLoans.map((loan) => {
       const totalItems = loan.requestItems.reduce(
         (sum, item) => sum + item.quantity,
@@ -239,7 +226,6 @@ export async function GET() {
       };
     });
 
-    // Transform all loans for stats dengan penghitungan produk paling sering dipinjam
     interface ProductCount {
       product_id: string;
       product_name: string;
@@ -257,12 +243,10 @@ export async function GET() {
 
       const itemsByProduct: Record<string, ProductItem> = {};
 
-      // Gunakan items (actual units yang dipinjam)
       loan.items.forEach((item) => {
         const productId = item.product_id;
         const productName = item.product.product_name;
 
-        // Count untuk produk paling sering dipinjam
         if (!productBorrowCount[productId]) {
           productBorrowCount[productId] = {
             product_id: productId,
@@ -272,7 +256,6 @@ export async function GET() {
         }
         productBorrowCount[productId].count += 1;
 
-        // Group untuk loan items
         if (!itemsByProduct[productId]) {
           itemsByProduct[productId] = {
             product_id: productId,
@@ -293,7 +276,6 @@ export async function GET() {
       };
     });
 
-    // Get top 5 most borrowed products
     const mostBorrowedProducts = Object.values(productBorrowCount)
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)

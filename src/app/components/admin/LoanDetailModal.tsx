@@ -18,7 +18,6 @@ import {
   Save,
   Plus,
   Search,
-  CheckCheck,
   XCircle,
   ChevronDown,
   ChevronUp,
@@ -518,7 +517,6 @@ export default function LoanDetailModal({
   const displayLoan = latestLoan || loan;
   const itemsToDisplay = isEditing ? editedItems : getCurrentItems();
 
-  // ✅ Safe access dengan default values seperti di borrower
   const sptFileUrl = getSptFileUrl(displayLoan.report?.spt_file);
   const hasUnits = hasUnitAssignments(displayLoan);
   const productQuantities = getProductQuantities(displayLoan);
@@ -532,7 +530,6 @@ export default function LoanDetailModal({
   return (
     <div className={`modal ${isOpen ? "modal-open" : ""}`}>
       <div className="modal-box p-0 max-w-4xl max-h-[85vh] flex flex-col bg-white border border-gray-200 mt-12">
-        {/* Header - Sama seperti borrower */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
@@ -559,9 +556,7 @@ export default function LoanDetailModal({
           </button>
         </div>
 
-        {/* Content - Mengikuti struktur borrower */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {/* Status & Actions - Sama seperti borrower */}
           <div className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center gap-4">
               <span
@@ -587,11 +582,6 @@ export default function LoanDetailModal({
                   ? "Dikembalikan"
                   : "Selesai"}
               </span>
-              {hasUnits && (
-                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs border border-purple-200">
-                  ✓ Ada Unit Assignment
-                </span>
-              )}
               <span className="text-xs text-gray-600">
                 {formatDate(displayLoan.updated_at)}
               </span>
@@ -611,7 +601,6 @@ export default function LoanDetailModal({
             )}
           </div>
 
-          {/* Warning Banner untuk admin */}
           {isEditing && hasItemsWithoutUnits && (
             <div className="flex items-start gap-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <AlertTriangle className="w-4 h-4 text-orange-600 flex-shrink-0 mt-0.5" />
@@ -627,9 +616,7 @@ export default function LoanDetailModal({
             </div>
           )}
 
-          {/* Informasi Peminjam - Sama seperti borrower */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Peminjam Utama */}
             <div className="p-3 bg-white rounded-lg border border-gray-200">
               <div className="flex items-center gap-2 mb-3">
                 <User className="w-4 h-4 text-gray-600" />
@@ -660,7 +647,6 @@ export default function LoanDetailModal({
               </div>
             </div>
 
-            {/* Peserta Lain */}
             {invitedUsers.length > 0 && (
               <div className="p-3 bg-white rounded-lg border border-gray-200">
                 <div className="flex items-center gap-2 mb-3">
@@ -688,7 +674,6 @@ export default function LoanDetailModal({
             )}
           </div>
 
-          {/* Barang yang Dipinjam - Sama seperti borrower dengan tambahan edit mode */}
           <div className="p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -719,7 +704,6 @@ export default function LoanDetailModal({
                 )}
             </div>
 
-            {/* Edit Mode Controls untuk admin */}
             {isEditing && (
               <div className="mb-3">
                 {!showAddProduct ? (
@@ -817,7 +801,6 @@ export default function LoanDetailModal({
                       item.product_id
                     );
 
-                    // Gunakan kombinasi key yang unik
                     const uniqueKey = `${item.product_id}-${
                       item.loan_item_id || index
                     }-${Date.now()}`;
@@ -827,7 +810,6 @@ export default function LoanDetailModal({
                         key={uniqueKey}
                         className="border border-gray-200 rounded-lg overflow-hidden"
                       >
-                        {/* Product Header */}
                         <div className="bg-gray-50 p-3 border-b border-gray-200">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3">
@@ -938,7 +920,6 @@ export default function LoanDetailModal({
                           </div>
                         </div>
 
-                        {/* Unit Details - Sama seperti borrower dengan tambahan edit mode */}
                         {(displayLoan.status !== "REQUESTED" || isEditing) && (
                           <div className="p-3 bg-white">
                             <div className="flex items-center gap-2 mb-3">
@@ -967,7 +948,6 @@ export default function LoanDetailModal({
 
                             {isEditing &&
                             expandedProduct === item.product_id ? (
-                              // Edit Mode: Pilih Unit
                               <>
                                 {item.available_units?.length === 0 ? (
                                   <div className="text-center py-4 bg-red-50 rounded border border-red-200">
@@ -1058,8 +1038,7 @@ export default function LoanDetailModal({
                                   </div>
                                 )}
                               </>
-                            ) : // View Mode: Tampilkan Unit seperti borrower
-                            productUnits.length > 0 ? (
+                            ) : productUnits.length > 0 ? (
                               <div className="space-y-2">
                                 {productUnits.map(
                                   (unit: any, unitIndex: any) => (
@@ -1108,7 +1087,6 @@ export default function LoanDetailModal({
                                   )
                                 )}
 
-                                {/* Summary seperti borrower */}
                                 <div className="mt-3 pt-3 border-t border-gray-200">
                                   <div className="flex justify-between items-center text-xs">
                                     <span className="text-gray-600">
@@ -1163,7 +1141,6 @@ export default function LoanDetailModal({
             </div>
           </div>
 
-          {/* Informasi SPT - Sama seperti borrower */}
           {displayLoan.report && (
             <div className="p-3 bg-white rounded-lg border border-gray-200">
               <div className="flex items-center gap-2 mb-3">
@@ -1228,7 +1205,6 @@ export default function LoanDetailModal({
             </div>
           )}
 
-          {/* Timeline - Sama seperti borrower */}
           <div className="p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center gap-2 mb-3">
               <Calendar className="w-4 h-4 text-gray-600" />
@@ -1250,7 +1226,6 @@ export default function LoanDetailModal({
           </div>
         </div>
 
-        {/* Footer dengan tombol aksi admin */}
         <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-white sticky bottom-0 gap-2">
           <div className="flex gap-2 flex-wrap">
             {isEditing ? (

@@ -73,7 +73,6 @@ export default function ReturnModal({
         </div>
 
         <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(80vh-140px)] lg:max-h-[calc(70vh-140px)] space-y-6">
-          {/* Informasi Peminjaman */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <h3 className="text-base sm:text-lg font-semibold mb-4 text-gray-800 flex items-center gap-2">
               <FileText className="w-4 h-4" />
@@ -164,7 +163,6 @@ export default function ReturnModal({
                   key={product.product_id}
                   className="border border-gray-200 rounded-lg overflow-hidden"
                 >
-                  {/* Product Header */}
                   <div className="bg-gray-50 p-3 border-b border-gray-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
