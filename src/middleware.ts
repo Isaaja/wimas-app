@@ -6,7 +6,6 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (pathname.startsWith("/api")) {
-    // skip auth untuk endpoint tertentu
     if (pathname.startsWith("/api/auth")) {
       return NextResponse.next();
     }

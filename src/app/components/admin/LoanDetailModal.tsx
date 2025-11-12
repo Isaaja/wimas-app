@@ -391,9 +391,7 @@ export default function LoanDetailModal({
       { loanId: loan.loan_id, units: unitAssignments },
       {
         onSuccess: () => {
-          toast.success(
-            "✅ Peminjaman berhasil disetujui dengan unit terpilih!"
-          );
+          toast.success("Peminjaman berhasil disetujui dengan unit terpilih!");
           setIsEditing(false);
           setExpandedProduct(null);
           setUnitsCache({});
@@ -535,9 +533,6 @@ export default function LoanDetailModal({
             <h2 className="text-lg font-semibold text-gray-800">
               Detail Peminjaman {isEditing && "- Mode Edit & Pilih Unit"}
             </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              ID: {displayLoan.loan_id}
-            </p>
             {loanLoading && (
               <div className="flex items-center gap-1 mt-1">
                 <span className="loading loading-spinner loading-xs text-info"></span>
@@ -616,7 +611,7 @@ export default function LoanDetailModal({
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-4">
             <div className="p-3 bg-white rounded-lg border border-gray-200">
               <div className="flex items-center gap-2 mb-3">
                 <User className="w-4 h-4 text-gray-600" />
@@ -630,18 +625,6 @@ export default function LoanDetailModal({
                   <p className="text-xs text-gray-500">Nama</p>
                   <p className="text-sm text-gray-800 font-medium">
                     {borrowerName}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Username</p>
-                  <p className="text-sm text-gray-800">
-                    {displayLoan.borrower?.username || "Unknown"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">ID</p>
-                  <p className="text-sm text-gray-800 font-mono">
-                    {displayLoan.borrower?.user_id || "Unknown"}
                   </p>
                 </div>
               </div>
@@ -664,9 +647,6 @@ export default function LoanDetailModal({
                       <p className="text-sm font-medium text-gray-800">
                         {user.name || user.username || "Unknown"}
                       </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {user.user_id}
-                      </p>
                     </div>
                   ))}
                 </div>
@@ -675,7 +655,7 @@ export default function LoanDetailModal({
           </div>
 
           <div className="p-3 bg-white rounded-lg border border-gray-200">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col lg:flex-row items-center lg:justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Package className="w-4 h-4 text-gray-600" />
                 <label className="text-xs text-gray-500 font-medium">
@@ -940,7 +920,7 @@ export default function LoanDetailModal({
                                       className={`w-3 h-3 ${
                                         isLoadingUnits ? "animate-spin" : ""
                                       }`}
-                                    />{" "}
+                                    />
                                     Refresh Unit
                                   </button>
                                 )}
@@ -1028,9 +1008,6 @@ export default function LoanDetailModal({
                                                 {unit.serialNumber}
                                               </p>
                                             </div>
-                                            <p className="text-xs text-gray-500 mt-0.5">
-                                              {unit.unit_id}
-                                            </p>
                                           </div>
                                         </button>
                                       );
@@ -1038,99 +1015,98 @@ export default function LoanDetailModal({
                                   </div>
                                 )}
                               </>
-                            ) : productUnits.length > 0 ? (
-                              <div className="space-y-2">
-                                {productUnits.map(
-                                  (unit: any, unitIndex: any) => (
-                                    <div
-                                      key={unit.unit_id}
-                                      className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200"
-                                    >
-                                      <div className="flex-1">
-                                        <div className="flex items-center gap-2 mb-1">
-                                          <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
-                                          <span className="text-sm text-gray-700">
-                                            Serial:{" "}
-                                            <span className="font-mono">
-                                              {unit.serial_number || "N/A"}
-                                            </span>
-                                          </span>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-xs text-gray-500 font-mono">
-                                            ID: {unit.unit_id}
-                                          </span>
-                                          <button
-                                            onClick={() =>
-                                              copyToClipboard(
-                                                unit.unit_id,
-                                                unit.unit_id
-                                              )
-                                            }
-                                            className="p-1 hover:bg-gray-200 rounded transition-colors"
-                                            title="Copy Unit ID"
-                                          >
-                                            <Copy
-                                              className={`w-3 h-3 ${
-                                                copiedUnitId === unit.unit_id
-                                                  ? "text-green-600"
-                                                  : "text-gray-400"
-                                              }`}
-                                            />
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
-                                        Unit #{unitIndex + 1}
-                                      </div>
-                                    </div>
-                                  )
-                                )}
-
-                                <div className="mt-3 pt-3 border-t border-gray-200">
-                                  <div className="flex justify-between items-center text-xs">
-                                    <span className="text-gray-600">
-                                      Total Unit:
-                                    </span>
-                                    <span
-                                      className={`font-medium ${
-                                        productUnits.length === quantity
-                                          ? "text-green-600"
-                                          : productUnits.length > quantity
-                                          ? "text-blue-600"
-                                          : "text-orange-600"
-                                      }`}
-                                    >
-                                      {productUnits.length} dari {quantity} unit
-                                    </span>
-                                  </div>
-                                  {productUnits.length < quantity && (
-                                    <div className="mt-1 text-xs text-orange-600">
-                                      ⚠️ {quantity - productUnits.length} unit
-                                      belum ditugaskan
-                                    </div>
-                                  )}
-                                  {productUnits.length > quantity && (
-                                    <div className="mt-1 text-xs text-blue-600">
-                                      ℹ️ Lebih banyak unit yang ditugaskan
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            ) : displayLoan.status === "REQUESTED" ? (
-                              <div className="text-center py-4 text-gray-500">
-                                <span className="text-xs">
-                                  Menunggu persetujuan dan penugasan {quantity}{" "}
-                                  unit
-                                </span>
-                              </div>
                             ) : (
-                              <div className="text-center py-4 text-gray-500">
-                                <span className="text-xs">
-                                  Belum ada unit yang ditugaskan untuk produk
-                                  ini
-                                </span>
-                              </div>
+                              !isEditing && (
+                                <div className="space-y-2">
+                                  {productUnits.map(
+                                    (unit: any, unitIndex: any) => (
+                                      <div
+                                        key={unit.unit_id}
+                                        className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200"
+                                      >
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-1">
+                                            <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                                            <span className="text-sm text-gray-700">
+                                              Serial:{" "}
+                                              <span className="font-mono">
+                                                {unit.serial_number || "N/A"}
+                                              </span>
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-xs text-gray-500 font-mono">
+                                              ID: {unit.unit_id}
+                                            </span>
+                                            <button
+                                              onClick={() =>
+                                                copyToClipboard(
+                                                  unit.unit_id,
+                                                  unit.unit_id
+                                                )
+                                              }
+                                              className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                              title="Copy Unit ID"
+                                            >
+                                              <Copy
+                                                className={`w-3 h-3 ${
+                                                  copiedUnitId === unit.unit_id
+                                                    ? "text-green-600"
+                                                    : "text-gray-400"
+                                                }`}
+                                              />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
+                                          Unit #{unitIndex + 1}
+                                        </div>
+                                      </div>
+                                    )
+                                  )}
+
+                                  {productUnits.length === 0 && (
+                                    <div className="text-center py-4 text-gray-500">
+                                      <span className="text-xs">
+                                        {displayLoan.status === "REQUESTED"
+                                          ? `Menunggu persetujuan dan penugasan ${quantity} unit`
+                                          : "Belum ada unit yang ditugaskan untuk produk ini"}
+                                      </span>
+                                    </div>
+                                  )}
+
+                                  <div className="mt-3 pt-3 border-t border-gray-200">
+                                    <div className="flex justify-between items-center text-xs">
+                                      <span className="text-gray-600">
+                                        Total Unit:
+                                      </span>
+                                      <span
+                                        className={`font-medium ${
+                                          productUnits.length === quantity
+                                            ? "text-green-600"
+                                            : productUnits.length > quantity
+                                            ? "text-blue-600"
+                                            : "text-orange-600"
+                                        }`}
+                                      >
+                                        {productUnits.length} dari {quantity}{" "}
+                                        unit
+                                      </span>
+                                    </div>
+                                    {productUnits.length < quantity && (
+                                      <div className="mt-1 text-xs text-orange-600">
+                                        ⚠️ {quantity - productUnits.length} unit
+                                        belum ditugaskan
+                                      </div>
+                                    )}
+                                    {productUnits.length > quantity && (
+                                      <div className="mt-1 text-xs text-blue-600">
+                                        ℹ️ Lebih banyak unit yang ditugaskan
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )
                             )}
                           </div>
                         )}
@@ -1231,19 +1207,6 @@ export default function LoanDetailModal({
             {isEditing ? (
               <>
                 <button
-                  onClick={handleSaveClick}
-                  disabled={isUpdating || editedItems.length === 0}
-                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
-                >
-                  {isUpdating ? (
-                    <span className="loading loading-spinner loading-xs"></span>
-                  ) : (
-                    <Save className="w-3 h-3" />
-                  )}
-                  {isUpdating ? "Menyimpan..." : "Simpan Perubahan"}
-                </button>
-
-                <button
                   onClick={handleApproveWithUnits}
                   disabled={
                     isApproving ||
@@ -1265,7 +1228,7 @@ export default function LoanDetailModal({
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-3 h-3" /> Setujui & Simpan Unit
+                      <CheckCircle className="w-3 h-3" /> Setujui Peminjaman
                     </>
                   )}
                 </button>
@@ -1287,22 +1250,8 @@ export default function LoanDetailModal({
                     disabled={isApproving}
                     className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
                   >
-                    <CheckCircle className="w-3 h-3" /> Review & Approve
+                    <CheckCircle className="w-3 h-3" /> Pilih unit & Setujui
                   </button>
-                  {onReject && (
-                    <button
-                      onClick={() => onReject?.(displayLoan.loan_id)}
-                      disabled={isRejecting}
-                      className="flex items-center gap-1 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm font-medium disabled:opacity-50"
-                    >
-                      {isRejecting ? (
-                        <span className="loading loading-spinner loading-xs"></span>
-                      ) : (
-                        <XCircle className="w-3 h-3" />
-                      )}
-                      {isRejecting ? "Menolak..." : "Tolak"}
-                    </button>
-                  )}
                 </>
               )
             )}

@@ -452,7 +452,7 @@ export default function AdminLoanTable({
                             <button
                               onClick={() => onReject?.(loan.loan_id)}
                               disabled={isProcessing}
-                              className="btn btn-ghost btn-xs text-red-600 lg:tooltip"
+                              className="btn btn-ghost btn-xs text-red-600 lg:tooltip lg:tooltip-left"
                               data-tip="Tolak Peminjaman"
                             >
                               {isProcessing &&
@@ -482,14 +482,16 @@ export default function AdminLoanTable({
                           </button>
                         )}
 
-                        {/* Tombol Lihat Detail untuk semua status */}
-                        <button
-                          className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
-                          data-tip="Lihat Detail"
-                          onClick={() => onViewDetail(loan.loan_id)}
-                        >
-                          <View className="w-4 h-4" />
-                        </button>
+                        {/* Tombol Lihat Detail - TIDAK DITAMPILKAN untuk status REQUESTED */}
+                        {loan.status !== "REQUESTED" && (
+                          <button
+                            className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
+                            data-tip="Lihat Detail"
+                            onClick={() => onViewDetail(loan.loan_id)}
+                          >
+                            <View className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
