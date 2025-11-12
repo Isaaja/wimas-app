@@ -179,7 +179,7 @@ export default function BorrowerDashboard() {
   }
 
   return (
-    <div className="min-h-fit p-4 bg-white">
+    <div className="min-h-fit pt-4 bg-white p-4">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-3">
           <div
@@ -189,17 +189,17 @@ export default function BorrowerDashboard() {
                 : "bg-gradient-to-r from-yellow-100 to-yellow-200 border-yellow-300"
             }`}
           >
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-5">
               {canBorrow ? (
                 <CheckCircle className="w-10 h-10 text-green-600" />
               ) : (
                 <AlertCircle className="w-10 h-10 text-yellow-600" />
               )}
-              <div className="flex-1 min-w-0">
+              <div className="flex flex-col min-w-0 py-2">
                 <h3 className="font-bold text-gray-800 text-lg truncate">
                   {canBorrow ? "Bisa Meminjam" : "Tidak Bisa Meminjam"}
                 </h3>
-                <div className="text-sm text-gray-600 truncate">
+                <div className="text-sm text-gray-600">
                   <p>
                     {canBorrow
                       ? "Silahkan memilih perangkat untuk dipinjam"

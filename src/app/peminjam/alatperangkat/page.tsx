@@ -81,9 +81,13 @@ export default function AlatPerangkatPage() {
       quantity: c.quantity,
     }));
 
+    console.log("✅ invitedUserIds:", invitedUserIds);
+    console.log("✅ items:", items);
+    console.log("✅ reportData:", reportData);
+
     try {
       await createLoan({
-        users: invitedUserIds,
+        user: invitedUserIds,
         items: items,
         docs: docsFile,
         report: reportData,
@@ -141,103 +145,108 @@ export default function AlatPerangkatPage() {
     );
 
   return (
-    <div className="flex flex-col max-h-screen bg-gray-200 mt-6 rounded-2xl shadow-xl p-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 px-4 gap-4">
-        <label className="input input-bordered bg-white rounded-2xl flex items-center gap-2 w-full md:max-w-md">
-          <svg
-            className="h-[1.2em] w-[1.2em] opacity-50"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-          >
-            <g
-              strokeLinejoin="round"
-              strokeLinecap="round"
-              strokeWidth="2.5"
-              fill="none"
-              stroke="currentColor"
+    <>
+      <h1 className="px-4 mt-4 lg:text-2xl text-xl font-bold text-center lg:text-left">
+        Alat & Perangkat
+      </h1>
+      <div className="flex flex-col max-h-screen bg-gray-200 m-4 rounded-2xl shadow-xl p-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 lg:px-4 px-2 gap-4">
+          <label className="input input-bordered bg-white rounded-2xl flex items-center gap-2 w-full md:max-w-md">
+            <svg
+              className="h-[1.2em] w-[1.2em] opacity-50"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
             >
-              <circle cx="11" cy="11" r="8"></circle>
-              <path d="m21 21-4.3-4.3"></path>
-            </g>
-          </svg>
-          <input
-            type="search"
-            required
-            placeholder="Cari perangkat..."
-            className="grow outline-none bg-transparent text-gray-700"
-            onChange={handleSearchChange}
-          />
-        </label>
-      </div>
-
-      {!canBorrow && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-3 mx-4 mb-4">
-          <p className="text-sm text-red-800 text-center">
-            ⚠️ Anda tidak dapat membuat pinjaman baru karena memiliki pinjaman
-            aktif. Selesaikan atau tunggu hingga pinjaman saat ini selesai
-            terlebih dahulu.
-          </p>
-        </div>
-      )}
-
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4 overflow-y-auto w-full max-h-[73vh] rounded-md px-4 pb-4">
-        {filteredAndSortedProducts.length > 0 ? (
-          filteredAndSortedProducts.map((p) => (
-            <ProductCard
-              key={p.product_id}
-              product={p}
-              onAdd={addToCart}
-              canBorrow={canBorrow}
+              <g
+                strokeLinejoin="round"
+                strokeLinecap="round"
+                strokeWidth="2.5"
+                fill="none"
+                stroke="currentColor"
+              >
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.3-4.3"></path>
+              </g>
+            </svg>
+            <input
+              type="search"
+              required
+              placeholder="Cari perangkat..."
+              className="grow outline-none bg-transparent text-gray-700"
+              onChange={handleSearchChange}
             />
-          ))
-        ) : (
-          <p className="text-center text-gray-500 col-span-full">
-            Tidak ada perangkat yang cocok dengan pencarian.
-          </p>
+          </label>
+        </div>
+
+        {!canBorrow && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3 mx-2 mb-4">
+            <p className="text-sm text-red-800 text-center">
+              ⚠️ Anda tidak dapat membuat pinjaman baru karena memiliki pinjaman
+              aktif. Selesaikan atau tunggu hingga pinjaman saat ini selesai
+              terlebih dahulu.
+            </p>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 lg:gap-4 gap-2 overflow-y-auto w-full max-h-[73vh] rounded-md lg:px-4 px-2 pb-4">
+          {filteredAndSortedProducts.length > 0 ? (
+            filteredAndSortedProducts.map((p) => (
+              <ProductCard
+                key={p.product_id}
+                product={p}
+                onAdd={addToCart}
+                canBorrow={canBorrow}
+              />
+            ))
+          ) : (
+            <p className="text-center text-gray-500 col-span-full">
+              Tidak ada perangkat yang cocok dengan pencarian.
+            </p>
+          )}
+        </div>
+
+        {/* Floating Button */}
+        {showFloatingButton && (
+          <div className="fixed bottom-6 right-4 sm:bottom-8 sm:right-6 lg:bottom-12 lg:right-20 z-50">
+            <div className="flex items-center bg-white rounded-2xl shadow-2xl border-2 border-gray-300 overflow-hidden">
+              <div className="px-3 py-3 sm:px-4 sm:py-3 lg:px-5 lg:py-4 bg-gray-50 border-r border-gray-200">
+                <div className="relative">
+                  <ShoppingBag className="w-5 h-5 sm:w-6 sm:h-6 text-gray-700" />
+                  {totalItems > 0 && (
+                    <span className="absolute -top-2 -right-2 sm:-top-3 sm:-right-3 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center border-2 border-white shadow-lg text-[10px] sm:text-xs">
+                      {totalItems > 99 ? "99+" : totalItems}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <button
+                onClick={handleOpenModal}
+                className="btn btn-accent text-black hover:bg-accent-focus shadow-none border-none rounded-none transform hover:scale-105 transition-all duration-200 px-4 py-3 sm:px-6 sm:py-3 lg:px-8 lg:py-4 min-h-0 h-auto group"
+                disabled={isCreating}
+              >
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <span className="font-medium font-sans text-sm sm:text-base lg:text-lg whitespace-nowrap">
+                    Pinjam Sekarang
+                  </span>
+                  <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 transition-transform duration-200 group-hover:translate-x-1" />
+                </div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isModalOpen && (
+          <CartSummary
+            cart={cart}
+            onRemove={removeFromCart}
+            onUpdateQty={updateQuantity}
+            onCheckout={handleCheckout}
+            onClose={() => setIsModalOpen(false)}
+            isLoading={isCreating}
+          />
         )}
       </div>
-
-      {/* Floating Button */}
-      {showFloatingButton && (
-        <div className="fixed bottom-12 right-20 z-50">
-          <div className="flex items-center bg-white rounded-2xl shadow-2xl border-2 border-gray-300 overflow-hidden">
-            <div className="px-5 py-4 bg-gray-50 border-r border-gray-200">
-              <div className="relative">
-                <ShoppingBag className="w-6 h-6 text-gray-700" />
-                {totalItems > 0 && (
-                  <span className="absolute -top-3 -right-3 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center border-2 border-white shadow-lg">
-                    {totalItems}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            <button
-              onClick={handleOpenModal}
-              className="btn btn-accent text-black hover:bg-accent-focus shadow-none border-none rounded-none transform hover:scale-105 transition-all duration-200 px-8 py-4 min-h-0 h-auto group"
-              disabled={isCreating}
-            >
-              <div className="flex items-center gap-3">
-                <span className="font-medium font-sans text-lg">
-                  Pinjam Sekarang
-                </span>
-                <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {isModalOpen && (
-        <CartSummary
-          cart={cart}
-          onRemove={removeFromCart}
-          onUpdateQty={updateQuantity}
-          onCheckout={handleCheckout}
-          onClose={() => setIsModalOpen(false)}
-          isLoading={isCreating}
-        />
-      )}
-    </div>
+    </>
   );
 }

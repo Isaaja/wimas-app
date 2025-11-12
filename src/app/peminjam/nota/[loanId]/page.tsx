@@ -1,8 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useParams } from "next/navigation";
-import { useLoanById } from "@/hooks/useLoans";
+import { useParams, useRouter } from "next/navigation";
+import { useLoanById, getProductUnits } from "@/hooks/useLoans";
 import Loading from "@/app/components/common/Loading";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
@@ -10,8 +10,9 @@ import { Download, ArrowLeft, Printer } from "lucide-react";
 import Link from "next/link";
 import { useReactToPrint } from "react-to-print";
 
-export default function NotaPeminjamanPage() {
+export default function AdminNotaPeminjamanPage() {
   const params = useParams();
+  const router = useRouter();
   const loanId = params.loanId as string;
   const { data: loan, isLoading, error } = useLoanById(loanId);
   const notaRef = useRef<HTMLDivElement>(null);
@@ -32,6 +33,54 @@ export default function NotaPeminjamanPage() {
     return format(date, "dd MMM yyyy, HH:mm", { locale: id });
   };
 
+  const getProductUnitsWithSerial = (productId: string) => {
+    if (!loan) return [];
+    return getProductUnits(loan, productId);
+  };
+
+  const getUniqueProducts = () => {
+    if (!loan?.items) return [];
+
+    const productMap = new Map();
+
+    loan.items.forEach((item) => {
+      if (!productMap.has(item.product_id)) {
+        productMap.set(item.product_id, {
+          ...item,
+          totalQuantity: loan.items.filter(
+            (i) => i.product_id === item.product_id
+          ).length,
+        });
+      }
+    });
+
+    return Array.from(productMap.values());
+  };
+
+  const getAllLoanUnits = () => {
+    if (!loan?.items) return [];
+
+    const allUnits: any[] = [];
+    const processedUnitIds = new Set<string>();
+
+    loan.items.forEach((item) => {
+      const productUnits = getProductUnitsWithSerial(item.product_id);
+
+      productUnits.forEach((unit) => {
+        if (unit.unit_id && !processedUnitIds.has(unit.unit_id)) {
+          processedUnitIds.add(unit.unit_id);
+          allUnits.push({
+            ...unit,
+            product_name: item.product_name,
+            product_id: item.product_id,
+          });
+        }
+      });
+    });
+
+    return allUnits;
+  };
+
   const handlePrint = useReactToPrint({
     contentRef: notaRef,
     documentTitle:
@@ -46,25 +95,25 @@ export default function NotaPeminjamanPage() {
       setIsPrinting(false);
     },
     pageStyle: `
-      @page {
-        size: ${isLandscape ? "landscape" : "portrait"};
-        margin: 0.2in;
-      }
-      @media print {
-        body {
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-          margin: 0;
-          padding: 0;
+        @page {
+          size: ${isLandscape ? "landscape" : "portrait"};
+          margin: 0.2in;
         }
-        .no-print {
-          display: none !important;
+        @media print {
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            margin: 0;
+            padding: 0;
+          }
+          .no-print {
+            display: none !important;
+          }
+          html, body {
+            height: 100%;
+          }
         }
-        html, body {
-          height: 100%;
-        }
-      }
-    `,
+      `,
   });
 
   const downloadPDF = async () => {
@@ -91,8 +140,8 @@ export default function NotaPeminjamanPage() {
           <p className="text-gray-600 mb-6">
             {error?.message || "Data peminjaman tidak ditemukan"}
           </p>
-          <Link href="/peminjam/peminjaman" className="btn btn-primary">
-            Kembali ke Riwayat
+          <Link href="/admin/peminjam" className="btn btn-primary">
+            Kembali ke Daftar Peminjaman
           </Link>
         </div>
       </div>
@@ -101,27 +150,34 @@ export default function NotaPeminjamanPage() {
 
   const isReturned = loan.status === "RETURNED" || loan.status === "DONE";
   const notaTitle = isReturned ? "NOTA PENGEMBALIAN" : "NOTA PEMINJAMAN";
-  const headerTitle = isReturned ? "Nota Pengembalian" : "Nota Peminjaman";
+  const headerTitle = isReturned
+    ? "Nota Pengembalian - Admin"
+    : "Nota Peminjaman - Admin";
+
+  const owner = loan.invited_users?.find((p: any) => p.role === "OWNER");
+  const invitedUsers = loan.invited_users?.filter(
+    (p: any) => p.role === "INVITED"
+  );
 
   const totalItems =
-    loan.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+    loan.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0;
+
+  const uniqueProducts = getUniqueProducts();
+  const allUnits = getAllLoanUnits();
 
   return (
-    <div className="bg-gray-50">
-      <div className="bg-white border-b no-print">
+    <div className="">
+      <div className="border-b no-print">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {isReturned ? (
-                <Link href="/peminjam/riwayat" className="btn btn-ghost btn-sm">
+                <Link href="/admin/riwayat" className="btn btn-ghost btn-sm">
                   <ArrowLeft className="w-4 h-4" />
                   Kembali
                 </Link>
               ) : (
-                <Link
-                  href="/peminjam/peminjaman"
-                  className="btn btn-ghost btn-sm"
-                >
+                <Link href="/admin/peminjam" className="btn btn-ghost btn-sm">
                   <ArrowLeft className="w-4 h-4" />
                   Kembali
                 </Link>
@@ -199,7 +255,7 @@ export default function NotaPeminjamanPage() {
                       Nama:
                     </span>
                     <span className="text-gray-800 flex-1">
-                      {loan.borrower.name || loan.borrower.username}
+                      {loan.borrower.name || "-"}
                     </span>
                   </div>
                 </div>
@@ -255,18 +311,16 @@ export default function NotaPeminjamanPage() {
                       {isReturned ? "Tanggal Kembali:" : "Tanggal Pinjam:"}
                     </span>
                     <span className="text-gray-800 flex-1">
-                      {isReturned
-                        ? formatDateTime(loan.updated_at)
-                        : formatDateTime(loan.created_at)}
+                      {formatDateTime(loan.updated_at)}
                     </span>
                   </div>
-                  {!isReturned && loan.updated_at && (
+                  {!isReturned && loan.created_at && (
                     <div className="flex">
                       <span className="font-medium text-gray-600 w-20">
-                        Terakhir Diupdate:
+                        Tanggal Pinjam:
                       </span>
                       <span className="text-gray-800 flex-1">
-                        {formatDateTime(loan.updated_at)}
+                        {formatDateTime(loan.created_at)}
                       </span>
                     </div>
                   )}
@@ -329,60 +383,64 @@ export default function NotaPeminjamanPage() {
 
             {/* Daftar Barang */}
             <div>
-              <h3 className="font-semibold text-gray-700 mb-1 text-sm">
+              <h3 className="font-semibold text-gray-700 mb-2 text-sm">
                 {isReturned
                   ? "BARANG YANG DIKEMBALIKAN"
-                  : "BARANG YANG DIPINJAM"}{" "}
-                ({totalItems} items)
+                  : "BARANG YANG DIPINJAM"}
+                ({totalItems} items, {allUnits.length} unit)
               </h3>
-              <div className="border border-gray-300 rounded overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100">
-                    <tr>
-                      <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300 w-8">
-                        No
-                      </th>
-                      <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300">
-                        Nama Barang
-                      </th>
-                      <th className="px-2 py-1 text-center font-medium text-gray-700 border-b border-gray-300 w-12">
-                        Jumlah
-                      </th>
-                      <th className="px-2 py-1 text-left font-medium text-gray-700 border-b border-gray-300 w-20">
-                        Keterangan
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loan.items?.map((item, index) => (
-                      <tr
-                        key={item.product_id}
-                        className="border-b border-gray-200 last:border-b-0"
-                      >
-                        <td className="px-2 py-1 text-gray-600">{index + 1}</td>
-                        <td className="px-2 py-1 text-gray-800">
-                          {item.product_name}
-                        </td>
-                        <td className="px-2 py-1 text-gray-600 text-center">
-                          {item.quantity}
-                        </td>
-                        <td className="px-2 py-1 text-gray-600">
-                          {item.quantity > 1
-                            ? `${item.quantity} unit`
-                            : "1 unit"}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+
+              {uniqueProducts.map((product: any, productIndex: number) => {
+                const productUnits = getProductUnitsWithSerial(
+                  product.product_id
+                );
+                const uniqueProductUnits = productUnits.filter(
+                  (unit, index, self) =>
+                    index === self.findIndex((u) => u.unit_id === unit.unit_id)
+                );
+
+                return (
+                  <div key={product.product_id} className="mb-2 last:mb-0">
+                    <div className="bg-gray-50 p-2 border border-gray-300 rounded">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-800 text-sm">
+                            {productIndex + 1}. {product.product_name}
+                          </div>
+
+                          <div className="mt-1 space-y-1">
+                            {uniqueProductUnits.map((unit, unitIndex) => (
+                              <div
+                                key={unit.unit_id}
+                                className="flex items-center justify-between text-xs"
+                              >
+                                <div className="flex items-center">
+                                  <span className="text-gray-500 w-4">
+                                    {unitIndex + 1}.
+                                  </span>
+                                  <span className="text-gray-800 font-mono ml-1">
+                                    {unit.serial_number || "N/A"}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-600 whitespace-nowrap ml-2">
+                          {product.totalQuantity} unit
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
-            {/* Participants - Format List */}
-            {loan.invited_users && loan.invited_users.length > 0 && (
+            {/* Daftar Peserta Undangan */}
+            {invitedUsers && invitedUsers.length > 0 && (
               <div>
                 <h3 className="font-semibold text-gray-700 mb-1 text-sm">
-                  PESERTA LAIN ({loan.invited_users.length} orang)
+                  PESERTA UNDANGAN ({invitedUsers.length} orang)
                 </h3>
                 <div className="text-sm text-gray-600">
                   <div
@@ -395,7 +453,43 @@ export default function NotaPeminjamanPage() {
                       gap: "2px 16px",
                     }}
                   >
-                    {loan.invited_users.map((user, index) => (
+                    {invitedUsers.map((participant: any, index: number) => (
+                      <div
+                        key={participant.id}
+                        className="flex"
+                        style={{ width: "20%" }}
+                      >
+                        <span className="w-5 flex-shrink-0">{index + 1}.</span>
+                        <span className="truncate">
+                          {participant.user?.name ||
+                            participant.user?.username ||
+                            "-"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Daftar Invited Users (jika ada) */}
+            {loan.invited_users && loan.invited_users.length > 0 && (
+              <div>
+                <h3 className="font-semibold text-gray-700 mb-1 text-sm">
+                  USERS YANG DIUNDANG ({loan.invited_users.length} orang)
+                </h3>
+                <div className="text-sm text-gray-600">
+                  <div
+                    className="flex flex-col flex-wrap max-h-24 gap-1"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      flexWrap: "wrap",
+                      maxHeight: "96px",
+                      gap: "2px 16px",
+                    }}
+                  >
+                    {loan.invited_users.map((user: any, index: number) => (
                       <div
                         key={user.user_id}
                         className="flex"

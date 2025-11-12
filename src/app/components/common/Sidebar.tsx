@@ -49,7 +49,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   if (!user) return null;
 
-  // 🔄 Mapping role dari token
   const mappedRole =
     roleMap[user.role.toLowerCase()] || user.role.toLowerCase();
   const displayRole = displayRoleMap[mappedRole] || mappedRole;

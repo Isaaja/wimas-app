@@ -3,47 +3,21 @@
 import { useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import {
-  Eye,
-  EyeOff,
-  View,
-  FileText,
-  Undo2,
-  RefreshCcwDot,
-} from "lucide-react";
+import { Eye, EyeOff, View, FileText, RefreshCcwDot } from "lucide-react";
 import LoanDetail from "./LoanDetail";
 import ReturnModal from "./ReturnModal";
 import Swal from "sweetalert2";
-import { useReturnLoan } from "@/hooks/useLoans";
+import {
+  useReturnLoan,
+  hasUnitAssignments,
+  type Loan,
+  type LoanHistory,
+} from "@/hooks/useLoans";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
-interface Loan {
-  loan_id: string;
-  status: string;
-  participants: Array<{
-    id: string;
-    role: string;
-    user: {
-      name: string;
-    };
-  }>;
-  report?: {
-    spt_number?: string | null;
-    spt_file?: string | null;
-    start_date?: string | null;
-    end_date?: string | null;
-  };
-  items: Array<{
-    product_id: string;
-    product_name: string;
-    quantity: number;
-    product_image: string;
-  }>;
-}
-
 interface LoanTableProps {
-  loans: Loan[];
+  loans: (Loan | LoanHistory)[];
   isLoading?: boolean;
   currentPage: number;
   itemsPerPage: number;
@@ -58,9 +32,13 @@ export default function LoanTable({
   onPageChange,
 }: LoanTableProps) {
   const [actioningLoanId, setActioningLoanId] = useState<string | null>(null);
-  const [selectedLoan, setSelectedLoan] = useState<Loan | null>(null);
+  const [selectedLoan, setSelectedLoan] = useState<Loan | LoanHistory | null>(
+    null
+  );
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-  const [loanToReturn, setLoanToReturn] = useState<Loan | null>(null);
+  const [loanToReturn, setLoanToReturn] = useState<Loan | LoanHistory | null>(
+    null
+  );
   const { mutate: returnLoan, isPending: isReturning } = useReturnLoan();
   const router = useRouter();
 
@@ -92,7 +70,60 @@ export default function LoanTable({
     return `/${sptFile}`;
   };
 
-  const handleReturn = (loan: Loan) => {
+  const getMainBorrower = (loan: Loan | LoanHistory) => {
+    if (
+      "borrower" in loan &&
+      typeof loan.borrower === "object" &&
+      "name" in loan.borrower
+    ) {
+      return (
+        (loan as Loan).borrower?.name ||
+        (loan as Loan).borrower?.username ||
+        "Unknown"
+      );
+    }
+    if ("borrower" in loan && typeof loan.borrower === "object") {
+      return (
+        (loan as LoanHistory).borrower?.name ||
+        (loan as LoanHistory).borrower?.username ||
+        "Unknown"
+      );
+    }
+    return "Unknown";
+  };
+
+  const getTotalItems = (loan: Loan | LoanHistory) => {
+    if (!loan.items) return 0;
+
+    if (loan.status === "REQUESTED") {
+      return loan.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    } else {
+      return loan.items.length;
+    }
+  };
+
+  const getInvitedUsersCount = (loan: Loan | LoanHistory) => {
+    if ("invited_users" in loan) {
+      return (loan as Loan).invited_users?.length || 0;
+    }
+    if ("participants" in loan) {
+      return (
+        (loan as LoanHistory).participants?.filter((p) => p.role === "INVITED")
+          .length || 0
+      );
+    }
+    return 0;
+  };
+
+  const getItemsCount = (loan: Loan | LoanHistory) => {
+    return loan.items?.length || 0;
+  };
+
+  const getReportData = (loan: Loan | LoanHistory) => {
+    return "report" in loan ? loan.report : undefined;
+  };
+
+  const handleReturn = (loan: Loan | LoanHistory) => {
     setLoanToReturn(loan);
   };
 
@@ -111,11 +142,17 @@ export default function LoanTable({
     });
 
     if (result.isConfirmed) {
+      setActioningLoanId(loanToReturn.loan_id);
       returnLoan(loanToReturn.loan_id, {
         onSuccess: () => {
+          toast.success("Barang berhasil dikembalikan!");
           setLoanToReturn(null);
+          setActioningLoanId(null);
         },
-        onError: (error) => {},
+        onError: (error) => {
+          toast.error(error.message || "Gagal mengembalikan barang");
+          setActioningLoanId(null);
+        },
       });
     }
   };
@@ -125,20 +162,21 @@ export default function LoanTable({
   };
 
   const handleViewNota = (loanId: string) => {
-    toast.success("Membuka nota peminjaman...");
+    router.push(`/peminjam/nota/${loanId}`);
   };
 
   const totalPages = Math.ceil(loans.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const currentLoans = loans.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleViewDetail = (loan: Loan) => {
+  const handleViewDetail = (loan: Loan | LoanHistory) => {
     setSelectedLoan(loan);
     setIsDetailOpen(true);
   };
 
   const handleCloseDetail = () => {
     setIsDetailOpen(false);
+    setSelectedLoan(null);
   };
 
   if (isLoading) {
@@ -149,7 +187,7 @@ export default function LoanTable({
     );
   }
 
-  if (loans.length === 0) {
+  if (!loans || loans.length === 0) {
     return (
       <div className="alert alert-info">
         <span>Tidak ada data peminjaman aktif.</span>
@@ -168,6 +206,7 @@ export default function LoanTable({
                 <th className="whitespace-nowrap">Peminjam</th>
                 <th className="whitespace-nowrap">No. SPT</th>
                 <th className="whitespace-nowrap">Tanggal Peminjaman</th>
+                <th className="whitespace-nowrap">Total Barang</th>
                 <th className="whitespace-nowrap">Status</th>
                 <th className="whitespace-nowrap text-center">Dokumen</th>
                 <th className="whitespace-nowrap text-center">Aksi</th>
@@ -175,9 +214,15 @@ export default function LoanTable({
             </thead>
             <tbody>
               {currentLoans.map((loan, index) => {
-                const statusInfo = getStatusBadge(loan.status);
+                const statusInfo = getStatusBadge(loan.status || "UNKNOWN");
                 const isProcessing = actioningLoanId === loan.loan_id;
-                const sptFileUrl = getSptFileUrl(loan.report?.spt_file);
+                const report = getReportData(loan);
+                const sptFileUrl = getSptFileUrl(report?.spt_file);
+                const mainBorrower = getMainBorrower(loan);
+                const totalItems = getTotalItems(loan);
+                const itemsCount = getItemsCount(loan);
+                const invitedUsersCount = getInvitedUsersCount(loan);
+                const hasUnits = hasUnitAssignments(loan as Loan);
 
                 return (
                   <tr key={loan.loan_id} className="hover">
@@ -185,56 +230,57 @@ export default function LoanTable({
                       {startIndex + index + 1}
                     </td>
 
-                    {/* Kolom Peminjam */}
                     <td className="border-t border-black/10">
-                      {loan.participants && loan.participants.length > 0 && (
-                        <div className="space-y-1">
-                          {loan.participants
-                            .filter(
-                              (participant) => participant.role === "OWNER"
-                            )
-                            .map((participant) => (
-                              <div
-                                key={participant.id}
-                                className="text-md font-bold"
-                              >
-                                <span className="">
-                                  {participant.user.name || "n/a"}
-                                </span>
-                              </div>
-                            ))}
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-gray-900">
+                          {mainBorrower}
                         </div>
-                      )}
+                        {invitedUsersCount > 0 && (
+                          <div className="text-xs text-gray-500">
+                            +{invitedUsersCount} peserta
+                          </div>
+                        )}
+                      </div>
                     </td>
 
-                    {/* Kolom Data SPT */}
                     <td className="border-t border-black/10">
-                      <div className="space-y-2 text-sm">
-                        <div className="text-xs">
-                          {loan.report?.spt_number || "-"}
+                      <div className="text-sm">{report?.spt_number || "-"}</div>
+                    </td>
+
+                    <td className="border-t border-black/10">
+                      <div className="text-sm space-y-1">
+                        <div>
+                          {formatDateOnly(report?.start_date)} -{" "}
+                          {formatDateOnly(report?.end_date)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {formatDateOnly(loan.created_at)}
                         </div>
                       </div>
                     </td>
 
                     <td className="border-t border-black/10">
-                      <div className="space-y-2">
-                        <div className="text-xs">
-                          {formatDateOnly(loan.report?.start_date)} -{" "}
-                          {formatDateOnly(loan.report?.end_date)}
-                        </div>
+                      <div className="text-sm font-medium">
+                        {totalItems} barang
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {itemsCount} jenis
                       </div>
                     </td>
 
-                    {/* Kolom Status */}
                     <td className="border-t border-black/10">
                       <div className="flex flex-col gap-1">
                         <span className={`badge ${statusInfo.class} badge-sm`}>
                           {statusInfo.label}
                         </span>
+                        {hasUnits && (
+                          <span className="badge badge-outline badge-sm text-xs">
+                            Ada unit
+                          </span>
+                        )}
                       </div>
                     </td>
 
-                    {/* Kolom Dokumen SPT */}
                     <td className="border-t border-black/10 text-center">
                       {sptFileUrl ? (
                         <div className="flex flex-col gap-1 items-center">
@@ -242,7 +288,7 @@ export default function LoanTable({
                             href={sptFileUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn btn-ghost btn-xs text-blue-600 tooltip"
+                            className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
                             data-tip="Lihat Dokumen SPT"
                           >
                             <Eye className="w-4 h-4" />
@@ -252,7 +298,7 @@ export default function LoanTable({
                       ) : (
                         <div className="flex flex-col gap-1 items-center">
                           <span
-                            className="text-gray-400 tooltip"
+                            className="text-gray-400 lg:tooltip"
                             data-tip="Tidak Ada Dokumen SPT"
                           >
                             <EyeOff className="w-4 h-4" />
@@ -262,11 +308,10 @@ export default function LoanTable({
                       )}
                     </td>
 
-                    {/* Kolom Aksi */}
                     <td className="border-t border-black/10">
                       <div className="flex justify-center items-center gap-1">
                         <button
-                          className="btn btn-ghost btn-xs text-blue-500 tooltip"
+                          className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
                           data-tip="Lihat Detail"
                           onClick={() => handleViewDetail(loan)}
                         >
@@ -274,20 +319,30 @@ export default function LoanTable({
                         </button>
 
                         {loan.status === "APPROVED" && (
-                          <>
-                            <button
-                              className="btn btn-ghost btn-xs text-orange-600 tooltip"
-                              data-tip="Kembalikan Barang"
-                              onClick={() => handleReturn(loan)}
-                              disabled={isProcessing}
-                            >
-                              {isProcessing ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                              ) : (
-                                <RefreshCcwDot className="w-4 h-4" />
-                              )}
-                            </button>
-                          </>
+                          <button
+                            className="btn btn-ghost btn-xs text-orange-600 lg:tooltip"
+                            data-tip="Kembalikan Barang"
+                            onClick={() => handleReturn(loan)}
+                            disabled={isProcessing || isReturning}
+                          >
+                            {isProcessing ? (
+                              <span className="loading loading-spinner loading-xs"></span>
+                            ) : (
+                              <RefreshCcwDot className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+
+                        {(loan.status === "APPROVED" ||
+                          loan.status === "RETURNED" ||
+                          loan.status === "DONE") && (
+                          <button
+                            className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
+                            data-tip="Lihat Nota"
+                            onClick={() => handleViewNota(loan.loan_id)}
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
                         )}
                       </div>
                     </td>
@@ -299,11 +354,12 @@ export default function LoanTable({
         </div>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-between items-center mt-4">
-          <div className="flex text-sm text-gray-600">
-            {currentPage} of {totalPages} pages
+          <div className="text-sm text-gray-600">
+            Menampilkan {startIndex + 1}-
+            {Math.min(startIndex + itemsPerPage, loans.length)} dari{" "}
+            {loans.length} data
           </div>
           <div className="flex gap-2">
             <button
@@ -311,21 +367,21 @@ export default function LoanTable({
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
             >
-              Prev
+              Sebelumnya
             </button>
             <button
               className="btn btn-sm btn-outline"
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
             >
-              Next
+              Berikutnya
             </button>
           </div>
         </div>
       )}
 
       <ReturnModal
-        loan={loanToReturn}
+        loan={loanToReturn as Loan}
         isOpen={!!loanToReturn}
         isReturning={isReturning}
         onClose={handleCloseReturnModal}
@@ -333,7 +389,7 @@ export default function LoanTable({
       />
 
       <LoanDetail
-        loan={selectedLoan}
+        loan={selectedLoan as Loan}
         isOpen={isDetailOpen}
         onClose={handleCloseDetail}
         onNota={handleViewNota}

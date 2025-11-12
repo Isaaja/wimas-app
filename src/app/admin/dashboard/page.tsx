@@ -12,7 +12,6 @@ import {
   Clock,
   BarChart3,
   Calendar,
-  CheckCircle,
 } from "lucide-react";
 import {
   LineChart,
@@ -39,11 +38,6 @@ interface LoanStatusData {
   color: string;
 }
 
-interface PopularProductData {
-  name: string;
-  count: number;
-}
-
 export default function AdminDashboard() {
   const { data, isLoading, isError, error } = useDashboardStats();
 
@@ -58,16 +52,27 @@ export default function AdminDashboard() {
     approvedLoans: 0,
     rejectedLoans: 0,
     returnedLoans: 0,
-    doneLoans: 0, // Tambahkan doneLoans
+    doneLoans: 0,
     adminUsers: 0,
     borrowerUsers: 0,
     recentLoans: 0,
   };
 
   const allLoans = useMemo(() => data?.allLoans || [], [data?.allLoans]);
-  const lowStockProductsList = data?.lowStockProducts || [];
-  const pendingLoansList = data?.pendingLoans || [];
+  const lowStockProducts = useMemo(
+    () => data?.lowStockProducts || [],
+    [data?.lowStockProducts]
+  );
+  const pendingLoans = useMemo(
+    () => data?.pendingLoans || [],
+    [data?.pendingLoans]
+  );
+  const mostBorrowedProducts = useMemo(
+    () => data?.mostBorrowedProducts || [],
+    [data?.mostBorrowedProducts]
+  );
 
+  // Loan Trend Data (6 bulan terakhir)
   const loanTrendData = useMemo((): LoanTrendData[] => {
     if (!allLoans || allLoans.length === 0) return [];
 
@@ -93,110 +98,36 @@ export default function AdminDashboard() {
     return last6Months;
   }, [allLoans]);
 
+  // Loan Status Distribution
   const loanStatusData = useMemo((): LoanStatusData[] => {
-    if (!allLoans || allLoans.length === 0) return [];
-
-    const statusCount: Record<string, number> = {
-      REQUESTED: 0,
-      APPROVED: 0,
-      REJECTED: 0,
-      RETURNED: 0,
-      DONE: 0, // Tambahkan status DONE
-    };
-
-    allLoans.forEach((loan) => {
-      const status = loan.status.toUpperCase();
-      statusCount[status] = (statusCount[status] || 0) + 1;
-    });
-
     return [
       {
         status: "Menunggu",
-        count: statusCount.REQUESTED,
-        color: "#f59e0b", // yellow-500
+        count: stats.pendingLoans,
+        color: "#f59e0b",
       },
       {
         status: "Disetujui",
-        count: statusCount.APPROVED,
-        color: "#10b981", // green-500
+        count: stats.approvedLoans,
+        color: "#10b981",
       },
       {
         status: "Ditolak",
-        count: statusCount.REJECTED,
-        color: "#ef4444", // red-500
+        count: stats.rejectedLoans,
+        color: "#ef4444",
       },
       {
         status: "Dikembalikan",
-        count: statusCount.RETURNED,
-        color: "#3b82f6", // blue-500
+        count: stats.returnedLoans,
+        color: "#3b82f6",
       },
       {
         status: "Selesai",
-        count: statusCount.DONE,
-        color: "#8b5cf6", // violet-500
+        count: stats.doneLoans,
+        color: "#8b5cf6",
       },
     ].filter((item) => item.count > 0);
-  }, [allLoans]);
-
-  const popularProductsData = useMemo((): PopularProductData[] => {
-    if (!allLoans || allLoans.length === 0) return [];
-
-    const productUsage = new Map<string, PopularProductData>();
-
-    allLoans.forEach((loan) => {
-      loan.items?.forEach((item) => {
-        const productId = item.product_id;
-        const productName = item.product?.product_name || "Unknown Product";
-        const currentCount = productUsage.get(productId) || {
-          name: productName,
-          count: 0,
-        };
-        currentCount.count += item.quantity || 1;
-        productUsage.set(productId, currentCount);
-      });
-    });
-
-    return Array.from(productUsage.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5);
-  }, [allLoans]);
-
-  const pendingLoans = pendingLoansList;
-  const lowStockProducts = lowStockProductsList;
-
-  // Statistik tambahan untuk card
-  // const loanStats = useMemo(() => {
-  //   return [
-  //     {
-  //       icon: Clock,
-  //       title: "Menunggu Approval",
-  //       value: stats.pendingLoans,
-  //       color: "yellow" as const,
-  //       description: "Peminjaman pending",
-  //     },
-  //     {
-  //       icon: CheckCircle,
-  //       title: "Disetujui",
-  //       value: stats.approvedLoans,
-  //       color: "green" as const,
-  //       description: "Peminjaman aktif",
-  //     },
-  //     {
-  //       icon: Package,
-  //       title: "Dikembalikan",
-  //       value: stats.returnedLoans,
-  //       color: "blue" as const,
-  //       description: "Menunggu konfirmasi",
-  //     },
-  //     {
-  //       icon: ClipboardList,
-  //       title: "Selesai",
-  //       value: stats.doneLoans || 0, // Gunakan doneLoans dari stats
-  //       color: "purple" as const,
-  //       description: "Peminjaman selesai",
-  //     },
-  //   ];
-  // }, [stats]);
+  }, [stats]);
 
   if (isLoading) {
     return <Loading />;
@@ -254,23 +185,9 @@ export default function AdminDashboard() {
           />
         </div>
 
-        {/* Loan Status Cards
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          {loanStats.map((stat, index) => (
-            <StatCard
-              key={index}
-              icon={stat.icon}
-              title={stat.title}
-              value={stat.value}
-              subtitle={stat.description}
-              color={stat.color}
-              compact
-            />
-          ))}
-        </div> */}
-
         {/* Charts Section - More Compact */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          {/* Loan Trend Chart */}
           <div className="bg-white rounded-lg shadow-lg border border-blue-100 p-3">
             <div className="flex items-center gap-2 mb-3">
               <BarChart3 className="w-4 h-4 text-blue-600" />
@@ -335,6 +252,7 @@ export default function AdminDashboard() {
 
         {/* Tables Section - More Compact */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Pending Loans */}
           <div className="bg-white rounded-lg shadow-lg border border-blue-100">
             <div className="p-3 border-b border-blue-100">
               <div className="flex items-center justify-between">
@@ -342,7 +260,7 @@ export default function AdminDashboard() {
                   <Clock className="w-4 h-4 text-blue-600" />
                   Peminjaman Menunggu Approval
                 </h2>
-                <Badge color="bg-yellow-100 text-yellow-800 text-xs hidden lg:flex">
+                <Badge color="bg-yellow-100 text-yellow-800 text-xs">
                   {pendingLoans.length} pending
                 </Badge>
               </div>
@@ -364,7 +282,7 @@ export default function AdminDashboard() {
                           {loan.borrower?.name || loan.borrower?.username}
                         </div>
                         <div className="text-xs text-gray-500 truncate">
-                          {loan.items?.length || 0} items •{" "}
+                          {loan.totalItems || 0} items •{" "}
                           {new Date(loan.created_at).toLocaleDateString(
                             "id-ID"
                           )}
@@ -377,8 +295,10 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+          {/* Right Column: Most Borrowed Products & Low Stock */}
           <div className="flex flex-col lg:flex-row gap-4 w-full">
-            {popularProductsData.length > 0 && (
+            {/* Most Borrowed Products - FROM API */}
+            {mostBorrowedProducts.length > 0 && (
               <div className="bg-white rounded-lg shadow-lg border border-blue-100 lg:w-1/2 w-full">
                 <div className="p-3 border-b border-blue-100">
                   <div className="flex items-center gap-2">
@@ -390,9 +310,9 @@ export default function AdminDashboard() {
                 </div>
                 <div className="p-3 max-h-56 overflow-y-auto">
                   <div className="space-y-2">
-                    {popularProductsData.map((product, index) => (
+                    {mostBorrowedProducts.map((product, index) => (
                       <div
-                        key={index}
+                        key={product.product_id}
                         className="flex items-center justify-between p-2 bg-blue-50 rounded"
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -402,11 +322,11 @@ export default function AdminDashboard() {
                             </span>
                           </div>
                           <span className="font-medium text-gray-800 text-sm truncate">
-                            {product.name}
+                            {product.product_name}
                           </span>
                         </div>
                         <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap flex-shrink-0">
-                          {product.count}x
+                          {product.borrow_count}x
                         </span>
                       </div>
                     ))}
@@ -414,8 +334,13 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
+
             {/* Low Stock Products */}
-            <div className="bg-white rounded-lg shadow-lg border border-blue-100 lg:w-1/2 w-full">
+            <div
+              className={`bg-white rounded-lg shadow-lg border border-blue-100 w-full ${
+                mostBorrowedProducts.length > 0 ? "lg:w-1/2" : ""
+              }`}
+            >
               <div className="p-3 border-b border-blue-100">
                 <div className="flex items-center justify-between">
                   <h2 className="font-semibold text-gray-800 text-sm flex items-center gap-2">
@@ -427,7 +352,7 @@ export default function AdminDashboard() {
                   </Badge>
                 </div>
               </div>
-              <div className="p-3 max-h-58 overflow-y-auto">
+              <div className="p-3 max-h-56 overflow-y-auto">
                 <div className="space-y-2">
                   {lowStockProducts.length === 0 ? (
                     <p className="text-green-500 text-center py-3 text-sm">

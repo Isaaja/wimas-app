@@ -1,7 +1,6 @@
 export function formatLoanResponse(loan: any) {
   if (!loan) return null;
 
-  // ✅ Pisahkan participant berdasarkan role
   const owner = loan.participants?.find((p: any) => p.role === "OWNER");
   const invited_users = loan.participants
     ?.filter((p: any) => p.role === "INVITED")
@@ -11,16 +10,28 @@ export function formatLoanResponse(loan: any) {
       name: p.user.name,
     }));
 
-  // ✅ Format items
-  const items = loan.items?.map((item: any) => ({
-    loan_item_id: item.loan_item_id,
-    product_id: item.product.product_id,
-    product_name: item.product.product_name,
-    product_image: item.product.product_id,
-    quantity: item.quantity,
-  }));
+  let items: any[] = [];
 
-  // ✅ Format report
+  if (loan.status === "REQUESTED") {
+    items = (loan.requestItems || []).map((item: any) => ({
+      product_id: item.product_id,
+      product_name: item.product?.product_name || "Loading...",
+      product_image: item.product?.product_image || null,
+      quantity: item.quantity,
+    }));
+  } else {
+    items = (loan.items || []).map((item: any) => ({
+      loan_item_id: item.loan_item_id,
+      product_id: item.product_id,
+      product_name: item.product?.product_name || "Loading...",
+      product_image: item.product?.product_image || null,
+      quantity: 1,
+      unit_id: item.unit_id,
+      serial_number: item.unit?.serialNumber,
+      unit_status: item.unit?.status,
+    }));
+  }
+
   const report = loan.report
     ? {
         report_id: loan.report.report_id,
@@ -33,14 +44,12 @@ export function formatLoanResponse(loan: any) {
       }
     : null;
 
-  // ✅ Return format yang bersih
   return {
     loan_id: loan.loan_id,
     status: loan.status,
     created_at: loan.created_at,
     updated_at: loan.updated_at,
 
-    // borrower utama
     borrower: {
       user_id: loan.borrower?.user_id,
       username: loan.borrower?.username,
@@ -51,11 +60,12 @@ export function formatLoanResponse(loan: any) {
       ? {
           user_id: owner.user.user_id,
           username: owner.user.username,
+          name: owner.user.name,
         }
       : null,
 
     invited_users: invited_users || [],
-    items: items || [],
+    items: items,
     report,
   };
 }

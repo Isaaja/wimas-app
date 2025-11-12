@@ -35,7 +35,6 @@ export async function PUT(
     checkAuth("ADMIN");
     const { id } = await context.params;
 
-    // Validate request body
     if (!body.items && !body.status) {
       throw new InvariantError(
         "At least one field (items or status) must be provided for updates."

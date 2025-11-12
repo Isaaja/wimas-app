@@ -29,12 +29,30 @@ export async function PUT(
     await checkAuth("ADMIN");
 
     const body = await req.json();
+
     await ProductValidator.validateProductPayload(body);
 
     const { id } = await context.params;
-    const result = await updateProductById(id, body);
 
-    return successResponse(result, "Product updated successfully", 201);
+    const {
+      product_name,
+      product_image,
+      quantity,
+      category_id,
+      product_avaible,
+      units,
+    } = body;
+
+    const result = await updateProductById(id, {
+      product_name,
+      product_image,
+      quantity,
+      category_id,
+      product_avaible,
+      units,
+    });
+
+    return successResponse(result, "Product updated successfully", 200);
   } catch (error: any) {
     return errorResponse(error, "Failed to update product");
   }
@@ -48,6 +66,7 @@ export async function DELETE(
     await checkAuth("ADMIN");
 
     const { id } = await context.params;
+
     await deleteProductById(id);
 
     return successResponse(undefined, "Product deleted successfully");

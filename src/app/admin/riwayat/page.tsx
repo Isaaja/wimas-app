@@ -82,7 +82,7 @@ export default function AdminPeminjamanPage() {
     }
   };
 
-  const handleDone = async (loanId: string) => {
+  const handleDone = async (loanId: any) => {
     const result = await Swal.fire({
       title: "Konfirmasi Penyelesaian",
       text: "Apakah Anda yakin ingin menyelesaikan peminjaman ini?",

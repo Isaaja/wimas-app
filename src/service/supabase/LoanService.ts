@@ -3,7 +3,12 @@ import { formatLoanResponse } from "@/app/utils/formatLoanResponse";
 import InvariantError from "@/exceptions/InvariantError";
 import NotFoundError from "@/exceptions/NotFoundError";
 import { prisma } from "@/lib/prismaClient";
-import { ParticipantRole, LoanStatus } from "@prisma/client";
+import {
+  ParticipantRole,
+  LoanStatus,
+  ItemCondition,
+  UnitStatus,
+} from "@prisma/client";
 import { nanoid } from "nanoid";
 
 export async function createLoan({
@@ -26,142 +31,141 @@ export async function createLoan({
 }) {
   const loanId = `loan-${nanoid(16)}`;
 
-  const loan = await prisma.$transaction(
-    async (tx) => {
-      const newLoan = await tx.loan.create({
-        data: {
-          loan_id: loanId,
-          borrower_id: userId,
-          status: "REQUESTED",
+  return prisma.loan.create({
+    data: {
+      loan_id: loanId,
+      borrower_id: userId,
+      status: LoanStatus.REQUESTED,
 
-          // ✅ Buat item pinjaman
-          items: {
-            create: items.map((item) => ({
-              loan_item_id: `li-${nanoid(16)}`,
-              product_id: item.product_id,
-              quantity: item.quantity,
-            })),
-          },
+      requestItems: {
+        create: items.map((item) => ({
+          id: `lri-${nanoid(16)}`,
+          product_id: item.product_id,
+          quantity: item.quantity,
+        })),
+      },
 
-          // ✅ Buat peserta pinjaman
-          participants: {
-            create: [
-              {
-                id: `lp-${nanoid(16)}`,
-                user_id: userId,
-                role: "OWNER" as ParticipantRole,
-              },
-              ...invitedUsers.map((uid) => ({
-                id: `lp-${nanoid(16)}`,
-                user_id: uid,
-                role: "INVITED" as ParticipantRole,
-              })),
-            ],
+      participants: {
+        create: [
+          {
+            id: `lp-${nanoid(16)}`,
+            user_id: userId,
+            role: ParticipantRole.OWNER,
           },
+          ...invitedUsers.map((uid) => ({
+            id: `lp-${nanoid(16)}`,
+            user_id: uid,
+            role: ParticipantRole.INVITED,
+          })),
+        ],
+      },
 
-          // ✅ Buat report (spt_file di dalamnya)
-          report: {
-            create: {
-              report_id: `rep-${nanoid(16)}`,
-              spt_file: report.spt_file,
-              spt_number: report.spt_number,
-              destination: report.destination,
-              place_of_execution: report.place_of_execution,
-              start_date: new Date(report.start_date),
-              end_date: new Date(report.end_date),
-            },
-          },
+      report: {
+        create: {
+          report_id: `rep-${nanoid(16)}`,
+          spt_file: report.spt_file,
+          spt_number: report.spt_number,
+          destination: report.destination,
+          place_of_execution: report.place_of_execution,
+          start_date: new Date(report.start_date),
+          end_date: new Date(report.end_date),
         },
-        include: {
-          participants: {
-            include: {
-              user: { select: { user_id: true, username: true } },
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  product_id: true,
-                  product_name: true,
-                  product_image: true,
-                },
-              },
-            },
-          },
-          report: true,
-        },
-      });
-
-      return { data: newLoan };
+      },
     },
-    { timeout: 15000, maxWait: 5000 }
-  );
-
-  return loan;
+  });
 }
 
-export async function approveLoan(loanId: string) {
-  return prisma.$transaction(
-    async (tx) => {
-      const loan = await tx.loan.findUnique({
-        where: { loan_id: loanId },
-        include: {
-          items: {
-            include: { product: true },
-          },
-        },
-      });
+export async function approveLoanWithUnits(
+  loanId: string,
+  unitAssignments: { product_id: string; unit_ids: string[] }[]
+) {
+  return prisma.$transaction(async (tx) => {
+    const loan = await tx.loan.findUnique({
+      where: { loan_id: loanId },
+      include: {
+        requestItems: true,
+      },
+    });
 
-      if (!loan) throw new Error("Loan not found");
+    if (!loan) throw new NotFoundError("Loan not found");
 
-      const allProductIds = loan.items.map((item: any) => item.product_id);
+    if (loan.status !== LoanStatus.REQUESTED) {
+      throw new InvariantError("Loan sudah diproses sebelumnya");
+    }
 
-      const products = await tx.product.findMany({
-        where: { product_id: { in: allProductIds } },
-      });
+    for (const req of loan.requestItems) {
+      const assignment = unitAssignments.find(
+        (a) => a.product_id === req.product_id
+      );
 
-      for (const item of loan.items as Array<{
-        product_id: string;
-        quantity: number;
-      }>) {
-        const product = products.find((p) => p.product_id === item.product_id);
+      if (!assignment) {
+        throw new InvariantError(
+          `Unit untuk product ${req.product_id} belum dipilih`
+        );
+      }
 
-        if (!product) {
-          throw new NotFoundError(`Product ${item.product_id} not found`);
+      if (assignment.unit_ids.length !== req.quantity) {
+        throw new InvariantError(
+          `Jumlah unit untuk product ${req.product_id} tidak sesuai. Dibutuhkan: ${req.quantity}, Dipilih: ${assignment.unit_ids.length}`
+        );
+      }
+
+      for (const unitId of assignment.unit_ids) {
+        const unit = await tx.productUnit.findUnique({
+          where: { unit_id: unitId },
+        });
+
+        if (!unit) {
+          throw new NotFoundError(`Unit ${unitId} tidak ditemukan`);
         }
 
-        if (product.product_avaible < item.quantity) {
+        if (unit.product_id !== req.product_id) {
           throw new InvariantError(
-            `Insufficient stock for product ${product.product_name}`
+            `Unit ${unitId} bukan milik product ${req.product_id}`
+          );
+        }
+
+        if (unit.status !== "AVAILABLE") {
+          throw new InvariantError(
+            `Unit ${unitId} tidak tersedia (Status: ${unit.status})`
           );
         }
       }
-
-      await Promise.all(
-        (loan.items as Array<{ product_id: string; quantity: number }>).map(
-          (item) =>
-            tx.product.update({
-              where: { product_id: item.product_id },
-              data: {
-                product_avaible: { decrement: item.quantity },
-              },
-            })
-        )
-      );
-
-      const updatedLoan = await tx.loan.update({
-        where: { loan_id: loanId },
-        data: { status: "APPROVED" },
-      });
-
-      return updatedLoan;
-    },
-    {
-      timeout: 15000, // maksimal waktu transaksi 15 detik
-      maxWait: 5000, // maksimal tunggu antrian 5 detik
     }
-  );
+
+    for (const assignment of unitAssignments) {
+      for (const unitId of assignment.unit_ids) {
+        await tx.loanItem.create({
+          data: {
+            loan_item_id: `li-${nanoid(16)}`,
+            loan_id: loanId,
+            product_id: assignment.product_id,
+            unit_id: unitId,
+          },
+        });
+
+        await tx.productUnit.update({
+          where: { unit_id: unitId },
+          data: { status: "LOANED" },
+        });
+      }
+    }
+
+    return tx.loan.update({
+      where: { loan_id: loanId },
+      data: { status: LoanStatus.APPROVED },
+      include: {
+        borrower: true,
+        items: {
+          include: {
+            product: true,
+            unit: true,
+          },
+        },
+        report: true,
+      },
+    });
+  });
 }
 
 export async function checkUserLoan(userId: string) {
@@ -211,15 +215,16 @@ export async function getLoanedProducts() {
           user: { select: { user_id: true, name: true, username: true } },
         },
       },
-      report: {
-        select: {
-          report_id: true,
-          spt_file: true,
-          spt_number: true,
-          destination: true,
-          place_of_execution: true,
-          start_date: true,
-          end_date: true,
+      report: true,
+      requestItems: {
+        include: {
+          product: {
+            select: {
+              product_id: true,
+              product_name: true,
+              product_image: true,
+            },
+          },
         },
       },
       items: {
@@ -231,13 +236,14 @@ export async function getLoanedProducts() {
               product_image: true,
             },
           },
+          unit: true,
         },
       },
     },
     orderBy: {
       created_at: "desc",
     },
-    take: 100, // Limit hasil jika terlalu banyak
+    take: 100,
   });
 
   return loans.map(formatLoanResponse);
@@ -272,78 +278,63 @@ export async function rejectLoan(loanId: string) {
 }
 
 export async function returnLoan(loanId: string) {
-  return prisma.$transaction(
-    async (tx) => {
-      const loan = await tx.loan.findUnique({
-        where: { loan_id: loanId },
-      });
-
-      if (!loan) throw new NotFoundError("Loan not found");
-
-      if (loan.status === "REJECTED") {
-        throw new Error("Loan already rejected");
-      } else if (loan.status === "REQUESTED") {
-        throw new Error("Loan already request");
-      } else if (loan.status === "DONE") {
-        throw new Error("Loan already done");
-      }
-
-      return tx.loan.update({
-        where: { loan_id: loanId },
-        data: { status: "RETURNED" },
-      });
-    },
-    {
-      timeout: 15000,
-      maxWait: 5000,
-    }
-  );
+  return prisma.loan.update({
+    where: { loan_id: loanId },
+    data: { status: LoanStatus.RETURNED },
+  });
 }
-export async function doneLoan(loanId: string) {
-  return prisma.$transaction(
-    async (tx) => {
-      // Ambil data pinjaman beserta itemnya
-      const loan = await tx.loan.findUnique({
-        where: { loan_id: loanId },
-        include: {
-          items: {
-            include: { product: true },
+
+export async function doneLoan(
+  loanId: string,
+  unitConditions: Record<string, string> = {}
+) {
+  return prisma.$transaction(async (tx) => {
+    const loan = await tx.loan.findUnique({
+      where: { loan_id: loanId },
+      include: {
+        items: {
+          include: {
+            product: true,
           },
         },
-      });
+      },
+    });
 
-      if (!loan) throw new NotFoundError("Loan not found");
+    if (!loan) throw new NotFoundError("Loan not found");
+    if (loan.status !== "RETURNED")
+      throw new InvariantError("Loan belum dikembalikan");
 
-      if (loan.status === "RETURNED") {
-        // Tambah kembali stok barang
-        await Promise.all(
-          (loan.items as Array<{ product_id: string; quantity: number }>).map(
-            (item) =>
-              tx.product.update({
-                where: { product_id: item.product_id },
-                data: {
-                  product_avaible: { increment: item.quantity },
-                },
-              })
-          )
-        );
+    for (const item of loan.items) {
+      if (item.unit_id) {
+        const conditionInput = unitConditions[item.unit_id] || "GOOD";
 
-        // Update status pinjaman menjadi RETURNED
-        const updatedLoan = await tx.loan.update({
-          where: { loan_id: loanId },
-          data: { status: "DONE" },
+        const condition =
+          conditionInput === "GOOD"
+            ? ItemCondition.GOOD
+            : ItemCondition.DAMAGED;
+        const unitStatus =
+          condition === ItemCondition.GOOD
+            ? UnitStatus.AVAILABLE
+            : UnitStatus.DAMAGED;
+
+        await tx.productUnit.update({
+          where: { unit_id: item.unit_id },
+          data: {
+            status: unitStatus,
+            condition: condition,
+          },
         });
-
-        return updatedLoan;
-      } else {
-        throw new InvariantError("Can't Return Item");
       }
-    },
-    {
-      timeout: 15000,
-      maxWait: 5000,
     }
-  );
+
+    return tx.loan.update({
+      where: { loan_id: loanId },
+      data: {
+        status: LoanStatus.DONE,
+        updated_at: new Date(),
+      },
+    });
+  });
 }
 
 export async function getLoanById(loanId: string) {
@@ -356,9 +347,33 @@ export async function getLoanById(loanId: string) {
           user: { select: { user_id: true, name: true, username: true } },
         },
       },
+      requestItems: {
+        include: {
+          product: {
+            select: {
+              product_id: true,
+              product_name: true,
+              product_image: true,
+            },
+          },
+        },
+      },
       items: {
         include: {
-          product: { select: { product_id: true, product_name: true } },
+          product: {
+            select: {
+              product_id: true,
+              product_name: true,
+              product_image: true,
+            },
+          },
+          unit: {
+            select: {
+              unit_id: true,
+              serialNumber: true,
+              status: true,
+            },
+          },
         },
       },
       report: true,
@@ -373,11 +388,9 @@ export async function getLoanById(loanId: string) {
 }
 
 export async function getHistoryLoan() {
-  // 1. Authenticate user
   const { user, error } = await authenticate();
   if (error) return error;
 
-  // 2. Query loan history
   const userLoans = await prisma.loanParticipant.findMany({
     where: {
       user_id: user!.user_id,
@@ -392,6 +405,17 @@ export async function getHistoryLoan() {
               name: true,
             },
           },
+          requestItems: {
+            include: {
+              product: {
+                select: {
+                  product_id: true,
+                  product_name: true,
+                  product_image: true,
+                },
+              },
+            },
+          },
           items: {
             include: {
               product: {
@@ -399,7 +423,13 @@ export async function getHistoryLoan() {
                   product_id: true,
                   product_name: true,
                   product_image: true,
-                  quantity: true,
+                },
+              },
+              unit: {
+                select: {
+                  unit_id: true,
+                  serialNumber: true,
+                  status: true,
                 },
               },
             },
@@ -435,18 +465,39 @@ export async function getHistoryLoan() {
     take: 100,
   });
 
-  // 3. Transform data
-  const loans = userLoans.map((lp) => ({
-    ...lp.loan,
-    items: lp.loan.items.map((item) => ({
-      product_id: item.product_id,
-      product_name: item.product.product_name,
-      product_image: item.product.product_image,
-      quantity: item.quantity,
-    })),
-    userRole: lp.role,
-    participantId: lp.id,
-  }));
+  const loans = userLoans.map((lp) => {
+    const loan = lp.loan;
+
+    let items: any[] = [];
+
+    if (loan.status === "REQUESTED") {
+      items = loan.requestItems.map((item) => ({
+        product_id: item.product_id,
+        product_name: item.product.product_name,
+        product_image: item.product.product_image,
+        quantity: item.quantity,
+      }));
+    } else {
+      items = loan.items.map((item) => ({
+        product_id: item.product_id,
+        product_name: item.product.product_name,
+        product_image: item.product.product_image,
+        quantity: 1,
+        loan_item_id: item.loan_item_id,
+        unit_id: item.unit_id,
+        serial_number: item.unit?.serialNumber,
+        unit_status: item.unit?.status,
+      }));
+    }
+
+    return {
+      ...loan,
+      items: items,
+      userRole: lp.role,
+      participantId: lp.id,
+    };
+  });
+
   return loans;
 }
 
@@ -456,102 +507,75 @@ export async function updateLoanById(
     items?: { product_id: string; quantity: number }[];
   }
 ) {
-  return prisma.$transaction(
-    async (tx) => {
-      // Check if loan exists
-      const loan = await tx.loan.findUnique({
-        where: { loan_id: loanId },
-        include: { items: true },
-      });
+  return prisma.$transaction(async (tx) => {
+    const loan = await tx.loan.findUnique({
+      where: { loan_id: loanId },
+      include: { requestItems: true },
+    });
 
-      if (!loan) throw new InvariantError("Loan tidak ditemukan");
+    if (!loan) throw new InvariantError("Loan tidak ditemukan");
 
-      // Validate loan status for updates
-      if (loan.status === "APPROVED" || loan.status === "RETURNED") {
-        throw new InvariantError(
-          "Tidak dapat mengubah loan yang sudah disetujui atau dikembalikan"
-        );
+    if (loan.status !== "REQUESTED") {
+      throw new InvariantError("Loan hanya dapat diubah saat REQUESTED");
+    }
+
+    if (data.items && data.items.length > 0) {
+      const existingMap = new Map(
+        loan.requestItems.map((i) => [i.product_id, i])
+      );
+
+      const newProductIds = new Set(data.items.map((i) => i.product_id));
+
+      // Hapus item request yang tidak masuk list baru
+      const itemsToRemove = loan.requestItems.filter(
+        (i) => !newProductIds.has(i.product_id)
+      );
+
+      if (itemsToRemove.length > 0) {
+        await tx.loanRequestItem.deleteMany({
+          where: {
+            id: {
+              in: itemsToRemove.map((i) => i.id),
+            },
+          },
+        });
       }
 
-      // Update loan items if provided
-      if (data.items && data.items.length > 0) {
-        // Get existing items mapped by product_id
-        const existingItemsMap = new Map(
-          loan.items.map((i) => [i.product_id, i])
-        );
-        const newProductIds = new Set(
-          data.items.map((item) => item.product_id)
-        );
+      // Tambah / update item
+      for (const item of data.items) {
+        if (item.quantity <= 0)
+          throw new InvariantError("Quantity harus lebih dari 0");
 
-        // Remove items that are not in the new items list
-        const itemsToRemove = loan.items.filter(
-          (item) => !newProductIds.has(item.product_id)
-        );
-        if (itemsToRemove.length > 0) {
-          await tx.loanItem.deleteMany({
-            where: {
-              loan_item_id: {
-                in: itemsToRemove.map((item) => item.loan_item_id),
-              },
+        const existing = existingMap.get(item.product_id);
+
+        if (existing) {
+          // Update
+          await tx.loanRequestItem.update({
+            where: { id: existing.id },
+            data: { quantity: item.quantity },
+          });
+        } else {
+          // Insert baru
+          await tx.loanRequestItem.create({
+            data: {
+              id: `lri-${nanoid(16)}`,
+              loan_id: loanId,
+              product_id: item.product_id,
+              quantity: item.quantity,
             },
           });
         }
-
-        // Process each item in the update request
-        for (const item of data.items) {
-          if (item.quantity <= 0) {
-            throw new InvariantError(
-              `Quantity untuk produk ${item.product_id} harus lebih dari 0`
-            );
-          }
-
-          const existing = existingItemsMap.get(item.product_id);
-
-          if (existing) {
-            // Update existing item quantity
-            await tx.loanItem.update({
-              where: { loan_item_id: existing.loan_item_id },
-              data: { quantity: item.quantity },
-            });
-          } else {
-            // Add new item to the loan
-            const { nanoid } = await import("nanoid");
-            await tx.loanItem.create({
-              data: {
-                loan_item_id: `li-${nanoid(16)}`,
-                loan_id: loanId,
-                product_id: item.product_id,
-                quantity: item.quantity,
-              },
-            });
-          }
-        }
       }
-
-      // Return updated loan with all relations
-      const updatedLoan = await tx.loan.findUnique({
-        where: { loan_id: loanId },
-        include: {
-          borrower: { select: { user_id: true, name: true, username: true } },
-          participants: {
-            include: {
-              user: { select: { user_id: true, name: true, username: true } },
-            },
-          },
-          items: {
-            include: {
-              product: { select: { product_id: true, product_name: true } },
-            },
-          },
-          report: true,
-        },
-      });
-
-      return updatedLoan;
-    },
-    {
-      timeout: 15000,
-      maxWait: 5000,
     }
-  );
+
+    return tx.loan.findUnique({
+      where: { loan_id: loanId },
+      include: {
+        borrower: true,
+        participants: true,
+        requestItems: { include: { product: true } },
+        report: true,
+      },
+    });
+  });
 }

@@ -134,41 +134,55 @@ export default function CartSummary({
           )}
         </div>
 
-        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-6 py-4">
+        <div className="sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex justify-between items-center">
-            <button className="btn" onClick={onClose} disabled={isLoading}>
+            {/* Tombol Tutup */}
+            <button
+              className="btn btn-sm sm:btn-md"
+              onClick={onClose}
+              disabled={isLoading}
+            >
               Tutup
             </button>
 
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2">
+              {/* Tombol Kembali */}
               {step > 1 && (
                 <button
-                  className="btn btn-outline"
+                  className="btn btn-outline btn-sm sm:btn-md"
                   onClick={prevStep}
                   disabled={isLoading}
                 >
-                  ⬅ Kembali
+                  <span className="hidden xs:inline">⬅ Kembali</span>
+                  <span className="xs:hidden">⬅</span>
                 </button>
               )}
 
+              {/* Tombol Lanjutkan/Konfirmasi */}
               {step < 3 ? (
                 <button
-                  className="btn btn-accent text-black"
+                  className="btn btn-accent text-black btn-sm sm:btn-md"
                   onClick={nextStep}
                   disabled={!isStepValid()}
                 >
-                  Lanjutkan ➡
+                  <span className="hidden xs:inline">Lanjutkan ➡</span>
+                  <span className="xs:hidden">Lanjut ➡</span>
                 </button>
               ) : (
                 <button
-                  className="btn btn-success text-white"
+                  className="btn btn-success text-white btn-sm sm:btn-md"
                   onClick={handleSubmit}
                   disabled={isLoading || cart.length === 0}
                 >
                   {isLoading ? (
                     <span className="loading loading-spinner loading-sm text-info"></span>
                   ) : (
-                    "Konfirmasi Pinjam"
+                    <>
+                      <span className="hidden sm:inline">
+                        Konfirmasi Pinjam
+                      </span>
+                      <span className="sm:hidden">Konfirmasi</span>
+                    </>
                   )}
                 </button>
               )}
