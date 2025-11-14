@@ -1,9 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Eye, EyeOff, View, FileText, RefreshCcwDot } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  View,
+  FileText,
+  RefreshCcwDot,
+  Link,
+  Filter,
+  X,
+} from "lucide-react";
 import LoanDetail from "./LoanDetail";
 import ReturnModal from "./ReturnModal";
 import Swal from "sweetalert2";
@@ -41,6 +50,72 @@ export default function LoanTable({
   );
   const { mutate: returnLoan, isPending: isReturning } = useReturnLoan();
   const router = useRouter();
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const filteredLoans = useMemo(() => {
+    if (!startDate && !endDate) return loans;
+
+    return loans.filter((loan) => {
+      if (!loan.created_at) return false;
+
+      const loanDate = new Date(loan.created_at);
+      const loanTime = loanDate.getTime();
+
+      if (startDate && endDate) {
+        const startTime = new Date(startDate).getTime();
+        const endTime = new Date(endDate + "T23:59:59").getTime();
+        return loanTime >= startTime && loanTime <= endTime;
+      } else if (startDate) {
+        const startTime = new Date(startDate).getTime();
+        return loanTime >= startTime;
+      } else if (endDate) {
+        const endTime = new Date(endDate + "T23:59:59").getTime();
+        return loanTime <= endTime;
+      }
+
+      return true;
+    });
+  }, [loans, startDate, endDate]);
+
+  const getDisplayDateRange = () => {
+    if (startDate && endDate) {
+      return `${formatDateOnly(startDate)} - ${formatDateOnly(endDate)}`;
+    } else if (startDate) {
+      return `Dari ${formatDateOnly(startDate)}`;
+    } else if (endDate) {
+      return `Sampai ${formatDateOnly(endDate)}`;
+    }
+    return "Semua Periode";
+  };
+
+  const quickFilters = [
+    { label: "Hari Ini", days: 0 },
+    { label: "7 Hari", days: 7 },
+    { label: "30 Hari", days: 30 },
+    { label: "Bulan Ini", days: -1 },
+  ];
+
+  const applyQuickFilter = (days: number) => {
+    const today = new Date();
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    let start = new Date();
+
+    if (days === -1) {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+    } else {
+      start.setDate(today.getDate() - days);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    setStartDate(start.toISOString().split("T")[0]);
+    setEndDate(end.toISOString().split("T")[0]);
+    setShowDatePicker(false);
+    onPageChange(1);
+  };
 
   const formatDateOnly = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -58,6 +133,23 @@ export default function LoanTable({
       DONE: { label: "Selesai", class: "badge-info" },
     };
     return statusMap[status] || { label: status, class: "badge-ghost" };
+  };
+
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setShowDatePicker(false);
+    onPageChange(1);
+  };
+
+  const handleStartDateChange = (date: string) => {
+    setStartDate(date);
+    onPageChange(1);
+  };
+
+  const handleEndDateChange = (date: string) => {
+    setEndDate(date);
+    onPageChange(1);
   };
 
   const getSptFileUrl = (sptFile: string | null | undefined): string | null => {
@@ -197,6 +289,98 @@ export default function LoanTable({
 
   return (
     <div className="space-y-4">
+      <div className="bg-gray-100 p-3 rounded-lg border border-gray-200 shadow-lg">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className={`btn btn-sm gap-2 ${
+                startDate || endDate ? "btn-info" : "btn-outline"
+              }`}
+            >
+              <Filter className="w-4 h-4" />
+              <span className="text-sm">{getDisplayDateRange()}</span>
+              {(startDate || endDate) && (
+                <div className="badge badge-sm badge-info">
+                  {filteredLoans.length}
+                </div>
+              )}
+            </button>
+
+            <div className="flex flex-wrap gap-1">
+              {quickFilters.map((filter, index) => (
+                <button
+                  key={index}
+                  onClick={() => applyQuickFilter(filter.days)}
+                  className="btn btn-xs btn-ghost"
+                >
+                  {filter.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-gray-600">
+              {filteredLoans.length} data
+            </div>
+            {(startDate || endDate) && (
+              <button
+                onClick={clearFilters}
+                className="btn btn-xs btn-ghost text-error"
+              >
+                <X className="w-3 h-3" />
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+
+        {showDatePicker && (
+          <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-blue-50">
+            <div className="flex gap-4">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-600">
+                  Dari Tanggal
+                </label>
+                <input
+                  type="date"
+                  className="input input-bordered input-info scheme-light w-full bg-white"
+                  value={startDate}
+                  onChange={(e) => handleStartDateChange(e.target.value)}
+                  max={endDate || undefined}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-gray-600">
+                  Sampai Tanggal
+                </label>
+                <input
+                  type="date"
+                  className="input input-bordered input-info scheme-light w-full bg-white"
+                  value={endDate}
+                  onChange={(e) => handleEndDateChange(e.target.value)}
+                  min={startDate || undefined}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center mt-3">
+              <div className="text-xs text-gray-500">
+                {startDate && endDate && getDisplayDateRange()}
+              </div>
+              <button
+                onClick={() => setShowDatePicker(false)}
+                className="btn btn-xs btn-ghost"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="table w-full">
