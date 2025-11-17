@@ -8,13 +8,13 @@ import {
   XCircle,
   View,
   X,
-  Filter,
   CheckCheck,
   EyeOff,
 } from "lucide-react";
 import { Loan, hasUnitAssignments, getUniqueProducts } from "@/hooks/useLoans";
 import Loading from "../common/Loading";
 import { useState, useMemo } from "react";
+import DateFilter from "../common/DateFilter";
 
 interface AdminLoanTableProps {
   loans: Loan[];
@@ -219,314 +219,240 @@ export default function AdminLoanTable({
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-100 p-3 rounded-lg border border-gray-200 shadow-lg">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-            <button
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              className={`btn btn-sm gap-2 ${
-                startDate || endDate ? "btn-info" : "btn-outline"
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              <span className="text-sm">{getDisplayDateRange()}</span>
-              {(startDate || endDate) && (
-                <div className="badge badge-sm badge-info">
-                  {filteredLoans.length}
-                </div>
-              )}
-            </button>
+      <DateFilter
+        startDate={startDate}
+        endDate={endDate}
+        filteredCount={filteredLoans.length}
+        onStartDateChange={handleStartDateChange}
+        onEndDateChange={handleEndDateChange}
+        onClearFilters={clearFilters}
+        formatDateOnly={formatDateOnly}
+      />
 
-            <div className="flex flex-wrap gap-1">
-              {quickFilters.map((filter, index) => (
-                <button
-                  key={index}
-                  onClick={() => applyQuickFilter(filter.days)}
-                  className="btn btn-xs btn-ghost"
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-600">
-              {filteredLoans.length} data
-            </div>
-            {(startDate || endDate) && (
-              <button
-                onClick={clearFilters}
-                className="btn btn-xs btn-ghost text-error"
-              >
-                <X className="w-3 h-3" />
-                Reset
-              </button>
-            )}
-          </div>
+      {filteredLoans.length === 0 ? (
+        <div className="alert alert-warning">
+          <span>Tidak ada data peminjaman pada periode yang dipilih.</span>
         </div>
-
-        {showDatePicker && (
-          <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-blue-50">
-            <div className="flex gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-600">
-                  Dari Tanggal
-                </label>
-                <input
-                  type="date"
-                  className="input input-bordered input-info scheme-light w-full bg-white"
-                  value={startDate}
-                  onChange={(e) => handleStartDateChange(e.target.value)}
-                  max={endDate || undefined}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-600">
-                  Sampai Tanggal
-                </label>
-                <input
-                  type="date"
-                  className="input input-bordered input-info scheme-light w-full bg-white"
-                  value={endDate}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                  min={startDate || undefined}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center mt-3">
-              <div className="text-xs text-gray-500">
-                {startDate && endDate && getDisplayDateRange()}
-              </div>
-              <button
-                onClick={() => setShowDatePicker(false)}
-                className="btn btn-xs btn-ghost"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="whitespace-nowrap">No</th>
-                <th className="whitespace-nowrap">Peminjam</th>
-                <th className="whitespace-nowrap">No. SPT</th>
-                <th className="whitespace-nowrap">Tanggal Peminjaman</th>
-                <th className="whitespace-nowrap">Total Barang</th>
-                <th className="whitespace-nowrap">Status</th>
-                <th className="whitespace-nowrap text-center">Dokumen</th>
-                <th className="whitespace-nowrap text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentLoans.map((loan, index) => {
-                const statusInfo = getStatusBadge(loan.status);
-                const isProcessing =
-                  (isApproving || isRejecting || isDoing) &&
-                  actioningLoanId === loan.loan_id;
-                const sptFileUrl = getSptFileUrl(loan.report?.spt_file);
-                const mainBorrower = getMainBorrower(loan);
-                const totalItems = getTotalItems(loan);
-                const productTypesCount = getProductTypesCount(loan);
-                const invitedUsersCount = getInvitedUsersCount(loan);
-                const hasUnits = hasUnitAssignments(loan);
-
-                return (
-                  <tr key={loan.loan_id} className="hover">
-                    <td className="border-t border-black/10 font-medium">
-                      {startIndex + index + 1}
-                    </td>
-
-                    {/* Kolom Peminjam */}
-                    <td className="border-t border-black/10">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {mainBorrower}
-                        </div>
-                        {invitedUsersCount > 0 && (
-                          <div className="text-xs text-gray-500">
-                            +{invitedUsersCount} peserta
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Kolom Data SPT */}
-                    <td className="border-t border-black/10">
-                      <div className="text-sm">
-                        {loan.report?.spt_number || "-"}
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm space-y-1">
-                        <div>
-                          {formatDateOnly(loan.report?.start_date)} -{" "}
-                          {formatDateOnly(loan.report?.end_date)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDateOnly(loan.created_at)}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Kolom Total Barang */}
-                    <td className="border-t border-black/10">
-                      <div className="text-sm font-medium">
-                        {totalItems} barang
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {productTypesCount} jenis
-                      </div>
-                    </td>
-
-                    {/* Kolom Status */}
-                    <td className="border-t border-black/10">
-                      <div className="flex flex-col gap-1">
-                        <span className={`badge ${statusInfo.class} badge-sm`}>
-                          {statusInfo.label}
-                        </span>
-                        {hasUnits && (
-                          <span className="badge badge-outline badge-sm text-xs">
-                            Ada unit
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Kolom Dokumen SPT */}
-                    <td className="border-t border-black/10 text-center">
-                      {sptFileUrl ? (
-                        <div className="flex flex-col gap-1 items-center">
-                          <a
-                            href={sptFileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
-                            data-tip="Lihat Dokumen SPT"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </a>
-                          <span className="text-xs text-gray-500">SPT</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-1 items-center">
-                          <span
-                            className="text-gray-400 lg:tooltip"
-                            data-tip="Tidak Ada Dokumen SPT"
-                          >
-                            <EyeOff className="w-4 h-4" />
-                          </span>
-                          <span className="text-xs text-gray-400">-</span>
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="flex justify-center items-center gap-1">
-                        {/* Tombol Review & Approve untuk status REQUESTED */}
-                        {mode === "active" && loan.status === "REQUESTED" && (
-                          <>
-                            <button
-                              onClick={() => onViewDetail(loan.loan_id)}
-                              disabled={isProcessing}
-                              className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
-                              data-tip="Review & Approve"
-                            >
-                              {isProcessing &&
-                              actioningLoanId === loan.loan_id ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                              ) : (
-                                <CheckCircle className="w-4 h-4" />
-                              )}
-                            </button>
-
-                            <button
-                              onClick={() => onReject?.(loan.loan_id)}
-                              disabled={isProcessing}
-                              className="btn btn-ghost btn-xs text-red-600 lg:tooltip lg:tooltip-left"
-                              data-tip="Tolak Peminjaman"
-                            >
-                              {isProcessing &&
-                              actioningLoanId === loan.loan_id ? (
-                                <span className="loading loading-spinner loading-xs"></span>
-                              ) : (
-                                <XCircle className="w-4 h-4" />
-                              )}
-                            </button>
-                          </>
-                        )}
-
-                        {/* Tombol DONE untuk status RETURNED */}
-                        {loan.status === "RETURNED" && (
-                          <button
-                            onClick={() => onDone?.(loan.loan_id)}
-                            disabled={isProcessing}
-                            className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
-                            data-tip="Selesaikan Peminjaman"
-                          >
-                            {isProcessing &&
-                            actioningLoanId === loan.loan_id ? (
-                              <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                              <CheckCheck className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-
-                        {/* Tombol Lihat Detail - TIDAK DITAMPILKAN untuk status REQUESTED */}
-                        {loan.status !== "REQUESTED" && (
-                          <button
-                            className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
-                            data-tip="Lihat Detail"
-                            onClick={() => onViewDetail(loan.loan_id)}
-                          >
-                            <View className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+      ) : (
+        <>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="whitespace-nowrap">No</th>
+                    <th className="whitespace-nowrap">Peminjam</th>
+                    <th className="whitespace-nowrap">No. SPT</th>
+                    <th className="whitespace-nowrap">Tanggal Peminjaman</th>
+                    <th className="whitespace-nowrap">Total Barang</th>
+                    <th className="whitespace-nowrap">Status</th>
+                    <th className="whitespace-nowrap text-center">Dokumen</th>
+                    <th className="whitespace-nowrap text-center">Aksi</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {currentLoans.map((loan, index) => {
+                    const statusInfo = getStatusBadge(loan.status);
+                    const isProcessing =
+                      (isApproving || isRejecting || isDoing) &&
+                      actioningLoanId === loan.loan_id;
+                    const sptFileUrl = getSptFileUrl(loan.report?.spt_file);
+                    const mainBorrower = getMainBorrower(loan);
+                    const totalItems = getTotalItems(loan);
+                    const productTypesCount = getProductTypesCount(loan);
+                    const invitedUsersCount = getInvitedUsersCount(loan);
+                    const hasUnits = hasUnitAssignments(loan);
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-4">
-          <div className="text-sm text-gray-600">
-            Menampilkan {startIndex + 1}-
-            {Math.min(startIndex + itemsPerPage, filteredLoans.length)} dari{" "}
-            {filteredLoans.length} data
+                    return (
+                      <tr key={loan.loan_id} className="hover">
+                        <td className="border-t border-black/10 font-medium">
+                          {startIndex + index + 1}
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {mainBorrower}
+                            </div>
+                            {invitedUsersCount > 0 && (
+                              <div className="text-xs text-gray-500">
+                                +{invitedUsersCount} peserta
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm">
+                            {loan.report?.spt_number || "-"}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm space-y-1">
+                            <div>
+                              {formatDateOnly(loan.report?.start_date)} -{" "}
+                              {formatDateOnly(loan.report?.end_date)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatDateOnly(loan.created_at)}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm font-medium">
+                            {totalItems} barang
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {productTypesCount} jenis
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`badge ${statusInfo.class} badge-sm`}
+                            >
+                              {statusInfo.label}
+                            </span>
+                            {hasUnits && (
+                              <span className="badge badge-outline badge-sm text-xs">
+                                Ada unit
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10 text-center">
+                          {sptFileUrl ? (
+                            <div className="flex flex-col gap-1 items-center">
+                              <a
+                                href={sptFileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
+                                data-tip="Lihat Dokumen SPT"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </a>
+                              <span className="text-xs text-gray-500">SPT</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1 items-center">
+                              <span
+                                className="text-gray-400 lg:tooltip"
+                                data-tip="Tidak Ada Dokumen SPT"
+                              >
+                                <EyeOff className="w-4 h-4" />
+                              </span>
+                              <span className="text-xs text-gray-400">-</span>
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="flex justify-center items-center gap-1">
+                            {mode === "active" &&
+                              loan.status === "REQUESTED" && (
+                                <>
+                                  <button
+                                    onClick={() => onViewDetail(loan.loan_id)}
+                                    disabled={isProcessing}
+                                    className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
+                                    data-tip="Review & Approve"
+                                  >
+                                    {isProcessing &&
+                                    actioningLoanId === loan.loan_id ? (
+                                      <span className="loading loading-spinner loading-xs"></span>
+                                    ) : (
+                                      <CheckCircle className="w-4 h-4" />
+                                    )}
+                                  </button>
+
+                                  <button
+                                    onClick={() => onReject?.(loan.loan_id)}
+                                    disabled={isProcessing}
+                                    className="btn btn-ghost btn-xs text-red-600 lg:tooltip lg:tooltip-left"
+                                    data-tip="Tolak Peminjaman"
+                                  >
+                                    {isProcessing &&
+                                    actioningLoanId === loan.loan_id ? (
+                                      <span className="loading loading-spinner loading-xs"></span>
+                                    ) : (
+                                      <XCircle className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                </>
+                              )}
+
+                            {loan.status === "RETURNED" && (
+                              <button
+                                onClick={() => onDone?.(loan.loan_id)}
+                                disabled={isProcessing}
+                                className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
+                                data-tip="Selesaikan Peminjaman"
+                              >
+                                {isProcessing &&
+                                actioningLoanId === loan.loan_id ? (
+                                  <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                  <CheckCheck className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+
+                            {loan.status !== "REQUESTED" && (
+                              <button
+                                className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
+                                data-tip="Lihat Detail"
+                                onClick={() => onViewDetail(loan.loan_id)}
+                              >
+                                <View className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Sebelumnya
-            </button>
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
+              <div className="text-sm text-gray-600">
+                Menampilkan {startIndex + 1}-
+                {Math.min(startIndex + itemsPerPage, filteredLoans.length)} dari{" "}
+                {filteredLoans.length} data
+              </div>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Sebelumnya
+                </button>
+                <div className="flex items-center gap-2 px-3">
+                  <span className="text-sm">
+                    Hal {currentPage} dari {totalPages}
+                  </span>
+                </div>
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Berikutnya
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
