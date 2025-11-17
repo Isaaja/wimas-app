@@ -275,6 +275,7 @@ export default function AlatPerangkatPage() {
           <ProductTable
             products={paginatedProducts}
             currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
             totalPages={totalPages}
             onEdit={handleEdit}
             onDelete={handleDelete}
