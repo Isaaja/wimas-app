@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Product } from "@/hooks/useProducts";
 import { X } from "lucide-react";
 import Image from "next/image";
+import { toast } from "react-toastify";
 
 interface ProductDetailModalProps {
   product: Product;
@@ -12,6 +13,7 @@ interface ProductDetailModalProps {
   onAddToCart: (product: Product, quantity: number) => void;
   canBorrow?: boolean;
   availableUnits: number;
+  currentCartQuantity?: number;
 }
 
 export default function ProductDetailModal({
@@ -21,17 +23,43 @@ export default function ProductDetailModal({
   onAddToCart,
   canBorrow = true,
   availableUnits,
+  currentCartQuantity = 0,
 }: ProductDetailModalProps) {
   const [quantity, setQuantity] = useState<number>(1);
 
+  const remainingStock = availableUnits - currentCartQuantity;
+  const isOutOfStock = availableUnits === 0;
+  const canAddMore = remainingStock > 0;
+
   useEffect(() => {
     if (isOpen) {
-      setQuantity(1);
+      const initialQuantity = Math.min(1, remainingStock);
+      setQuantity(initialQuantity > 0 ? initialQuantity : 1);
     }
-  }, [isOpen, availableUnits]);
+  }, [isOpen, remainingStock]);
 
   const handleAddToCart = () => {
-    if (!canBorrow) return;
+    if (!canBorrow) {
+      toast.error("Anda tidak dapat meminjam karena memiliki pinjaman aktif");
+      return;
+    }
+
+    if (!canAddMore) {
+      toast.error("Stok sudah penuh di keranjang");
+      return;
+    }
+
+    if (quantity > remainingStock) {
+      toast.error(
+        `Hanya tersedia ${remainingStock} unit lagi untuk ditambahkan`
+      );
+      return;
+    }
+
+    if (quantity < 1) {
+      toast.error("Jumlah minimal adalah 1");
+      return;
+    }
 
     onAddToCart(product, quantity);
     setQuantity(1);
@@ -44,7 +72,10 @@ export default function ProductDetailModal({
   };
 
   const handleQuantityChange = (value: number) => {
-    const newQuantity = Math.max(1, Math.min(value, availableUnits));
+    if (!canAddMore) return;
+
+    const maxQuantity = Math.max(0, remainingStock);
+    const newQuantity = Math.max(1, Math.min(value, maxQuantity));
     setQuantity(newQuantity);
   };
 
@@ -53,6 +84,7 @@ export default function ProductDetailModal({
   return (
     <dialog className="modal modal-open">
       <div className="modal-box max-w-3xl w-11/12 sm:w-10/12 md:w-9/12 lg:max-w-3xl p-0 bg-white rounded-lg max-h-[80vh] sm:max-h-[85vh] lg:max-h-[80vh] overflow-hidden flex flex-col mt-12">
+        {/* Header */}
         <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <h3 className="font-bold text-base sm:text-lg text-gray-800">
             Detail Produk
@@ -80,17 +112,22 @@ export default function ProductDetailModal({
               />
             </div>
 
+            {/* Badge Mobile */}
             <div className="lg:hidden text-center">
               <div
                 className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
-                  availableUnits > 0
+                  canAddMore
                     ? "bg-green-500 text-white"
-                    : "bg-red-500 text-white"
+                    : isOutOfStock
+                    ? "bg-red-500 text-white"
+                    : "bg-orange-500 text-white"
                 }`}
               >
-                {availableUnits > 0
-                  ? `Tersedia: ${availableUnits} unit`
-                  : "Stok Habis"}
+                {canAddMore
+                  ? `Bisa Ditambah: ${remainingStock} unit`
+                  : isOutOfStock
+                  ? "Stok Habis"
+                  : "Stok Penuh di Keranjang"}
               </div>
             </div>
           </div>
@@ -106,14 +143,18 @@ export default function ProductDetailModal({
             <div className="hidden lg:block text-center">
               <div
                 className={`badge badge-lg px-3 py-2 text-xs font-semibold ${
-                  availableUnits > 0
+                  canAddMore
                     ? "bg-green-500 text-white"
-                    : "bg-red-500 text-white"
+                    : isOutOfStock
+                    ? "bg-red-500 text-white"
+                    : "bg-orange-500 text-white"
                 }`}
               >
-                {availableUnits > 0
-                  ? `Tersedia: ${availableUnits} unit`
-                  : "Stok Habis"}
+                {canAddMore
+                  ? `Bisa Ditambah: ${remainingStock} unit`
+                  : isOutOfStock
+                  ? "Stok Habis"
+                  : "Stok Penuh di Keranjang"}
               </div>
             </div>
 
@@ -138,6 +179,32 @@ export default function ProductDetailModal({
                   {availableUnits} unit
                 </span>
               </div>
+
+              {currentCartQuantity > 0 && (
+                <div className="flex justify-between items-center py-1 bg-blue-50 px-2 rounded">
+                  <span className="text-gray-600 font-medium">
+                    Di Keranjang:
+                  </span>
+                  <span className="font-semibold text-blue-600">
+                    {currentCartQuantity} unit
+                  </span>
+                </div>
+              )}
+
+              {currentCartQuantity > 0 && (
+                <div className="flex justify-between items-center py-1 bg-green-50 px-2 rounded">
+                  <span className="text-gray-600 font-medium">
+                    Bisa Ditambah:
+                  </span>
+                  <span
+                    className={`font-semibold ${
+                      remainingStock > 0 ? "text-green-600" : "text-orange-600"
+                    }`}
+                  >
+                    {remainingStock} unit
+                  </span>
+                </div>
+              )}
             </div>
 
             <div className="bg-blue-50 rounded-lg p-3">
@@ -148,7 +215,7 @@ export default function ProductDetailModal({
                 <button
                   className="btn btn-circle btn-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
                   onClick={() => handleQuantityChange(quantity - 1)}
-                  disabled={!canBorrow || availableUnits === 0 || quantity <= 1}
+                  disabled={!canBorrow || !canAddMore || quantity <= 1}
                 >
                   -
                 </button>
@@ -157,36 +224,36 @@ export default function ProductDetailModal({
                   className="input input-bordered input-sm w-16 text-center font-semibold text-gray-800 bg-white"
                   value={quantity}
                   min={1}
-                  max={availableUnits}
+                  max={remainingStock}
                   onChange={(e) => handleQuantityChange(Number(e.target.value))}
-                  disabled={!canBorrow || availableUnits === 0}
+                  disabled={!canBorrow || !canAddMore}
                 />
                 <button
                   className="btn btn-circle btn-xs bg-white border border-gray-300 hover:bg-gray-50 text-gray-700"
                   onClick={() => handleQuantityChange(quantity + 1)}
                   disabled={
-                    !canBorrow ||
-                    availableUnits === 0 ||
-                    quantity >= availableUnits
+                    !canBorrow || !canAddMore || quantity >= remainingStock
                   }
                 >
                   +
                 </button>
               </div>
               <p className="text-xs text-center text-gray-500 mt-2">
-                Maks: {availableUnits} unit
+                {canAddMore
+                  ? `Maks: ${remainingStock} unit`
+                  : "Tidak bisa menambah lagi"}
               </p>
             </div>
 
             {!canBorrow && (
               <div className="alert alert-warning py-2 px-3 bg-yellow-50 border-yellow-200">
                 <span className="text-yellow-800 text-xs sm:text-sm">
-                  ⚠️ Ada pinjaman aktif
+                  ⚠️ Anda memiliki pinjaman aktif
                 </span>
               </div>
             )}
 
-            {availableUnits === 0 && (
+            {isOutOfStock && (
               <div className="alert alert-error py-2 px-3 bg-red-50 border-red-200">
                 <span className="text-red-800 text-xs sm:text-sm">
                   ❌ Stok habis
@@ -194,15 +261,31 @@ export default function ProductDetailModal({
               </div>
             )}
 
-            {canBorrow && availableUnits > 0 && (
-              <div className="alert alert-info py-2 px-3 bg-blue-50 border-blue-200">
-                <span className="text-blue-800 text-xs sm:text-sm">
-                  Akan pinjam: <strong>{quantity} unit</strong>
+            {!isOutOfStock && !canAddMore && canBorrow && (
+              <div className="alert alert-warning py-2 px-3 bg-orange-50 border-orange-200">
+                <span className="text-orange-800 text-xs sm:text-sm">
+                  ⚠️ Stok sudah penuh di keranjang. Total di keranjang:{" "}
+                  {currentCartQuantity} unit
                 </span>
               </div>
             )}
 
-            <div className="flex gap-2 mt-2 pt-2 bg-white sticky bottom-0 -mx-3 -mb-3 px-3 pb-3 sm:static sm:mx-0 sm:mb-0 sm:px-0 sm:pb-0">
+            {canBorrow && canAddMore && (
+              <div className="alert alert-info py-2 px-3 bg-blue-50 border-blue-200">
+                <span className="text-blue-800 text-xs sm:text-sm">
+                  Akan ditambahkan: <strong>{quantity} unit</strong>
+                  {currentCartQuantity > 0 && (
+                    <span>
+                      {" "}
+                      (Total di keranjang akan menjadi:{" "}
+                      <strong>{currentCartQuantity + quantity} unit</strong>)
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+
+            <div className="flex gap-2 mt-2 pt-2 bg-white sticky bottom-0 -mx-3 -mb-3 px-3 pb-3 sm:static sm:mx-0 sm:mb-0 sm:px-0 sm:pb-0 border-t sm:border-t-0">
               <button
                 className="btn btn-outline btn-sm flex-1 border-gray-300 text-gray-700 hover:bg-gray-50 text-xs py-2 h-auto"
                 onClick={handleClose}
@@ -210,19 +293,20 @@ export default function ProductDetailModal({
                 Batal
               </button>
               <button
-                className="btn btn-primary btn-sm flex-1 bg-blue-600 border-blue-600 text-white hover:bg-blue-700 text-xs font-semibold py-2 h-auto"
+                className="btn btn-primary btn-sm flex-1 bg-blue-600 border-blue-600 text-white hover:bg-blue-700 text-xs font-semibold py-2 h-auto disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed disabled:text-slate-300 disabled:text-shadow-zinc-800"
                 onClick={handleAddToCart}
                 disabled={
                   !canBorrow ||
-                  availableUnits === 0 ||
-                  quantity > availableUnits
+                  !canAddMore ||
+                  quantity > remainingStock ||
+                  quantity < 1
                 }
               >
                 {!canBorrow
                   ? "Tidak Bisa Pinjam"
-                  : availableUnits === 0
-                  ? "Stok Habis"
-                  : "Pinjam Sekarang"}
+                  : !canAddMore
+                  ? "Stok Penuh"
+                  : "Pinjam"}
               </button>
             </div>
           </div>

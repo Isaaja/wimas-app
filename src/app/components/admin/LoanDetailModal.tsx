@@ -437,15 +437,28 @@ export default function LoanDetailModal({
   };
 
   const addProduct = (product: Product) => {
+    if (product.product_avaible <= 0) {
+      toast.error(`Stok ${product.product_name} habis, tidak bisa ditambahkan`);
+      return;
+    }
+
     const existingItemIndex = editedItems.findIndex(
       (item: any) => item.product_id === product.product_id
     );
 
     if (existingItemIndex >= 0) {
-      updateItemQuantity(
-        existingItemIndex,
-        editedItems[existingItemIndex].quantity + 1
-      );
+      const currentQuantity = editedItems[existingItemIndex].quantity;
+      const availableStock = product.product_avaible;
+
+      if (currentQuantity >= availableStock) {
+        toast.error(
+          `Stok ${product.product_name} tidak mencukupi. Stok tersedia: ${availableStock}`
+        );
+        return;
+      }
+
+      updateItemQuantity(existingItemIndex, currentQuantity + 1);
+      toast.success(`Berhasil menambah quantity ${product.product_name}`);
     } else {
       const newItem = {
         product_id: product.product_id,
@@ -456,11 +469,13 @@ export default function LoanDetailModal({
         available_units: unitsCache[product.product_id] || [],
       };
       setEditedItems((prev: any) => [...prev, newItem]);
+      toast.success(`Berhasil menambahkan ${product.product_name}`);
 
       if (!unitsCache[product.product_id]) {
         loadSingleProductUnits(product.product_id);
       }
     }
+
     setShowAddProduct(false);
     setSearchTerm("");
   };
@@ -695,12 +710,27 @@ export default function LoanDetailModal({
                     <Plus className="w-3 h-3" /> Tambah Perangkat
                   </button>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-blue-800">
+                        Tambah Perangkat Baru
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setShowAddProduct(false);
+                          setSearchTerm("");
+                        }}
+                        className="p-1 hover:bg-blue-100 rounded transition-colors"
+                      >
+                        <X className="w-3 h-3 text-blue-600" />
+                      </button>
+                    </div>
+
                     <div className="relative">
                       <Search className="w-3 h-3 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Cari perangkat..."
+                        placeholder="Cari perangkat berdasarkan nama..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -709,50 +739,99 @@ export default function LoanDetailModal({
 
                     {productsLoading ? (
                       <div className="text-center py-4">
-                        <span className="loading loading-spinner loading-sm text-info"></span>
+                        <span className="loading loading-spinner loading-sm text-blue-500"></span>
                         <p className="text-xs text-gray-500 mt-1">
                           Memuat produk...
                         </p>
                       </div>
                     ) : availableProducts.length > 0 ? (
-                      <div className="max-h-32 overflow-y-auto border border-blue-200 rounded">
+                      <div className="max-h-40 overflow-y-auto border border-blue-200 rounded bg-white">
                         {availableProducts.map((product) => (
                           <button
                             key={product.product_id}
                             onClick={() => addProduct(product)}
-                            className="w-full text-left p-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                            disabled={product.product_avaible <= 0}
+                            className="w-full text-left p-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm font-medium text-gray-800">
-                                  {product.product_name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Stok: {product.product_avaible}
-                                </p>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-sm font-medium text-gray-800">
+                                    {product.product_name}
+                                  </p>
+                                  {product.product_avaible <= 0 && (
+                                    <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">
+                                      Stok Habis
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-gray-500">
+                                  <span>Stok: {product.product_avaible}</span>
+                                </div>
                               </div>
-                              <Plus className="w-3 h-3 text-blue-600" />
+                              <div className="flex items-center gap-2 ml-3">
+                                {product.product_avaible > 0 ? (
+                                  <>
+                                    <Plus className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                    <span className="text-xs text-blue-600 font-medium">
+                                      Tambah
+                                    </span>
+                                  </>
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                )}
+                              </div>
                             </div>
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-500 text-center py-2">
-                        {searchTerm
-                          ? "Produk tidak ditemukan"
-                          : "Semua produk sudah dipilih"}
-                      </p>
+                      <div className="text-center py-4 bg-gray-50 rounded border">
+                        {searchTerm ? (
+                          <div className="space-y-1">
+                            <Search className="w-6 h-6 text-gray-400 mx-auto" />
+                            <p className="text-sm text-gray-600">
+                              Produk tidak ditemukan
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Tidak ada produk yang cocok dengan "{searchTerm}"
+                            </p>
+                            <button
+                              onClick={() => setSearchTerm("")}
+                              className="text-xs text-blue-600 hover:text-blue-700 mt-2"
+                            >
+                              Tampilkan semua produk
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <Package className="w-6 h-6 text-gray-400 mx-auto" />
+                            <p className="text-sm text-gray-600">
+                              Semua produk sudah dipilih
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Tidak ada produk lain yang bisa ditambahkan
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
 
-                    <button
-                      onClick={() => {
-                        setShowAddProduct(false);
-                        setSearchTerm("");
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-xs"
-                    >
-                      Tutup
-                    </button>
+                    {availableProducts.length > 0 && (
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>
+                          Menampilkan {availableProducts.length} produk tersedia
+                        </span>
+                        {searchTerm && (
+                          <button
+                            onClick={() => setSearchTerm("")}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            Hapus pencarian
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

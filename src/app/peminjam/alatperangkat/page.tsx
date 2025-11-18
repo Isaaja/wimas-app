@@ -33,6 +33,32 @@ export default function AlatPerangkatPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFloatingButton, setShowFloatingButton] = useState(false);
 
+  const getCartQuantity = useCallback(
+    (productId: string) => {
+      const cartItem = cart.find((item) => item.product_id === productId);
+      return cartItem ? cartItem.quantity : 0;
+    },
+    [cart]
+  );
+
+  const handleAddToCart = useCallback(
+    (product: any, quantity: number) => {
+      const currentQty = getCartQuantity(product.product_id);
+      const availableUnits =
+        product.units?.filter((u: any) => u.status === "AVAILABLE").length || 0;
+
+      if (currentQty + quantity > availableUnits) {
+        toast.error(
+          `Stok tidak mencukupi! Tersedia: ${availableUnits}, Di keranjang: ${currentQty}`
+        );
+        return;
+      }
+
+      addToCart(product, quantity);
+    },
+    [cart, addToCart, getCartQuantity]
+  );
+
   const debouncedSearch = useCallback(
     debounce((term: string) => {
       setSearchTerm(term.toLowerCase());
@@ -194,8 +220,9 @@ export default function AlatPerangkatPage() {
               <ProductCard
                 key={p.product_id}
                 product={p}
-                onAdd={addToCart}
+                onAdd={handleAddToCart}
                 canBorrow={canBorrow}
+                currentCartQuantity={getCartQuantity(p.product_id)}
               />
             ))
           ) : (
