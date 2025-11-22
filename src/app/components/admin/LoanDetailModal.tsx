@@ -77,6 +77,15 @@ export default function LoanDetailModal({
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [unitsCache, setUnitsCache] = useState<Record<string, any[]>>({});
   const [copiedUnitId, setCopiedUnitId] = useState<string | null>(null);
+  const [addingProducts, setAddingProducts] = useState<Record<string, boolean>>(
+    {}
+  );
+
+  useEffect(() => {
+    if (isEditing && editedItems.length > 0) {
+      loadAvailableUnitsForAll(editedItems);
+    }
+  }, [isEditing]);
 
   useEffect(() => {
     if (isOpen) {
@@ -102,26 +111,24 @@ export default function LoanDetailModal({
   const [isLoadingUnits, setIsLoadingUnits] = useState(false);
 
   useEffect(() => {
-    if (isOpen && loan?.loan_id) {
-      setShouldFetchLatest(true);
-    } else {
-      setShouldFetchLatest(false);
-    }
-  }, [isOpen, loan?.loan_id]);
-
-  useEffect(() => {
     const currentLoan = latestLoan || loan;
-    if (currentLoan && Array.isArray(currentLoan.items)) {
+    if (currentLoan && Array.isArray(currentLoan.items) && !isEditing) {
       const items = currentLoan.items.map((item: any) => ({
         ...item,
         selected_units: [],
         available_units: unitsCache[item.product_id] || [],
       }));
       setEditedItems(items);
-    } else {
-      setEditedItems([]);
     }
-  }, [loan, latestLoan, unitsCache]);
+  }, [loan, latestLoan, isEditing]);
+
+  useEffect(() => {
+    if (isOpen && loan?.loan_id) {
+      setShouldFetchLatest(true);
+    } else {
+      setShouldFetchLatest(false);
+    }
+  }, [isOpen, loan?.loan_id]);
 
   const getCurrentItems = (): LoanProduct[] => {
     const currentLoan = latestLoan || loan;
@@ -307,20 +314,44 @@ export default function LoanDetailModal({
       return;
     }
 
+    // Validasi stock untuk semua items
+    for (const item of editedItems) {
+      const product = products.find((p) => p.product_id === item.product_id);
+      if (!product) {
+        toast.error(`Produk ${item.product_name} tidak ditemukan`);
+        return;
+      }
+
+      if (item.quantity > product.product_avaible) {
+        toast.error(
+          `Stok ${product.product_name} tidak mencukupi. Dibutuhkan: ${item.quantity}, Stok tersedia: ${product.product_avaible}`
+        );
+        return;
+      }
+    }
+
     const itemsToUpdate = editedItems.map((item: any) => ({
       product_id: item.product_id,
       quantity: item.quantity,
     }));
 
+    // SIMPAN SEMUA PERUBAHAN (quantity updates & removals)
     updateLoanItems(
-      { loanId: loan.loan_id, items: itemsToUpdate },
+      {
+        loanId: loan.loan_id,
+        items: itemsToUpdate,
+      },
       {
         onSuccess: () => {
           toast.success("Berhasil mengubah perangkat yang dipinjam");
           setShowAddProduct(false);
+          setIsEditing(false);
           refetchLoan();
           onDataUpdated?.();
-          loadAvailableUnitsForAll(editedItems);
+
+          // Reset states
+          setExpandedProduct(null);
+          setUnitsCache({});
         },
         onError: (error) => {
           console.error("Error updating loan items:", error);
@@ -344,6 +375,9 @@ export default function LoanDetailModal({
     setShowAddProduct(false);
     setExpandedProduct(null);
     setUnitsCache({});
+    setSearchTerm("");
+
+    toast.info("Perubahan dibatalkan");
   };
 
   const toggleUnitSelection = (productId: string, unitId: string) => {
@@ -412,7 +446,26 @@ export default function LoanDetailModal({
   };
 
   const updateItemQuantity = (index: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
+    if (newQuantity < 1) {
+      toast.error("Quantity minimal 1");
+      return;
+    }
+
+    const item = editedItems[index];
+    const product = products.find((p) => p.product_id === item.product_id);
+
+    if (!product) {
+      toast.error("Produk tidak ditemukan");
+      return;
+    }
+
+    if (newQuantity > product.product_avaible) {
+      toast.error(
+        `Stok ${product.product_name} tidak mencukupi. Stok tersedia: ${product.product_avaible}`
+      );
+      return;
+    }
+
     setEditedItems((prev: any) => {
       return prev.map((item: any, i: number) =>
         i === index
@@ -427,57 +480,114 @@ export default function LoanDetailModal({
   };
 
   const removeItem = (index: number) => {
+    const itemToRemove = editedItems[index];
+
     setEditedItems((prev: any) =>
       prev.filter((_: any, i: number) => i !== index)
     );
-    const removedProductId = editedItems[index]?.product_id;
+
+    const removedProductId = itemToRemove?.product_id;
     if (removedProductId === expandedProduct) {
       setExpandedProduct(null);
     }
   };
 
-  const addProduct = (product: Product) => {
+  const addProduct = async (product: Product) => {
+    if (!loan) return;
+
+    if (displayLoan.status !== "REQUESTED") {
+      toast.error("Hanya bisa mengedit peminjaman dengan status REQUESTED");
+      return;
+    }
+
     if (product.product_avaible <= 0) {
       toast.error(`Stok ${product.product_name} habis, tidak bisa ditambahkan`);
       return;
     }
 
-    const existingItemIndex = editedItems.findIndex(
-      (item: any) => item.product_id === product.product_id
-    );
+    setAddingProducts((prev) => ({ ...prev, [product.product_id]: true }));
 
-    if (existingItemIndex >= 0) {
-      const currentQuantity = editedItems[existingItemIndex].quantity;
-      const availableStock = product.product_avaible;
+    try {
+      const existingItemIndex = editedItems.findIndex(
+        (item: any) => item.product_id === product.product_id
+      );
 
-      if (currentQuantity >= availableStock) {
-        toast.error(
-          `Stok ${product.product_name} tidak mencukupi. Stok tersedia: ${availableStock}`
+      let updatedItems: any[];
+
+      if (existingItemIndex >= 0) {
+        const currentQuantity = editedItems[existingItemIndex].quantity;
+        const availableStock = product.product_avaible;
+
+        if (currentQuantity >= availableStock) {
+          toast.error(
+            `Stok ${product.product_name} tidak mencukupi. Stok tersedia: ${availableStock}`
+          );
+          return;
+        }
+
+        updatedItems = editedItems.map((item: any, i: number) =>
+          i === existingItemIndex
+            ? {
+                ...item,
+                quantity: currentQuantity + 1,
+                selected_units: [],
+              }
+            : item
         );
-        return;
+      } else {
+        const newItem = {
+          product_id: product.product_id,
+          product_name: product.product_name,
+          quantity: 1,
+          loan_item_id: `temp-${Date.now()}`,
+          selected_units: [],
+          available_units: unitsCache[product.product_id] || [],
+        };
+        updatedItems = [...editedItems, newItem];
       }
 
-      updateItemQuantity(existingItemIndex, currentQuantity + 1);
-      toast.success(`Berhasil menambah quantity ${product.product_name}`);
-    } else {
-      const newItem = {
-        product_id: product.product_id,
-        product_name: product.product_name,
-        quantity: 1,
-        loan_item_id: `temp-${Date.now()}`,
-        selected_units: [],
-        available_units: unitsCache[product.product_id] || [],
-      };
-      setEditedItems((prev: any) => [...prev, newItem]);
-      toast.success(`Berhasil menambahkan ${product.product_name}`);
+      const itemsToUpdate = updatedItems.map((item: any) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+      }));
 
-      if (!unitsCache[product.product_id]) {
-        loadSingleProductUnits(product.product_id);
-      }
+      await updateLoanItems(
+        { loanId: loan.loan_id, items: itemsToUpdate },
+        {
+          onSuccess: async () => {
+            const message =
+              existingItemIndex >= 0
+                ? `Berhasil menambah quantity ${product.product_name}`
+                : `Berhasil menambahkan ${product.product_name}`;
+            toast.success(message);
+
+            setEditedItems(updatedItems);
+            setShowAddProduct(false);
+            setSearchTerm("");
+
+            await refetchLoan();
+            onDataUpdated?.();
+
+            if (existingItemIndex < 0 && !unitsCache[product.product_id]) {
+              await loadSingleProductUnits(product.product_id);
+            }
+
+            if (existingItemIndex < 0) {
+              setExpandedProduct(product.product_id);
+            }
+          },
+          onError: (error) => {
+            console.error("Error adding product:", error);
+            toast.error(error.message || "Gagal menambahkan perangkat");
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error in addProduct:", error);
+      toast.error("Gagal menambahkan perangkat");
+    } finally {
+      setAddingProducts((prev) => ({ ...prev, [product.product_id]: false }));
     }
-
-    setShowAddProduct(false);
-    setSearchTerm("");
   };
 
   const loadSingleProductUnits = async (productId: string) => {
@@ -750,7 +860,11 @@ export default function LoanDetailModal({
                           <button
                             key={product.product_id}
                             onClick={() => addProduct(product)}
-                            disabled={product.product_avaible <= 0}
+                            disabled={
+                              product.product_avaible <= 0 ||
+                              addingProducts[product.product_id] ||
+                              isUpdating
+                            }
                             className="w-full text-left p-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <div className="flex justify-between items-start">
@@ -770,7 +884,11 @@ export default function LoanDetailModal({
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 ml-3">
-                                {product.product_avaible > 0 ? (
+                                {addingProducts[product.product_id] ? (
+                                  <span className="text-xs text-blue-600">
+                                    Menambah...
+                                  </span>
+                                ) : product.product_avaible > 0 ? (
                                   <>
                                     <Plus className="w-4 h-4 text-blue-600 flex-shrink-0" />
                                     <span className="text-xs text-blue-600 font-medium">
@@ -1286,6 +1404,24 @@ export default function LoanDetailModal({
             {isEditing ? (
               <>
                 <button
+                  onClick={handleSaveClick}
+                  disabled={isUpdating}
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  {isUpdating ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3 h-3" />
+                      Simpan Perubahan
+                    </>
+                  )}
+                </button>
+
+                <button
                   onClick={handleApproveWithUnits}
                   disabled={
                     isApproving ||
@@ -1302,12 +1438,13 @@ export default function LoanDetailModal({
                 >
                   {isApproving ? (
                     <>
-                      <span className="loading loading-spinner loading-xs"></span>{" "}
+                      <span className="loading loading-spinner loading-xs"></span>
                       Memproses...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-3 h-3" /> Setujui Peminjaman
+                      <CheckCircle className="w-3 h-3" />
+                      Setujui Peminjaman
                     </>
                   )}
                 </button>
@@ -1323,15 +1460,13 @@ export default function LoanDetailModal({
             ) : (
               displayLoan.status === "REQUESTED" &&
               !isUpdating && (
-                <>
-                  <button
-                    onClick={handleEditClick}
-                    disabled={isApproving}
-                    className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
-                  >
-                    <CheckCircle className="w-3 h-3" /> Pilih unit & Setujui
-                  </button>
-                </>
+                <button
+                  onClick={handleEditClick}
+                  disabled={isApproving}
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  <Edit className="w-3 h-3" /> Edit Perangkat
+                </button>
               )
             )}
           </div>

@@ -31,22 +31,29 @@ export async function PUT(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const body = await req.json();
     checkAuth("ADMIN");
     const { id } = await context.params;
+    const { items } = await req.json();
 
-    if (!body.items && !body.status) {
-      throw new InvariantError(
-        "At least one field (items or status) must be provided for updates."
-      );
+    if (!items || !Array.isArray(items)) {
+      return errorResponse("Items harus berupa array");
     }
 
-    const updateLoan = await updateLoanById(id, body);
-    if (!updateLoan) {
-      throw new InvariantError("Failed to Update Loan");
+    for (const item of items) {
+      if (!item.product_id || !item.quantity) {
+        return errorResponse(
+          "Setiap item harus memiliki product_id dan quantity"
+        );
+      }
+      if (item.quantity <= 0) {
+        return errorResponse("Quantity harus lebih dari 0");
+      }
     }
-    return successResponse(updateLoan, "Loan berhasil diupdate", 200);
-  } catch (error) {
+
+    const updateLoan = await updateLoanById(id, { items });
+
+    return successResponse(updateLoan, "Perangkat berhasil diupdate", 200);
+  } catch (error: any) {
     return errorResponse(error);
   }
 }
