@@ -253,7 +253,7 @@ export const getProductQuantities = (loan: Loan): Record<string, number> => {
   }
 };
 
-export const getUniqueProducts = (loan: Loan): LoanProduct[] => {
+export const getUniqueProducts = (loan: Loan | LoanHistory): LoanProduct[] => {
   if (!loan || !loan.items || !Array.isArray(loan.items)) {
     return [];
   }

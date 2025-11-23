@@ -81,6 +81,21 @@ export default function AdminNotaPeminjamanPage() {
     return allUnits;
   };
 
+  // Fungsi baru untuk mendapatkan serial numbers dalam format koma
+  const getSerialNumbersFormatted = (productId: string) => {
+    const productUnits = getProductUnitsWithSerial(productId);
+    const uniqueProductUnits = productUnits.filter(
+      (unit, index, self) =>
+        index === self.findIndex((u) => u.unit_id === unit.unit_id)
+    );
+
+    const serialNumbers = uniqueProductUnits
+      .map((unit) => unit.serial_number || "N/A")
+      .filter((serial) => serial !== "N/A");
+
+    return serialNumbers.length > 0 ? serialNumbers.join(", ") : "N/A";
+  };
+
   const handlePrint = useReactToPrint({
     contentRef: notaRef,
     documentTitle:
@@ -391,12 +406,8 @@ export default function AdminNotaPeminjamanPage() {
               </h3>
 
               {uniqueProducts.map((product: any, productIndex: number) => {
-                const productUnits = getProductUnitsWithSerial(
+                const serialNumbersFormatted = getSerialNumbersFormatted(
                   product.product_id
-                );
-                const uniqueProductUnits = productUnits.filter(
-                  (unit, index, self) =>
-                    index === self.findIndex((u) => u.unit_id === unit.unit_id)
                 );
 
                 return (
@@ -408,22 +419,12 @@ export default function AdminNotaPeminjamanPage() {
                             {productIndex + 1}. {product.product_name}
                           </div>
 
-                          <div className="mt-1 space-y-1">
-                            {uniqueProductUnits.map((unit, unitIndex) => (
-                              <div
-                                key={unit.unit_id}
-                                className="flex items-center justify-between text-xs"
-                              >
-                                <div className="flex items-center">
-                                  <span className="text-gray-500 w-4">
-                                    {unitIndex + 1}.
-                                  </span>
-                                  <span className="text-gray-800 font-mono ml-1">
-                                    {unit.serial_number || "N/A"}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
+                          {/* Serial Numbers dalam format koma */}
+                          <div className="mt-1">
+                            <div className="text-xs text-gray-700">
+                              <span className="font-medium">Serial: </span>
+                              {serialNumbersFormatted}
+                            </div>
                           </div>
                         </div>
                         <div className="text-xs text-gray-600 whitespace-nowrap ml-2">

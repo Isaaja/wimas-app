@@ -102,7 +102,6 @@ export default function LoanDetail({
 
   if (!isVisible || !loan) return null;
 
-  // ✅ Safe access dengan default values
   const sptFileUrl = getSptFileUrl(loan.report?.spt_file);
   const hasUnits = hasUnitAssignments(loan);
   const productQuantities = getProductQuantities(loan);
@@ -113,13 +112,11 @@ export default function LoanDetail({
   return (
     <div className={`modal ${isOpen ? "modal-open" : ""}`}>
       <div className="modal-box p-0 max-w-4xl max-h-[85vh] flex flex-col bg-white border border-gray-200 mt-12">
-        {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
               Detail Peminjaman
             </h2>
-            <p className="text-sm text-gray-500 mt-1">ID: {loan.loan_id}</p>
           </div>
           <button
             onClick={onClose}
@@ -131,7 +128,6 @@ export default function LoanDetail({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          {/* Status & Actions */}
           <div className="flex items-center justify-between gap-3 p-3 bg-white rounded-lg border border-gray-200">
             <div className="flex items-center gap-4">
               <span
@@ -157,11 +153,6 @@ export default function LoanDetail({
                   ? "Dikembalikan"
                   : "Selesai"}
               </span>
-              {hasUnits && (
-                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs border border-purple-200">
-                  ✓ Ada Unit Assignment
-                </span>
-              )}
               <span className="text-xs text-gray-600">
                 {formatDate(loan.updated_at)}
               </span>
@@ -183,7 +174,6 @@ export default function LoanDetail({
 
           {/* Informasi Peminjam */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Peminjam Utama */}
             <div className="p-3 bg-white rounded-lg border border-gray-200">
               <div className="flex items-center gap-2 mb-3">
                 <User className="w-4 h-4 text-gray-600" />
@@ -199,18 +189,6 @@ export default function LoanDetail({
                     {loan.borrower?.name ||
                       loan.borrower?.username ||
                       "Unknown"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Username</p>
-                  <p className="text-sm text-gray-800">
-                    {loan.borrower?.username || "Unknown"}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">ID</p>
-                  <p className="text-sm text-gray-800 font-mono">
-                    {loan.borrower?.user_id || "Unknown"}
                   </p>
                 </div>
               </div>
@@ -233,9 +211,6 @@ export default function LoanDetail({
                     >
                       <p className="text-sm font-medium text-gray-800">
                         {user.name || user.username || "Unknown"}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {user.user_id}
                       </p>
                     </div>
                   ))}
@@ -339,29 +314,6 @@ export default function LoanDetail({
                                         {unit.serial_number}
                                       </span>
                                       {getUnitStatusBadge(unit.unit_status)}
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 font-mono">
-                                        ID: {unit.unit_id}
-                                      </span>
-                                      <button
-                                        onClick={() =>
-                                          copyToClipboard(
-                                            unit.unit_id,
-                                            unit.unit_id
-                                          )
-                                        }
-                                        className="p-1 hover:bg-gray-200 rounded transition-colors"
-                                        title="Copy Unit ID"
-                                      >
-                                        <Copy
-                                          className={`w-3 h-3 ${
-                                            copiedUnitId === unit.unit_id
-                                              ? "text-green-600"
-                                              : "text-gray-400"
-                                          }`}
-                                        />
-                                      </button>
                                     </div>
                                   </div>
                                   <div className="text-xs text-gray-400 bg-white px-2 py-1 rounded border">

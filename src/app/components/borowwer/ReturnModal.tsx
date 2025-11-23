@@ -61,7 +61,6 @@ export default function ReturnModal({
             <h2 className="text-lg sm:text-xl font-bold text-gray-800">
               Konfirmasi Pengembalian Barang
             </h2>
-            <p className="text-sm text-gray-500 mt-1">ID: {loan.loan_id}</p>
           </div>
           <button
             onClick={onClose}
@@ -87,9 +86,6 @@ export default function ReturnModal({
                   </label>
                   <p className="text-sm text-gray-800 font-medium mt-1">
                     {loan.borrower.name || loan.borrower.username}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {loan.borrower.user_id}
                   </p>
                 </div>
 

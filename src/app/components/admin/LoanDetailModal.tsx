@@ -1231,29 +1231,6 @@ export default function LoanDetailModal({
                                               </span>
                                             </span>
                                           </div>
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-500 font-mono">
-                                              ID: {unit.unit_id}
-                                            </span>
-                                            <button
-                                              onClick={() =>
-                                                copyToClipboard(
-                                                  unit.unit_id,
-                                                  unit.unit_id
-                                                )
-                                              }
-                                              className="p-1 hover:bg-gray-200 rounded transition-colors"
-                                              title="Copy Unit ID"
-                                            >
-                                              <Copy
-                                                className={`w-3 h-3 ${
-                                                  copiedUnitId === unit.unit_id
-                                                    ? "text-green-600"
-                                                    : "text-gray-400"
-                                                }`}
-                                              />
-                                            </button>
-                                          </div>
                                         </div>
                                         <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
                                           Unit #{unitIndex + 1}
