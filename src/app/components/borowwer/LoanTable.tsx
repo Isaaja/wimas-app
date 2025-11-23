@@ -20,6 +20,7 @@ import {
   hasUnitAssignments,
   type Loan,
   type LoanHistory,
+  getUniqueProducts,
 } from "@/hooks/useLoans";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -213,7 +214,15 @@ export default function LoanTable({
   };
 
   const getItemsCount = (loan: Loan | LoanHistory) => {
-    return loan.items?.length || 0;
+    if (!loan.items) return 0;
+
+    if (loan.status === "REQUESTED") {
+      const uniqueProducts = new Set(loan.items.map((item) => item.product_id));
+      return uniqueProducts.size;
+    } else {
+      const uniqueProducts = getUniqueProducts(loan);
+      return uniqueProducts.length;
+    }
   };
 
   const getReportData = (loan: Loan | LoanHistory) => {
@@ -242,7 +251,6 @@ export default function LoanTable({
       setActioningLoanId(loanToReturn.loan_id);
       returnLoan(loanToReturn.loan_id, {
         onSuccess: () => {
-          toast.success("Barang berhasil dikembalikan!");
           setLoanToReturn(null);
           setActioningLoanId(null);
         },

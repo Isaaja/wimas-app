@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Loan, getProductUnits } from "@/hooks/useLoans";
-import { X, CheckCircle, AlertTriangle, Package, Info } from "lucide-react";
+import { X, CheckCircle, AlertTriangle, Package } from "lucide-react";
 
 interface DoneLoanModalProps {
   loan: Loan | null;
@@ -28,32 +28,7 @@ export default function DoneLoanModal({
 }: DoneLoanModalProps) {
   const [unitConditions, setUnitConditions] = useState<UnitCondition[]>([]);
 
-  useEffect(() => {
-    if (loan && isOpen) {
-      const conditions: UnitCondition[] = [];
-      const processedUnitIds = new Set<string>();
-
-      loan.items?.forEach((item) => {
-        const productUnits = getProductUnits(loan, item.product_id);
-
-        productUnits.forEach((unit) => {
-          if (unit.unit_id && !processedUnitIds.has(unit.unit_id)) {
-            processedUnitIds.add(unit.unit_id);
-
-            conditions.push({
-              unit_id: unit.unit_id,
-              serial_number: unit.serial_number || "N/A",
-              product_name: item.product_name,
-              condition: "GOOD",
-            });
-          }
-        });
-      });
-
-      setUnitConditions(conditions);
-    }
-  }, [loan, isOpen]);
-
+  // Get unique units from loan
   const getUniqueUnits = (loan: Loan): UnitCondition[] => {
     if (!loan.items) return [];
 
@@ -66,7 +41,7 @@ export default function DoneLoanModal({
         if (unit.unit_id && !uniqueUnits.has(unit.unit_id)) {
           uniqueUnits.set(unit.unit_id, {
             unit_id: unit.unit_id,
-            serial_number: unit.serial_number || "N/A",
+            serial_number: unit.serial_number || "Tidak ada serial",
             product_name: item.product_name,
             condition: "GOOD",
           });
@@ -104,14 +79,6 @@ export default function DoneLoanModal({
     onConfirm(conditionsRecord);
   };
 
-  const getConditionBadge = (condition: string) => {
-    if (condition === "GOOD") {
-      return <span className="badge badge-success badge-sm">Baik</span>;
-    } else {
-      return <span className="badge badge-error badge-sm">Rusak</span>;
-    }
-  };
-
   const getConditionCount = () => {
     const good = unitConditions.filter(
       (unit) => unit.condition === "GOOD"
@@ -122,31 +89,22 @@ export default function DoneLoanModal({
     return { good, damaged };
   };
 
-  useEffect(() => {
-    if (unitConditions.length > 0) {
-      console.log("Unit Conditions:", unitConditions);
-      console.log(
-        "Unique unit IDs:",
-        unitConditions.map((u) => u.unit_id)
-      );
-    }
-  }, [unitConditions]);
-
   if (!isOpen || !loan) return null;
 
   const { good, damaged } = getConditionCount();
+  const totalUnits = unitConditions.length;
 
   return (
     <div className="modal modal-open">
-      <div className="modal-box max-w-4xl max-h-[70vh] flex flex-col bg-white p-0">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
+      <div className="modal-box max-w-2xl max-h-[80vh] flex flex-col bg-white p-0">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
-              Konfirmasi Penyelesaian Peminjaman
+              Konfirmasi Pengembalian
             </h2>
-            <p className="text-sm text-gray-500 mt-1">ID: {loan.loan_id}</p>
-            <p className="text-xs text-gray-400">
-              {unitConditions.length} unit unik ditemukan
+            <p className="text-sm text-gray-500 mt-1">
+              Periksa kondisi barang yang dikembalikan
             </p>
           </div>
           <button
@@ -154,111 +112,88 @@ export default function DoneLoanModal({
             disabled={isProcessing}
             className="p-1 hover:bg-gray-100 rounded transition-colors disabled:opacity-50"
           >
-            <X className="w-4 h-4 text-gray-600" />
+            <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
 
+        {/* Content */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                <Info className="w-5 h-5 text-blue-600" />
+          {/* Summary Card */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <Package className="w-4 h-4" />
+                Ringkasan Barang
+              </h3>
+              <span className="text-sm text-gray-500">{totalUnits} barang</span>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-1 text-center p-3 bg-green-50 border border-green-200 rounded-lg">
+                <div className="text-xl font-bold text-green-600">{good}</div>
+                <div className="text-sm text-green-700">Baik</div>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-blue-800 text-sm mb-2">
-                  Informasi Status Unit
-                </h4>
-                <ul className="text-xs text-blue-700 space-y-1">
-                  <li>
-                    • <strong>Kondisi BAIK</strong> → Status:{" "}
-                    <strong>AVAILABLE</strong>, Condition: <strong>GOOD</strong>
-                  </li>
-                  <li>
-                    • <strong>Kondisi RUSAK</strong> → Status:{" "}
-                    <strong>DAMAGED</strong>, Condition:{" "}
-                    <strong>DAMAGED</strong>
-                  </li>
-                  <li>
-                    • Unit dengan status <strong>DAMAGED</strong> tidak bisa
-                    dipinjam sampai diperbaiki
-                  </li>
-                </ul>
+              <div className="flex-1 text-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="text-xl font-bold text-red-600">{damaged}</div>
+                <div className="text-sm text-red-700">Rusak</div>
               </div>
             </div>
           </div>
 
+          {/* Unit List */}
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-base font-semibold mb-3 text-gray-800 flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              Ringkasan Kondisi Unit
-            </h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{good}</div>
-                <div className="text-sm text-green-700">Unit Baik</div>
-                <div className="text-xs text-green-600 mt-1">
-                  Status: AVAILABLE
-                  <br />
-                  Condition: GOOD
-                </div>
-              </div>
-              <div className="text-center p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{damaged}</div>
-                <div className="text-sm text-red-700">Unit Rusak</div>
-                <div className="text-xs text-red-600 mt-1">
-                  Status: DAMAGED
-                  <br />
-                  Condition: DAMAGED
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-base font-semibold mb-4 text-gray-800">
-              Kondisi Unit Perangkat ({unitConditions.length} unit unik)
-            </h3>
+            <h3 className="font-semibold text-gray-800 mb-3">Daftar Barang</h3>
 
             {unitConditions.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <Package className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p>Tidak ada unit yang perlu diperiksa</p>
+                <p>Tidak ada barang yang perlu diperiksa</p>
               </div>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {unitConditions.map((unit) => (
+              <div className="space-y-3">
+                {unitConditions.map((unit, index) => (
                   <div
                     key={unit.unit_id}
                     className="border border-gray-200 rounded-lg p-3"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <h4 className="font-medium text-gray-800">
-                          {unit.product_name}
-                        </h4>
-                        <p className="text-sm text-gray-500">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm text-gray-500 w-6">
+                            {index + 1}.
+                          </span>
+                          <h4 className="font-medium text-gray-800">
+                            {unit.product_name}
+                          </h4>
+                        </div>
+                        <p className="text-sm text-gray-600 ml-6">
                           Serial: {unit.serial_number}
                         </p>
-                        <p className="text-xs text-gray-400">
-                          ID: {unit.unit_id?.slice(-8)}
-                        </p>
                       </div>
-                      {getConditionBadge(unit.condition)}
+                      <div
+                        className={`text-xs px-2 py-1 rounded ${
+                          unit.condition === "GOOD"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {unit.condition === "GOOD" ? "Baik" : "Rusak"}
+                      </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 ml-6">
                       <button
                         onClick={() =>
                           handleConditionChange(unit.unit_id, "GOOD")
                         }
                         disabled={isProcessing}
-                        className={`flex-1 btn btn-sm ${
+                        className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
                           unit.condition === "GOOD"
-                            ? "btn-success"
-                            : "btn-outline btn-success"
+                            ? "bg-green-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                       >
-                        <CheckCircle className="w-3 h-3 mr-1" />
+                        <CheckCircle className="w-4 h-4 inline mr-1" />
                         Baik
                       </button>
                       <button
@@ -266,29 +201,15 @@ export default function DoneLoanModal({
                           handleConditionChange(unit.unit_id, "DAMAGED")
                         }
                         disabled={isProcessing}
-                        className={`flex-1 btn btn-sm ${
+                        className={`flex-1 py-2 px-3 rounded text-sm font-medium transition-colors ${
                           unit.condition === "DAMAGED"
-                            ? "btn-error"
-                            : "btn-outline btn-error"
+                            ? "bg-red-600 text-white"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                       >
-                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        <AlertTriangle className="w-4 h-4 inline mr-1" />
                         Rusak
                       </button>
-                    </div>
-
-                    <div className="mt-2 text-xs text-gray-500">
-                      {unit.condition === "GOOD" ? (
-                        <span>
-                          ✅ Akan menjadi <strong>AVAILABLE</strong> (siap
-                          dipinjam)
-                        </span>
-                      ) : (
-                        <span>
-                          ❌ Akan menjadi <strong>DAMAGED</strong> (tidak bisa
-                          dipinjam)
-                        </span>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -296,19 +217,21 @@ export default function DoneLoanModal({
             )}
           </div>
 
-          {damaged === unitConditions.length && unitConditions.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          {/* Warning if all damaged */}
+          {damaged === totalUnits && totalUnits > 0 && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0" />
                 <p className="text-sm text-yellow-800">
-                  <strong>Perhatian:</strong> Semua unit dalam kondisi rusak.
-                  Pastikan ini sesuai dengan kondisi sebenarnya.
+                  Semua barang dalam kondisi rusak. Pastikan ini sesuai dengan
+                  kondisi sebenarnya.
                 </p>
               </div>
             </div>
           )}
         </div>
 
+        {/* Footer */}
         <div className="flex justify-end gap-3 p-4 border-t border-gray-200 bg-white">
           <button
             onClick={onClose}
@@ -320,7 +243,7 @@ export default function DoneLoanModal({
           <button
             onClick={handleConfirm}
             disabled={isProcessing || unitConditions.length === 0}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 flex items-center gap-2"
           >
             {isProcessing ? (
               <>
@@ -330,7 +253,7 @@ export default function DoneLoanModal({
             ) : (
               <>
                 <CheckCircle className="w-4 h-4" />
-                Konfirmasi Penyelesaian
+                Selesaikan Peminjaman
               </>
             )}
           </button>

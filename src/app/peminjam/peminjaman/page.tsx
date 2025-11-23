@@ -32,7 +32,6 @@ export default function PeminjamanPage() {
       <h1 className="lg:text-2xl text-xl font-bold mb-4">
         Daftar Peminjaman Aktif
       </h1>
-      
 
       <LoanTable
         loans={loans}
