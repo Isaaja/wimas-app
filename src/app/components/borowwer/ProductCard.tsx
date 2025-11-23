@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Product } from "@/hooks/useProducts";
 import { toast } from "react-toastify";
-import { Info, ArrowRight } from "lucide-react";
+import { ArrowRight, ShoppingCart } from "lucide-react";
 import ProductDetailModal from "./ProductDetailModal";
 import Image from "next/image";
 
@@ -11,6 +11,7 @@ interface ProductCardProps {
   product: Product;
   onAdd: (product: Product, qty: number) => void;
   canBorrow?: boolean;
+  currentCartQuantity?: number;
 }
 
 const calculateAvailableUnits = (units: any[] = []): number => {
@@ -21,6 +22,7 @@ export default function ProductCard({
   product,
   onAdd,
   canBorrow = true,
+  currentCartQuantity,
 }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -37,6 +39,27 @@ export default function ProductCard({
     toast.success(
       `Berhasil menambahkan ${product.product_name} sebanyak ${quantity} ke daftar peminjaman.`
     );
+  };
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!canBorrow) {
+      toast.error("Anda tidak dapat meminjam karena memiliki pinjaman aktif");
+      return;
+    }
+    if (availableUnits === 0) {
+      toast.error("Stok produk habis");
+      return;
+    }
+
+    if ((currentCartQuantity || 0) >= availableUnits) {
+      toast.error(
+        `Stok tidak mencukupi. Tersedia: ${availableUnits}, Di keranjang: ${currentCartQuantity}`
+      );
+      return;
+    }
+
+    handleAddToCart(product, 1);
   };
 
   const openModal = () => {
@@ -99,7 +122,7 @@ export default function ProductCard({
 
         <div className="card-body p-4 text-center">
           <h2
-            className="font-bold text-sm sm:text-base md:text-lg cursor-pointer hover:text-blue-600 transition-colors line-clamp-2"
+            className="font-bold lg:text-base text-xs cursor-pointer hover:text-blue-600 transition-colors line-clamp-2"
             onClick={openModal}
           >
             {product.product_name}
@@ -117,14 +140,23 @@ export default function ProductCard({
             </div>
           )}
           {canBorrow && !isOutOfStock && (
-            <div className="card-actions justify-center mt-2 sm:mt-4">
+            <div className="card-actions justify-center mt-2 sm:mt-4 ">
               <button
-                className="btn btn-info btn-xs sm:btn-sm w-full text-xs sm:text-sm"
+                className="btn btn-info btn-xs sm:btn-sm text-xs sm:text-sm lg:w-44 w-full transition-all transform hover:scale-105"
                 onClick={openModal}
               >
-                <span className="hidden xs:inline">Lihat Detail</span>
-                <span className="xs:hidden">Detail</span>
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1" />
+                <span className="hidden xs:inline text-white">
+                  Lihat Detail
+                </span>
+                <span className="xs:hidden text-white">Detail</span>
+                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 text-white" />
+              </button>
+              <button
+                onClick={handleQuickAdd}
+                className="btn btn-xs sm:btn-sm lg:w-12 w-full bg-green-500 hover:bg-green-600 border-0 text-white shadow-lg transition-all transform hover:scale-110"
+                title="Tambah ke Keranjang"
+              >
+                <ShoppingCart className="w-3 h-3" />
               </button>
             </div>
           )}
@@ -138,6 +170,7 @@ export default function ProductCard({
         onAddToCart={handleAddToCart}
         canBorrow={canBorrow}
         availableUnits={availableUnits}
+        currentCartQuantity={currentCartQuantity}
       />
     </>
   );

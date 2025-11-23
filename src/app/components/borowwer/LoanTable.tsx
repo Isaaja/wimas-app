@@ -9,7 +9,6 @@ import {
   View,
   FileText,
   RefreshCcwDot,
-  Link,
   Filter,
   X,
 } from "lucide-react";
@@ -21,9 +20,11 @@ import {
   hasUnitAssignments,
   type Loan,
   type LoanHistory,
+  getUniqueProducts,
 } from "@/hooks/useLoans";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import DateFilter from "../common/DateFilter";
 
 interface LoanTableProps {
   loans: (Loan | LoanHistory)[];
@@ -61,17 +62,18 @@ export default function LoanTable({
       if (!loan.created_at) return false;
 
       const loanDate = new Date(loan.created_at);
+      loanDate.setHours(0, 0, 0, 0);
       const loanTime = loanDate.getTime();
 
       if (startDate && endDate) {
-        const startTime = new Date(startDate).getTime();
-        const endTime = new Date(endDate + "T23:59:59").getTime();
+        const startTime = new Date(startDate).setHours(0, 0, 0, 0);
+        const endTime = new Date(endDate).setHours(23, 59, 59, 999);
         return loanTime >= startTime && loanTime <= endTime;
       } else if (startDate) {
-        const startTime = new Date(startDate).getTime();
+        const startTime = new Date(startDate).setHours(0, 0, 0, 0);
         return loanTime >= startTime;
       } else if (endDate) {
-        const endTime = new Date(endDate + "T23:59:59").getTime();
+        const endTime = new Date(endDate).setHours(23, 59, 59, 999);
         return loanTime <= endTime;
       }
 
@@ -99,6 +101,8 @@ export default function LoanTable({
 
   const applyQuickFilter = (days: number) => {
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
     const end = new Date();
     end.setHours(23, 59, 59, 999);
 
@@ -106,7 +110,9 @@ export default function LoanTable({
 
     if (days === -1) {
       start = new Date(today.getFullYear(), today.getMonth(), 1);
+      start.setHours(0, 0, 0, 0);
     } else {
+      start = new Date(today);
       start.setDate(today.getDate() - days);
       start.setHours(0, 0, 0, 0);
     }
@@ -208,7 +214,15 @@ export default function LoanTable({
   };
 
   const getItemsCount = (loan: Loan | LoanHistory) => {
-    return loan.items?.length || 0;
+    if (!loan.items) return 0;
+
+    if (loan.status === "REQUESTED") {
+      const uniqueProducts = new Set(loan.items.map((item) => item.product_id));
+      return uniqueProducts.size;
+    } else {
+      const uniqueProducts = getUniqueProducts(loan);
+      return uniqueProducts.length;
+    }
   };
 
   const getReportData = (loan: Loan | LoanHistory) => {
@@ -237,7 +251,6 @@ export default function LoanTable({
       setActioningLoanId(loanToReturn.loan_id);
       returnLoan(loanToReturn.loan_id, {
         onSuccess: () => {
-          toast.success("Barang berhasil dikembalikan!");
           setLoanToReturn(null);
           setActioningLoanId(null);
         },
@@ -257,9 +270,12 @@ export default function LoanTable({
     router.push(`/peminjam/nota/${loanId}`);
   };
 
-  const totalPages = Math.ceil(loans.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredLoans.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentLoans = loans.slice(startIndex, startIndex + itemsPerPage);
+  const currentLoans = filteredLoans.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   const handleViewDetail = (loan: Loan | LoanHistory) => {
     setSelectedLoan(loan);
@@ -289,279 +305,214 @@ export default function LoanTable({
 
   return (
     <div className="space-y-4">
-      <div className="bg-gray-100 p-3 rounded-lg border border-gray-200 shadow-lg">
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center flex-1">
-            <button
-              onClick={() => setShowDatePicker(!showDatePicker)}
-              className={`btn btn-sm gap-2 ${
-                startDate || endDate ? "btn-info" : "btn-outline"
-              }`}
-            >
-              <Filter className="w-4 h-4" />
-              <span className="text-sm">{getDisplayDateRange()}</span>
-              {(startDate || endDate) && (
-                <div className="badge badge-sm badge-info">
-                  {filteredLoans.length}
-                </div>
-              )}
-            </button>
+      <DateFilter
+        startDate={startDate}
+        endDate={endDate}
+        filteredCount={filteredLoans.length}
+        onStartDateChange={handleStartDateChange}
+        onEndDateChange={handleEndDateChange}
+        onClearFilters={clearFilters}
+        formatDateOnly={formatDateOnly}
+      />
 
-            <div className="flex flex-wrap gap-1">
-              {quickFilters.map((filter, index) => (
-                <button
-                  key={index}
-                  onClick={() => applyQuickFilter(filter.days)}
-                  className="btn btn-xs btn-ghost"
-                >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-600">
-              {filteredLoans.length} data
-            </div>
-            {(startDate || endDate) && (
-              <button
-                onClick={clearFilters}
-                className="btn btn-xs btn-ghost text-error"
-              >
-                <X className="w-3 h-3" />
-                Reset
-              </button>
-            )}
-          </div>
+      {filteredLoans.length === 0 ? (
+        <div className="alert alert-warning">
+          <span>Tidak ada data peminjaman pada periode yang dipilih.</span>
         </div>
-
-        {showDatePicker && (
-          <div className="mt-3 p-3 border border-gray-200 rounded-lg bg-blue-50">
-            <div className="flex gap-4">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-600">
-                  Dari Tanggal
-                </label>
-                <input
-                  type="date"
-                  className="input input-bordered input-info scheme-light w-full bg-white"
-                  value={startDate}
-                  onChange={(e) => handleStartDateChange(e.target.value)}
-                  max={endDate || undefined}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-600">
-                  Sampai Tanggal
-                </label>
-                <input
-                  type="date"
-                  className="input input-bordered input-info scheme-light w-full bg-white"
-                  value={endDate}
-                  onChange={(e) => handleEndDateChange(e.target.value)}
-                  min={startDate || undefined}
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center mt-3">
-              <div className="text-xs text-gray-500">
-                {startDate && endDate && getDisplayDateRange()}
-              </div>
-              <button
-                onClick={() => setShowDatePicker(false)}
-                className="btn btn-xs btn-ghost"
-              >
-                Tutup
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="whitespace-nowrap">No</th>
-                <th className="whitespace-nowrap">Peminjam</th>
-                <th className="whitespace-nowrap">No. SPT</th>
-                <th className="whitespace-nowrap">Tanggal Peminjaman</th>
-                <th className="whitespace-nowrap">Total Barang</th>
-                <th className="whitespace-nowrap">Status</th>
-                <th className="whitespace-nowrap text-center">Dokumen</th>
-                <th className="whitespace-nowrap text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentLoans.map((loan, index) => {
-                const statusInfo = getStatusBadge(loan.status || "UNKNOWN");
-                const isProcessing = actioningLoanId === loan.loan_id;
-                const report = getReportData(loan);
-                const sptFileUrl = getSptFileUrl(report?.spt_file);
-                const mainBorrower = getMainBorrower(loan);
-                const totalItems = getTotalItems(loan);
-                const itemsCount = getItemsCount(loan);
-                const invitedUsersCount = getInvitedUsersCount(loan);
-                const hasUnits = hasUnitAssignments(loan as Loan);
-
-                return (
-                  <tr key={loan.loan_id} className="hover">
-                    <td className="border-t border-black/10 font-medium">
-                      {startIndex + index + 1}
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {mainBorrower}
-                        </div>
-                        {invitedUsersCount > 0 && (
-                          <div className="text-xs text-gray-500">
-                            +{invitedUsersCount} peserta
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm">{report?.spt_number || "-"}</div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm space-y-1">
-                        <div>
-                          {formatDateOnly(report?.start_date)} -{" "}
-                          {formatDateOnly(report?.end_date)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDateOnly(loan.created_at)}
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm font-medium">
-                        {totalItems} barang
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {itemsCount} jenis
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="flex flex-col gap-1">
-                        <span className={`badge ${statusInfo.class} badge-sm`}>
-                          {statusInfo.label}
-                        </span>
-                        {hasUnits && (
-                          <span className="badge badge-outline badge-sm text-xs">
-                            Ada unit
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10 text-center">
-                      {sptFileUrl ? (
-                        <div className="flex flex-col gap-1 items-center">
-                          <a
-                            href={sptFileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
-                            data-tip="Lihat Dokumen SPT"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </a>
-                          <span className="text-xs text-gray-500">SPT</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-1 items-center">
-                          <span
-                            className="text-gray-400 lg:tooltip"
-                            data-tip="Tidak Ada Dokumen SPT"
-                          >
-                            <EyeOff className="w-4 h-4" />
-                          </span>
-                          <span className="text-xs text-gray-400">-</span>
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="flex justify-center items-center gap-1">
-                        <button
-                          className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
-                          data-tip="Lihat Detail"
-                          onClick={() => handleViewDetail(loan)}
-                        >
-                          <View className="w-4 h-4" />
-                        </button>
-
-                        {loan.status === "APPROVED" && (
-                          <button
-                            className="btn btn-ghost btn-xs text-orange-600 lg:tooltip"
-                            data-tip="Kembalikan Barang"
-                            onClick={() => handleReturn(loan)}
-                            disabled={isProcessing || isReturning}
-                          >
-                            {isProcessing ? (
-                              <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                              <RefreshCcwDot className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-
-                        {(loan.status === "APPROVED" ||
-                          loan.status === "RETURNED" ||
-                          loan.status === "DONE") && (
-                          <button
-                            className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
-                            data-tip="Lihat Nota"
-                            onClick={() => handleViewNota(loan.loan_id)}
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+      ) : (
+        <>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="whitespace-nowrap">No</th>
+                    <th className="whitespace-nowrap">Peminjam</th>
+                    <th className="whitespace-nowrap">No. SPT</th>
+                    <th className="whitespace-nowrap">Tanggal Peminjaman</th>
+                    <th className="whitespace-nowrap">Total Barang</th>
+                    <th className="whitespace-nowrap">Status</th>
+                    <th className="whitespace-nowrap text-center">Dokumen</th>
+                    <th className="whitespace-nowrap text-center">Aksi</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {currentLoans.map((loan, index) => {
+                    const statusInfo = getStatusBadge(loan.status || "UNKNOWN");
+                    const isProcessing = actioningLoanId === loan.loan_id;
+                    const report = getReportData(loan);
+                    const sptFileUrl = getSptFileUrl(report?.spt_file);
+                    const mainBorrower = getMainBorrower(loan);
+                    const totalItems = getTotalItems(loan);
+                    const itemsCount = getItemsCount(loan);
+                    const invitedUsersCount = getInvitedUsersCount(loan);
+                    const hasUnits = hasUnitAssignments(loan as Loan);
 
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-4">
-          <div className="text-sm text-gray-600">
-            Menampilkan {startIndex + 1}-
-            {Math.min(startIndex + itemsPerPage, loans.length)} dari{" "}
-            {loans.length} data
+                    return (
+                      <tr key={loan.loan_id} className="hover">
+                        <td className="border-t border-black/10 font-medium">
+                          {startIndex + index + 1}
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {mainBorrower}
+                            </div>
+                            {invitedUsersCount > 0 && (
+                              <div className="text-xs text-gray-500">
+                                +{invitedUsersCount} peserta
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm">
+                            {report?.spt_number || "-"}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm space-y-1">
+                            <div>
+                              {formatDateOnly(report?.start_date)} -{" "}
+                              {formatDateOnly(report?.end_date)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatDateOnly(loan.created_at)}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm font-medium">
+                            {totalItems} barang
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {itemsCount} jenis
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`badge ${statusInfo.class} badge-sm`}
+                            >
+                              {statusInfo.label}
+                            </span>
+                            {hasUnits && (
+                              <span className="badge badge-outline badge-sm text-xs">
+                                Ada unit
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10 text-center">
+                          {sptFileUrl ? (
+                            <div className="flex flex-col gap-1 items-center">
+                              <a
+                                href={sptFileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
+                                data-tip="Lihat Dokumen SPT"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </a>
+                              <span className="text-xs text-gray-500">SPT</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1 items-center">
+                              <span
+                                className="text-gray-400 lg:tooltip"
+                                data-tip="Tidak Ada Dokumen SPT"
+                              >
+                                <EyeOff className="w-4 h-4" />
+                              </span>
+                              <span className="text-xs text-gray-400">-</span>
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="flex justify-center items-center gap-1">
+                            <button
+                              className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
+                              data-tip="Lihat Detail"
+                              onClick={() => handleViewDetail(loan)}
+                            >
+                              <View className="w-4 h-4" />
+                            </button>
+
+                            {loan.status === "APPROVED" && (
+                              <button
+                                className="btn btn-ghost btn-xs text-orange-600 lg:tooltip"
+                                data-tip="Kembalikan Barang"
+                                onClick={() => handleReturn(loan)}
+                                disabled={isProcessing || isReturning}
+                              >
+                                {isProcessing ? (
+                                  <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                  <RefreshCcwDot className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+
+                            {(loan.status === "APPROVED" ||
+                              loan.status === "RETURNED" ||
+                              loan.status === "DONE") && (
+                              <button
+                                className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
+                                data-tip="Lihat Nota"
+                                onClick={() => handleViewNota(loan.loan_id)}
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Sebelumnya
-            </button>
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
+
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
+              <div className="text-sm text-gray-600">
+                Menampilkan {startIndex + 1}-
+                {Math.min(startIndex + itemsPerPage, filteredLoans.length)} dari{" "}
+                {filteredLoans.length} data
+              </div>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Sebelumnya
+                </button>
+                <div className="flex items-center gap-2 px-3">
+                  <span className="text-sm">
+                    Hal {currentPage} dari {totalPages}
+                  </span>
+                </div>
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Berikutnya
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <ReturnModal
