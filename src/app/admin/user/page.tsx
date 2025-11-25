@@ -25,7 +25,7 @@ export default function SuperAdminUserPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 7;
+  const usersPerPage = 8;
   const totalPages = Math.ceil(users.length / usersPerPage);
 
   const handleAdd = () => {
@@ -91,6 +91,7 @@ export default function SuperAdminUserPage() {
         users={displayedUsers}
         currentPage={currentPage}
         totalPages={totalPages}
+        itemsPerPage={8}
         onDelete={handleDelete}
         onPageChange={setCurrentPage}
       />

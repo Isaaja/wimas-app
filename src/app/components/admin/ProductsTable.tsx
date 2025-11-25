@@ -79,22 +79,22 @@ export default function ProductsTable({
                       </div>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <div className="font-bold text-sm lg:text-base max-w-[150px] lg:max-w-[200px] truncate mx-auto">
+                      <div className="font-bold text-xs lg:text-sm max-w-[150px] lg:max-w-[200px] truncate mx-auto">
                         {product.product_name}
                       </div>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {product.category?.category_name || "-"}
                       </span>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {product.quantity}
                       </span>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {availableCount}
                       </span>
                     </td>

@@ -14,7 +14,13 @@ interface ProductCardProps {
   currentCartQuantity?: number;
 }
 
-const calculateAvailableUnits = (units: any[] = []): number => {
+const calculateAvailableUnits = (
+  units: any[] = [],
+  product_avaible?: number
+): number => {
+  if (product_avaible !== undefined) {
+    return product_avaible;
+  }
   return units.filter((unit) => unit.status === "AVAILABLE").length;
 };
 
@@ -26,7 +32,10 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const availableUnits = calculateAvailableUnits(product.units);
+  const availableUnits = calculateAvailableUnits(
+    product.units,
+    product.product_avaible
+  );
   const isOutOfStock = availableUnits === 0;
 
   const imageSrc =
