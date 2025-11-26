@@ -21,7 +21,7 @@ function sortProductsWithOutOfStockLast(products: any[]): any[] {
           (u: any) => u.status === "AVAILABLE" && u.condition === "GOOD"
         ).length;
       }
-      return product.product_avaible || 0;
+      return product.product_available || 0;
     };
 
     const aAvailable = calculateAvailable(a);

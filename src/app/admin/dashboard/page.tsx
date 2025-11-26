@@ -375,12 +375,12 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                           <span
                             className={`font-bold text-sm whitespace-nowrap ${
-                              product.product_avaible === 0
+                              product.product_available === 0
                                 ? "text-red-600"
                                 : "text-orange-600"
                             }`}
                           >
-                            {product.product_avaible}
+                            {product.product_available}
                           </span>
                         </div>
                       </div>

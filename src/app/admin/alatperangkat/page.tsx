@@ -36,13 +36,12 @@ export default function AlatPerangkatPage() {
   const deleteUnit = useDeleteUnit();
   const itemsPerPage = 4;
 
-  const debouncedSearch = useCallback(
-    debounce((term: string) => {
+  const debouncedSearch = useMemo(() => {
+    return debounce((term: string) => {
       setSearchTerm(term.toLowerCase());
       setCurrentPage(1);
-    }, 300),
-    []
-  );
+    }, 300);
+  }, [setSearchTerm, setCurrentPage]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     debouncedSearch(e.target.value);

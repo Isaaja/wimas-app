@@ -7,7 +7,7 @@ export interface Product {
   product_image: string | null;
   quantity: number;
   category_id: string;
-  product_avaible: number;
+  product_available: number;
   category?: {
     category_id: string;
     category_name: string;
@@ -29,7 +29,7 @@ export interface CreateProductPayload {
   product_image: string;
   quantity: number;
   category_id: string;
-  product_avaible: number;
+  product_available: number;
   units: { serialNumber: string }[];
 }
 
@@ -506,7 +506,7 @@ export const useCreateProduct = () => {
         product_image: newProduct.product_image,
         quantity: newProduct.quantity,
         category_id: newProduct.category_id,
-        product_avaible: newProduct.product_avaible,
+        product_available: newProduct.product_available,
         createdAt: new Date(),
         updatedAt: new Date(),
         isOptimistic: true,
@@ -772,7 +772,7 @@ export const useAvailableProducts = () => {
   const { data: products, ...queryInfo } = useProducts();
 
   const availableProducts = useMemo(
-    () => products?.filter((product) => product.product_avaible > 0) || [],
+    () => products?.filter((product) => product.product_available > 0) || [],
     [products]
   );
 
