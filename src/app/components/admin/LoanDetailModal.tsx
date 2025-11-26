@@ -77,6 +77,15 @@ export default function LoanDetailModal({
   const [expandedProduct, setExpandedProduct] = useState<string | null>(null);
   const [unitsCache, setUnitsCache] = useState<Record<string, any[]>>({});
   const [copiedUnitId, setCopiedUnitId] = useState<string | null>(null);
+  const [addingProducts, setAddingProducts] = useState<Record<string, boolean>>(
+    {}
+  );
+
+  useEffect(() => {
+    if (isEditing && editedItems.length > 0) {
+      loadAvailableUnitsForAll(editedItems);
+    }
+  }, [isEditing]);
 
   useEffect(() => {
     if (isOpen) {
@@ -102,26 +111,24 @@ export default function LoanDetailModal({
   const [isLoadingUnits, setIsLoadingUnits] = useState(false);
 
   useEffect(() => {
-    if (isOpen && loan?.loan_id) {
-      setShouldFetchLatest(true);
-    } else {
-      setShouldFetchLatest(false);
-    }
-  }, [isOpen, loan?.loan_id]);
-
-  useEffect(() => {
     const currentLoan = latestLoan || loan;
-    if (currentLoan && Array.isArray(currentLoan.items)) {
+    if (currentLoan && Array.isArray(currentLoan.items) && !isEditing) {
       const items = currentLoan.items.map((item: any) => ({
         ...item,
         selected_units: [],
         available_units: unitsCache[item.product_id] || [],
       }));
       setEditedItems(items);
-    } else {
-      setEditedItems([]);
     }
-  }, [loan, latestLoan, unitsCache]);
+  }, [loan, latestLoan, isEditing]);
+
+  useEffect(() => {
+    if (isOpen && loan?.loan_id) {
+      setShouldFetchLatest(true);
+    } else {
+      setShouldFetchLatest(false);
+    }
+  }, [isOpen, loan?.loan_id]);
 
   const getCurrentItems = (): LoanProduct[] => {
     const currentLoan = latestLoan || loan;
@@ -307,20 +314,44 @@ export default function LoanDetailModal({
       return;
     }
 
+    // Validasi stock untuk semua items
+    for (const item of editedItems) {
+      const product = products.find((p) => p.product_id === item.product_id);
+      if (!product) {
+        toast.error(`Produk ${item.product_name} tidak ditemukan`);
+        return;
+      }
+
+      if (item.quantity > product.product_avaible) {
+        toast.error(
+          `Stok ${product.product_name} tidak mencukupi. Dibutuhkan: ${item.quantity}, Stok tersedia: ${product.product_avaible}`
+        );
+        return;
+      }
+    }
+
     const itemsToUpdate = editedItems.map((item: any) => ({
       product_id: item.product_id,
       quantity: item.quantity,
     }));
 
+    // SIMPAN SEMUA PERUBAHAN (quantity updates & removals)
     updateLoanItems(
-      { loanId: loan.loan_id, items: itemsToUpdate },
+      {
+        loanId: loan.loan_id,
+        items: itemsToUpdate,
+      },
       {
         onSuccess: () => {
           toast.success("Berhasil mengubah perangkat yang dipinjam");
           setShowAddProduct(false);
+          setIsEditing(false);
           refetchLoan();
           onDataUpdated?.();
-          loadAvailableUnitsForAll(editedItems);
+
+          // Reset states
+          setExpandedProduct(null);
+          setUnitsCache({});
         },
         onError: (error) => {
           console.error("Error updating loan items:", error);
@@ -344,6 +375,9 @@ export default function LoanDetailModal({
     setShowAddProduct(false);
     setExpandedProduct(null);
     setUnitsCache({});
+    setSearchTerm("");
+
+    toast.info("Perubahan dibatalkan");
   };
 
   const toggleUnitSelection = (productId: string, unitId: string) => {
@@ -412,7 +446,26 @@ export default function LoanDetailModal({
   };
 
   const updateItemQuantity = (index: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
+    if (newQuantity < 1) {
+      toast.error("Quantity minimal 1");
+      return;
+    }
+
+    const item = editedItems[index];
+    const product = products.find((p) => p.product_id === item.product_id);
+
+    if (!product) {
+      toast.error("Produk tidak ditemukan");
+      return;
+    }
+
+    if (newQuantity > product.product_avaible) {
+      toast.error(
+        `Stok ${product.product_name} tidak mencukupi. Stok tersedia: ${product.product_avaible}`
+      );
+      return;
+    }
+
     setEditedItems((prev: any) => {
       return prev.map((item: any, i: number) =>
         i === index
@@ -427,42 +480,114 @@ export default function LoanDetailModal({
   };
 
   const removeItem = (index: number) => {
+    const itemToRemove = editedItems[index];
+
     setEditedItems((prev: any) =>
       prev.filter((_: any, i: number) => i !== index)
     );
-    const removedProductId = editedItems[index]?.product_id;
+
+    const removedProductId = itemToRemove?.product_id;
     if (removedProductId === expandedProduct) {
       setExpandedProduct(null);
     }
   };
 
-  const addProduct = (product: Product) => {
-    const existingItemIndex = editedItems.findIndex(
-      (item: any) => item.product_id === product.product_id
-    );
+  const addProduct = async (product: Product) => {
+    if (!loan) return;
 
-    if (existingItemIndex >= 0) {
-      updateItemQuantity(
-        existingItemIndex,
-        editedItems[existingItemIndex].quantity + 1
-      );
-    } else {
-      const newItem = {
-        product_id: product.product_id,
-        product_name: product.product_name,
-        quantity: 1,
-        loan_item_id: `temp-${Date.now()}`,
-        selected_units: [],
-        available_units: unitsCache[product.product_id] || [],
-      };
-      setEditedItems((prev: any) => [...prev, newItem]);
-
-      if (!unitsCache[product.product_id]) {
-        loadSingleProductUnits(product.product_id);
-      }
+    if (displayLoan.status !== "REQUESTED") {
+      toast.error("Hanya bisa mengedit peminjaman dengan status REQUESTED");
+      return;
     }
-    setShowAddProduct(false);
-    setSearchTerm("");
+
+    if (product.product_avaible <= 0) {
+      toast.error(`Stok ${product.product_name} habis, tidak bisa ditambahkan`);
+      return;
+    }
+
+    setAddingProducts((prev) => ({ ...prev, [product.product_id]: true }));
+
+    try {
+      const existingItemIndex = editedItems.findIndex(
+        (item: any) => item.product_id === product.product_id
+      );
+
+      let updatedItems: any[];
+
+      if (existingItemIndex >= 0) {
+        const currentQuantity = editedItems[existingItemIndex].quantity;
+        const availableStock = product.product_avaible;
+
+        if (currentQuantity >= availableStock) {
+          toast.error(
+            `Stok ${product.product_name} tidak mencukupi. Stok tersedia: ${availableStock}`
+          );
+          return;
+        }
+
+        updatedItems = editedItems.map((item: any, i: number) =>
+          i === existingItemIndex
+            ? {
+                ...item,
+                quantity: currentQuantity + 1,
+                selected_units: [],
+              }
+            : item
+        );
+      } else {
+        const newItem = {
+          product_id: product.product_id,
+          product_name: product.product_name,
+          quantity: 1,
+          loan_item_id: `temp-${Date.now()}`,
+          selected_units: [],
+          available_units: unitsCache[product.product_id] || [],
+        };
+        updatedItems = [...editedItems, newItem];
+      }
+
+      const itemsToUpdate = updatedItems.map((item: any) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+      }));
+
+      await updateLoanItems(
+        { loanId: loan.loan_id, items: itemsToUpdate },
+        {
+          onSuccess: async () => {
+            const message =
+              existingItemIndex >= 0
+                ? `Berhasil menambah quantity ${product.product_name}`
+                : `Berhasil menambahkan ${product.product_name}`;
+            toast.success(message);
+
+            setEditedItems(updatedItems);
+            setShowAddProduct(false);
+            setSearchTerm("");
+
+            await refetchLoan();
+            onDataUpdated?.();
+
+            if (existingItemIndex < 0 && !unitsCache[product.product_id]) {
+              await loadSingleProductUnits(product.product_id);
+            }
+
+            if (existingItemIndex < 0) {
+              setExpandedProduct(product.product_id);
+            }
+          },
+          onError: (error) => {
+            console.error("Error adding product:", error);
+            toast.error(error.message || "Gagal menambahkan perangkat");
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error in addProduct:", error);
+      toast.error("Gagal menambahkan perangkat");
+    } finally {
+      setAddingProducts((prev) => ({ ...prev, [product.product_id]: false }));
+    }
   };
 
   const loadSingleProductUnits = async (productId: string) => {
@@ -695,12 +820,27 @@ export default function LoanDetailModal({
                     <Plus className="w-3 h-3" /> Tambah Perangkat
                   </button>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium text-blue-800">
+                        Tambah Perangkat Baru
+                      </h4>
+                      <button
+                        onClick={() => {
+                          setShowAddProduct(false);
+                          setSearchTerm("");
+                        }}
+                        className="p-1 hover:bg-blue-100 rounded transition-colors"
+                      >
+                        <X className="w-3 h-3 text-blue-600" />
+                      </button>
+                    </div>
+
                     <div className="relative">
                       <Search className="w-3 h-3 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <input
                         type="text"
-                        placeholder="Cari perangkat..."
+                        placeholder="Cari perangkat berdasarkan nama..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -709,50 +849,107 @@ export default function LoanDetailModal({
 
                     {productsLoading ? (
                       <div className="text-center py-4">
-                        <span className="loading loading-spinner loading-sm text-info"></span>
+                        <span className="loading loading-spinner loading-sm text-blue-500"></span>
                         <p className="text-xs text-gray-500 mt-1">
                           Memuat produk...
                         </p>
                       </div>
                     ) : availableProducts.length > 0 ? (
-                      <div className="max-h-32 overflow-y-auto border border-blue-200 rounded">
+                      <div className="max-h-40 overflow-y-auto border border-blue-200 rounded bg-white">
                         {availableProducts.map((product) => (
                           <button
                             key={product.product_id}
                             onClick={() => addProduct(product)}
-                            className="w-full text-left p-2 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                            disabled={
+                              product.product_avaible <= 0 ||
+                              addingProducts[product.product_id] ||
+                              isUpdating
+                            }
+                            className="w-full text-left p-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm font-medium text-gray-800">
-                                  {product.product_name}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Stok: {product.product_avaible}
-                                </p>
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-sm font-medium text-gray-800">
+                                    {product.product_name}
+                                  </p>
+                                  {product.product_avaible <= 0 && (
+                                    <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">
+                                      Stok Habis
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-3 text-xs text-gray-500">
+                                  <span>Stok: {product.product_avaible}</span>
+                                </div>
                               </div>
-                              <Plus className="w-3 h-3 text-blue-600" />
+                              <div className="flex items-center gap-2 ml-3">
+                                {addingProducts[product.product_id] ? (
+                                  <span className="text-xs text-blue-600">
+                                    Menambah...
+                                  </span>
+                                ) : product.product_avaible > 0 ? (
+                                  <>
+                                    <Plus className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                    <span className="text-xs text-blue-600 font-medium">
+                                      Tambah
+                                    </span>
+                                  </>
+                                ) : (
+                                  <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                                )}
+                              </div>
                             </div>
                           </button>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-xs text-gray-500 text-center py-2">
-                        {searchTerm
-                          ? "Produk tidak ditemukan"
-                          : "Semua produk sudah dipilih"}
-                      </p>
+                      <div className="text-center py-4 bg-gray-50 rounded border">
+                        {searchTerm ? (
+                          <div className="space-y-1">
+                            <Search className="w-6 h-6 text-gray-400 mx-auto" />
+                            <p className="text-sm text-gray-600">
+                              Produk tidak ditemukan
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Tidak ada produk yang cocok dengan "{searchTerm}"
+                            </p>
+                            <button
+                              onClick={() => setSearchTerm("")}
+                              className="text-xs text-blue-600 hover:text-blue-700 mt-2"
+                            >
+                              Tampilkan semua produk
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <Package className="w-6 h-6 text-gray-400 mx-auto" />
+                            <p className="text-sm text-gray-600">
+                              Semua produk sudah dipilih
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              Tidak ada produk lain yang bisa ditambahkan
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )}
 
-                    <button
-                      onClick={() => {
-                        setShowAddProduct(false);
-                        setSearchTerm("");
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors text-xs"
-                    >
-                      Tutup
-                    </button>
+                    {availableProducts.length > 0 && (
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>
+                          Menampilkan {availableProducts.length} produk tersedia
+                        </span>
+                        {searchTerm && (
+                          <button
+                            onClick={() => setSearchTerm("")}
+                            className="text-blue-600 hover:text-blue-700"
+                          >
+                            Hapus pencarian
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1034,29 +1231,6 @@ export default function LoanDetailModal({
                                               </span>
                                             </span>
                                           </div>
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-xs text-gray-500 font-mono">
-                                              ID: {unit.unit_id}
-                                            </span>
-                                            <button
-                                              onClick={() =>
-                                                copyToClipboard(
-                                                  unit.unit_id,
-                                                  unit.unit_id
-                                                )
-                                              }
-                                              className="p-1 hover:bg-gray-200 rounded transition-colors"
-                                              title="Copy Unit ID"
-                                            >
-                                              <Copy
-                                                className={`w-3 h-3 ${
-                                                  copiedUnitId === unit.unit_id
-                                                    ? "text-green-600"
-                                                    : "text-gray-400"
-                                                }`}
-                                              />
-                                            </button>
-                                          </div>
                                         </div>
                                         <div className="text-xs text-gray-500 bg-white px-2 py-1 rounded border">
                                           Unit #{unitIndex + 1}
@@ -1207,6 +1381,24 @@ export default function LoanDetailModal({
             {isEditing ? (
               <>
                 <button
+                  onClick={handleSaveClick}
+                  disabled={isUpdating}
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  {isUpdating ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3 h-3" />
+                      Simpan Perubahan
+                    </>
+                  )}
+                </button>
+
+                <button
                   onClick={handleApproveWithUnits}
                   disabled={
                     isApproving ||
@@ -1223,12 +1415,13 @@ export default function LoanDetailModal({
                 >
                   {isApproving ? (
                     <>
-                      <span className="loading loading-spinner loading-xs"></span>{" "}
+                      <span className="loading loading-spinner loading-xs"></span>
                       Memproses...
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="w-3 h-3" /> Setujui Peminjaman
+                      <CheckCircle className="w-3 h-3" />
+                      Setujui Peminjaman
                     </>
                   )}
                 </button>
@@ -1244,15 +1437,13 @@ export default function LoanDetailModal({
             ) : (
               displayLoan.status === "REQUESTED" &&
               !isUpdating && (
-                <>
-                  <button
-                    onClick={handleEditClick}
-                    disabled={isApproving}
-                    className="flex items-center gap-1 px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-sm font-medium disabled:opacity-50"
-                  >
-                    <CheckCircle className="w-3 h-3" /> Pilih unit & Setujui
-                  </button>
-                </>
+                <button
+                  onClick={handleEditClick}
+                  disabled={isApproving}
+                  className="flex items-center gap-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  <Edit className="w-3 h-3" /> Edit Perangkat
+                </button>
               )
             )}
           </div>

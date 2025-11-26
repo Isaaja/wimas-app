@@ -5,6 +5,7 @@ interface ProductTableProps {
   products: Product[];
   currentPage: number;
   totalPages: number;
+  itemsPerPage?: number;
   onEdit?: (product: Product) => void;
   onDelete?: (product: Product) => void;
   onPageChange: (page: number) => void;
@@ -14,10 +15,15 @@ export default function ProductsTable({
   products,
   currentPage,
   totalPages,
+  itemsPerPage = 4,
   onEdit,
   onDelete,
   onPageChange,
 }: ProductTableProps) {
+  const getStartingNumber = (index: number) => {
+    return (currentPage - 1) * itemsPerPage + index + 1;
+  };
+
   const getAvailableCount = (product: Product) => {
     return (
       product.units?.filter(
@@ -46,10 +52,12 @@ export default function ProductsTable({
             <tbody>
               {products.map((product: Product, index: number) => {
                 const availableCount = getAvailableCount(product);
+                const itemNumber = getStartingNumber(index);
+
                 return (
                   <tr key={product.product_id} className="hover">
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      {index + 1}
+                      {itemNumber}
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
                       <div className="avatar flex justify-center">
@@ -71,22 +79,22 @@ export default function ProductsTable({
                       </div>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <div className="font-bold text-sm lg:text-base max-w-[150px] lg:max-w-[200px] truncate mx-auto">
+                      <div className="font-bold text-xs lg:text-sm max-w-[150px] lg:max-w-[200px] truncate mx-auto">
                         {product.product_name}
                       </div>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {product.category?.category_name || "-"}
                       </span>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {product.quantity}
                       </span>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {availableCount}
                       </span>
                     </td>
@@ -158,113 +166,62 @@ export default function ProductsTable({
 
       {/* Mobile Cards */}
       <div className="lg:hidden space-y-4">
-        {products.map((product: Product, index: number) => (
-          <div
-            key={product.product_id}
-            className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-5 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold shadow-lg">
-                    #{index + 1}
+        {products.map((product: Product, index: number) => {
+          const itemNumber = getStartingNumber(index);
+
+          return (
+            <div
+              key={product.product_id}
+              className="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-lg border border-gray-100 p-5 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+            >
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold shadow-lg">
+                      #{itemNumber}
+                    </div>
+                  </div>
+                  <div className="avatar">
+                    <div className="mask w-14 h-14 rounded-xl border-2 border-white shadow-lg">
+                      {product.product_image ? (
+                        <Image
+                          src={product.product_image}
+                          width={56}
+                          height={56}
+                          alt={product.product_name || "Product image"}
+                          className="object-cover w-full h-full rounded-xl"
+                        />
+                      ) : (
+                        <div className="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400 rounded-xl">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="avatar">
-                  <div className="mask w-14 h-14 rounded-xl border-2 border-white shadow-lg">
-                    {product.product_image ? (
-                      <Image
-                        src={product.product_image}
-                        width={56}
-                        height={56}
-                        alt={product.product_name || "Product image"}
-                        className="object-cover w-full h-full rounded-xl"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 text-gray-400 rounded-xl">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
 
-              <div className="flex gap-2">
-                <button
-                  className="btn btn-circle btn-sm bg-white/80 backdrop-blur-sm  hover:bg-blue-50 border-blue-300 text-blue-600 transition-all duration-200 shadow-sm"
-                  onClick={() => onEdit?.(product)}
-                  title="Edit"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div className="flex gap-2">
+                  <button
+                    className="btn btn-circle btn-sm bg-white/80 backdrop-blur-sm  hover:bg-blue-50 border-blue-300 text-blue-600 transition-all duration-200 shadow-sm"
+                    onClick={() => onEdit?.(product)}
+                    title="Edit"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </button>
-                <button
-                  className="btn btn-circle btn-sm bg-white/80 backdrop-blur-sm  hover:bg-red-50 border-red-300 text-red-600 transition-all duration-200 shadow-sm"
-                  onClick={() => onDelete?.(product)}
-                  title="Hapus"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
-                Nama Produk
-              </div>
-              <div className="font-bold text-gray-900 text-lg truncate bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text">
-                {product.product_name}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 mb-1">
-                    Kategori
-                  </div>
-                  <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-blue-500"
+                      className="h-4 w-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -273,21 +230,18 @@ export default function ProductsTable({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                       />
                     </svg>
-                    {product.category?.category_name || "-"}
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 mb-1">
-                    Jumlah
-                  </div>
-                  <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                  </button>
+                  <button
+                    className="btn btn-circle btn-sm bg-white/80 backdrop-blur-sm  hover:bg-red-50 border-red-300 text-red-600 transition-all duration-200 shadow-sm"
+                    onClick={() => onDelete?.(product)}
+                    title="Hapus"
+                  >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-green-500"
+                      className="h-4 w-4"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -296,66 +250,124 @@ export default function ProductsTable({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                       />
                     </svg>
-                    {product.quantity}
-                  </div>
+                  </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 mb-1">
-                    Ketersediaan
+              <div className="mb-4">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+                  Nama Produk
+                </div>
+                <div className="font-bold text-gray-900 text-lg truncate bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text">
+                  {product.product_name}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+                    <div className="text-xs font-semibold text-gray-500 mb-1">
+                      Kategori
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-blue-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                        />
+                      </svg>
+                      {product.category?.category_name || "-"}
+                    </div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 text-purple-500"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-                      />
-                    </svg>
-                    {product.product_avaible}
+
+                  <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+                    <div className="text-xs font-semibold text-gray-500 mb-1">
+                      Jumlah
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-green-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {product.quantity}
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
-                  <div className="text-xs font-semibold text-gray-500 mb-1">
-                    Status
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+                    <div className="text-xs font-semibold text-gray-500 mb-1">
+                      Ketersediaan
+                    </div>
+                    <div className="text-sm font-medium text-gray-900 flex items-center gap-1">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 text-purple-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                        />
+                      </svg>
+                      {product.product_avaible}
+                    </div>
                   </div>
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                      product.product_avaible === 0
-                        ? "bg-gradient-to-r from-red-100 to-red-50 text-red-700 border border-red-200"
-                        : "bg-gradient-to-r from-green-100 to-emerald-50 text-green-700 border border-green-200"
-                    }`}
-                  >
-                    {product.product_avaible === 0 ? (
-                      <>
-                        <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                        Tidak Tersedia
-                      </>
-                    ) : (
-                      <>
-                        <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                        Tersedia
-                      </>
-                    )}
-                  </span>
+
+                  <div className="bg-white rounded-xl p-3 border border-gray-100 shadow-sm">
+                    <div className="text-xs font-semibold text-gray-500 mb-1">
+                      Status
+                    </div>
+                    <span
+                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                        product.product_avaible === 0
+                          ? "bg-gradient-to-r from-red-100 to-red-50 text-red-700 border border-red-200"
+                          : "bg-gradient-to-r from-green-100 to-emerald-50 text-green-700 border border-green-200"
+                      }`}
+                    >
+                      {product.product_avaible === 0 ? (
+                        <>
+                          <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
+                          Tidak Tersedia
+                        </>
+                      ) : (
+                        <>
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                          Tersedia
+                        </>
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Pagination */}

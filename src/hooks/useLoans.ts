@@ -229,13 +229,20 @@ const createOptimisticLoan = (
 // ==================== NEW UTILITY FUNCTIONS ====================
 
 export const hasUnitAssignments = (loan: Loan): boolean => {
+  if (!loan || !loan.items || !Array.isArray(loan.items)) {
+    return false;
+  }
   return loan.items.some((item) => item.unit_id != null);
 };
 
 export const getProductQuantities = (loan: Loan): Record<string, number> => {
+  if (!loan || !loan.items || !Array.isArray(loan.items)) {
+    return {};
+  }
+
   if (loan.status === "REQUESTED") {
     return loan.items.reduce((acc: Record<string, number>, item) => {
-      acc[item.product_id] = item.quantity;
+      acc[item.product_id] = item.quantity || 0;
       return acc;
     }, {});
   } else {
@@ -246,7 +253,11 @@ export const getProductQuantities = (loan: Loan): Record<string, number> => {
   }
 };
 
-export const getUniqueProducts = (loan: Loan): LoanProduct[] => {
+export const getUniqueProducts = (loan: Loan | LoanHistory): LoanProduct[] => {
+  if (!loan || !loan.items || !Array.isArray(loan.items)) {
+    return [];
+  }
+
   if (loan.status === "REQUESTED") {
     return loan.items;
   } else {
@@ -265,6 +276,10 @@ export const getUniqueProducts = (loan: Loan): LoanProduct[] => {
 };
 
 export const getLoanItemsByStatus = (loan: Loan): LoanProduct[] => {
+  if (!loan || !loan.items || !Array.isArray(loan.items)) {
+    return [];
+  }
+
   if (loan.status === "REQUESTED") {
     return loan.items.map((item) => ({
       ...item,
@@ -280,6 +295,10 @@ export const getLoanItemsByStatus = (loan: Loan): LoanProduct[] => {
 export const getAvailableUnitsCount = (
   items: LoanProduct[]
 ): Record<string, number> => {
+  if (!items || !Array.isArray(items)) {
+    return {};
+  }
+
   return items.reduce((acc: Record<string, number>, item) => {
     if (item.unit_id) {
       const productUnits = items.filter(
@@ -300,8 +319,16 @@ export const transformLoanItems = (
   totalItems: number;
   productCount: number;
 } => {
+  if (!loan) {
+    return {
+      items: [],
+      totalItems: 0,
+      productCount: 0,
+    };
+  }
+
   const items = getLoanItemsByStatus(loan);
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
   const productCount = new Set(items.map((item) => item.product_id)).size;
 
   return {
@@ -838,6 +865,7 @@ export function useUpdateLoanItems() {
       );
       const previousLoans = queryClient.getQueryData(LOAN_QUERY_KEYS.lists());
 
+      // Optimistic update
       queryClient.setQueryData(
         LOAN_QUERY_KEYS.detail(loanId),
         (old: Loan | undefined) => {
@@ -845,11 +873,13 @@ export function useUpdateLoanItems() {
           return {
             ...old,
             items: items.map((item) => ({
-              product_id: item.product_id,
-              quantity: item.quantity,
-              product_name: old.items.find(
-                (i: any) => i.product_id === item.product_id
-              )?.product_name,
+              ...item,
+              product_name:
+                old.items.find((i) => i.product_id === item.product_id)
+                  ?.product_name || "Loading...",
+              product_image: old.items.find(
+                (i) => i.product_id === item.product_id
+              )?.product_image,
             })),
             updated_at: new Date().toISOString(),
           };
@@ -860,14 +890,7 @@ export function useUpdateLoanItems() {
     },
     onSuccess: (data: Loan, variables) => {
       queryClient.setQueryData(LOAN_QUERY_KEYS.detail(variables.loanId), data);
-
-      queryClient.setQueryData(
-        LOAN_QUERY_KEYS.lists(),
-        (old: Loan[] | undefined = []) =>
-          old.map((loan) => (loan.loan_id === data.loan_id ? data : loan))
-      );
-
-      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.history() });
+      queryClient.invalidateQueries({ queryKey: LOAN_QUERY_KEYS.lists() });
     },
     onError: (err: Error, variables, context: any) => {
       if (context?.previousLoan) {
@@ -1134,7 +1157,9 @@ export function useRealtimeLoans(interval: number = 30000) {
 }
 
 export const getProductUnits = (loan: Loan, productId: string): any[] => {
-  if (!loan.items) return [];
+  if (!loan || !loan.items || !Array.isArray(loan.items)) {
+    return [];
+  }
 
   const productItems = loan.items.filter(
     (item) => item.product_id === productId
@@ -1150,6 +1175,10 @@ export const getProductUnits = (loan: Loan, productId: string): any[] => {
     }));
   }
 
+  if (loan.status === "REQUESTED") {
+    return [];
+  }
+
   const quantity = getProductQuantities(loan)[productId] || 0;
   return Array.from({ length: quantity }, (_, index) => ({
     unit_id: `unit-${productId}-${index + 1}`,
@@ -1159,9 +1188,11 @@ export const getProductUnits = (loan: Loan, productId: string): any[] => {
 };
 
 export const productHasUnits = (loan: Loan, productId: string): boolean => {
-  if (!loan.items) return false;
+  if (!loan || !loan.items || !Array.isArray(loan.items)) {
+    return false;
+  }
   return loan.items.some(
-    (item) => item.product_id === productId && item.unit_id
+    (item) => item.product_id === productId && item.unit_id != null
   );
 };
 
