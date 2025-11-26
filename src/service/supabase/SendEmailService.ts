@@ -68,47 +68,58 @@ export async function sendEmail({
       .join("");
 
     const htmlTemplate = `
-      <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6;">
-        <p>Dear Admin,</p>
+<div style="font-family: 'Segoe UI', Arial, sans-serif; color: #333; line-height: 1.6; background-color:#f9f9f9; padding:20px;">
+  <div style="max-width:600px; margin:0 auto; background-color:#fff; border-radius:8px; overflow:hidden; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
+    
+    <div style="background-color:#1D4ED8; color:white; padding:16px; text-align:center;">
+      <h2 style="margin:0; font-size:20px;">Detail ${status} Peminjaman Perangkat</h2>
+    </div>
 
-        <p>Berikut detail ${status} perangkat yang baru diterima:</p>
+    <div style="padding:16px;">
+      <p>Halo Admin,</p>
+      <p>Berikut detail <strong>${status}</strong> perangkat yang baru diterima:</p>
 
-        <h3 style="margin-bottom: 8px;">👥 Peminjam:</h3>
-        <ul style="margin-top: 0; padding-left: 20px;">
+      <h3 style="margin-top:20px; margin-bottom:8px; color:#1D4ED8;">👥 Peminjam</h3>
+      <div style="background-color:#F3F4F6; padding:12px; border-radius:6px;">
+        <ul style="margin:0; padding-left:20px;">
           ${borrowerList}
         </ul>
+      </div>
 
-        <h3 style="margin-bottom: 8px;">📦 Barang yang dipinjam:</h3>
-        <table style="border-collapse: collapse; width: 100%; margin-top: 8px;">
+      <h3 style="margin-top:20px; margin-bottom:8px; color:#1D4ED8;">📦 Barang yang Dipinjam</h3>
+      <div style="overflow-x:auto;">
+        <table style="border-collapse: collapse; width: 100%;">
           <thead>
-            <tr style="background-color: #f5f5f5;">
-              <th style="padding: 8px 10px; border: 1px solid #ddd;">Nama Barang</th>
-              <th style="padding: 8px 10px; border: 1px solid #ddd;">Jumlah</th>
-              <th style="padding: 8px 10px; border: 1px solid #ddd;">Kategori</th>
+            <tr style="background-color: #E0E7FF; text-align:left;">
+              <th style="padding: 10px; border: 1px solid #ddd;">Nama Barang</th>
+              <th style="padding: 10px; border: 1px solid #ddd; text-align:center;">Jumlah</th>
+              <th style="padding: 10px; border: 1px solid #ddd;">Kategori</th>
             </tr>
           </thead>
           <tbody>
             ${itemList}
           </tbody>
         </table>
-
-        <p style="margin-top: 16px;">
-          Mohon untuk meninjau dan memberikan persetujuan melalui dashboard admin.
-        </p>
-
-        <p>Terima kasih atas perhatian dan kerjasamanya.</p>
-
-        <p>Salam hormat,<br/>
-        <strong>Sistem Peminjaman Perangkat</strong><br/>
-        Isa Iant Maulana</p>
-
-        <hr style="margin-top: 30px; border: none; border-top: 1px solid #ddd;" />
-
-        <p style="font-size: 12px; color: #666;">
-          Email ini dikirim secara otomatis oleh sistem. Mohon tidak membalas email ini secara langsung.
-        </p>
       </div>
-    `;
+
+      <p style="margin-top:16px;">
+        Mohon untuk meninjau dan memberikan persetujuan melalui dashboard admin.
+      </p>
+
+      <p>Terima kasih atas perhatian dan kerjasamanya.</p>
+
+      <p>Salam hormat,<br/>
+      <strong>Sistem Peminjaman Perangkat</strong><br/>
+      Isa Iant Maulana</p>
+    </div>
+
+    <div style="background-color:#F3F4F6; padding:12px; text-align:center; font-size:12px; color:#666;">
+      Email ini dikirim secara otomatis oleh sistem. Mohon tidak membalas email ini secara langsung.
+    </div>
+    
+  </div>
+</div>
+`;
 
     const data = await resend.emails.send({
       from: "isaiantmaulana@resend.dev",

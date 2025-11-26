@@ -56,7 +56,7 @@ export async function addProduct(payload: any) {
     product_image,
     quantity,
     category_id,
-    product_avaible,
+    product_available,
     units,
   } = payload;
 
@@ -80,7 +80,7 @@ export async function addProduct(payload: any) {
         product_image: defaultImage,
         quantity,
         category_id,
-        product_avaible,
+        product_available,
       },
     });
 
@@ -110,7 +110,7 @@ export async function updateProductById(
     product_image?: string;
     quantity?: number;
     category_id?: string;
-    product_avaible?: number;
+    product_available?: number;
     units?: { serialNumber: string }[];
   }
 ) {
@@ -209,7 +209,7 @@ export async function updateUnitCondition(
       await prisma.product.update({
         where: { product_id: unit.product_id },
         data: {
-          product_avaible: {
+          product_available: {
             increment: 1,
           },
         },
@@ -241,14 +241,14 @@ export async function deleteUnit(unit_id: string) {
 
     const newAvailable =
       unit.status === "AVAILABLE"
-        ? Math.max(0, unit.product.product_avaible - 1)
-        : unit.product.product_avaible;
+        ? Math.max(0, unit.product.product_available - 1)
+        : unit.product.product_available;
 
     await prisma.product.update({
       where: { product_id: unit.product_id },
       data: {
         quantity: newQuantity,
-        product_avaible: newAvailable,
+        product_available: newAvailable,
       },
     });
 

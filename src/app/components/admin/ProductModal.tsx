@@ -31,7 +31,7 @@ export default function ProductModal({
     product_name: "",
     product_image: "",
     quantity: 0,
-    product_avaible: 1,
+    product_available: 1,
     units: [],
   });
 
@@ -58,7 +58,7 @@ export default function ProductModal({
         product_name: productToEdit.product_name,
         product_image: productToEdit.product_image || "",
         quantity: productToEdit.quantity,
-        product_avaible: productToEdit.product_avaible,
+        product_available: productToEdit.product_available,
         units:
           productToEdit.units?.map((u) => ({
             serialNumber: u.serialNumber,
@@ -70,7 +70,7 @@ export default function ProductModal({
         product_name: "",
         product_image: "",
         quantity: 0,
-        product_avaible: 1,
+        product_available: 1,
         units: [],
       });
     }

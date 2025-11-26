@@ -37,7 +37,7 @@ export default function CartStep1({
                   Jumlah: <span className="font-semibold">{item.quantity}</span>
                 </p>
                 <p className="text-xs text-gray-500">
-                  Stock tersedia: {item.product_avaible}
+                  Stock tersedia: {item.product_available}
                 </p>
               </div>
             </div>
@@ -60,7 +60,7 @@ export default function CartStep1({
                   onClick={() =>
                     onUpdateQty(item.product_id, item.quantity + 1)
                   }
-                  disabled={item.quantity >= item.product_avaible}
+                  disabled={item.quantity >= item.product_available}
                 >
                   +
                 </button>

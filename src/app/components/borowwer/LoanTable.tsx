@@ -160,12 +160,24 @@ export default function LoanTable({
 
   const getSptFileUrl = (sptFile: string | null | undefined): string | null => {
     if (!sptFile) return null;
+
     if (sptFile.startsWith("http")) return sptFile;
-    if (sptFile.startsWith("public/")) {
-      return sptFile.replace("public/", "/");
+
+    if (sptFile.startsWith("uploads/")) {
+      return `/uploads/spt/${sptFile.replace("uploads/", "")}`;
     }
-    if (sptFile.startsWith("/")) return sptFile;
-    return `/${sptFile}`;
+
+    if (sptFile.startsWith("public/")) {
+      const cleaned = sptFile.replace("public/", "").replace("uploads/", "");
+      return `/uploads/spt/${cleaned}`;
+    }
+
+    if (sptFile.startsWith("/")) {
+      const cleaned = sptFile.replace("/", "").replace("uploads/", "");
+      return `/uploads/spt/${cleaned}`;
+    }
+
+    return `/uploads/spt/${sptFile}`;
   };
 
   const getMainBorrower = (loan: Loan | LoanHistory) => {

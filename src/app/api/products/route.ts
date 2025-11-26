@@ -48,7 +48,7 @@ export async function POST(req: Request) {
       product_image,
       quantity,
       category_id,
-      product_avaible,
+      product_available,
       units,
     } = body;
 
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
       product_image,
       quantity,
       category_id,
-      product_avaible,
+      product_available,
       units,
     });
 

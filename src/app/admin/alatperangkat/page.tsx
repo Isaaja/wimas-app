@@ -12,13 +12,14 @@ import {
 } from "@/hooks/useProducts";
 import ProductTable from "@/app/components/admin/ProductsTable";
 import DamagedItemsTable from "@/app/components/admin/DamagedItemsTable";
+import LoanedItemsTable from "@/app/components/admin/LoanedItemsTable";
 import ProductModal from "@/app/components/admin/ProductModal";
 import debounce from "lodash.debounce";
 import { toast } from "react-toastify";
 import Loading from "@/app/components/common/Loading";
 import Swal from "sweetalert2";
 
-type TabType = "products" | "damaged";
+type TabType = "products" | "damaged" | "loaned";
 
 export default function AlatPerangkatPage() {
   const { data: products, isLoading, isError, error } = useProducts();
@@ -35,13 +36,12 @@ export default function AlatPerangkatPage() {
   const deleteUnit = useDeleteUnit();
   const itemsPerPage = 4;
 
-  const debouncedSearch = useCallback(
-    debounce((term: string) => {
+  const debouncedSearch = useMemo(() => {
+    return debounce((term: string) => {
       setSearchTerm(term.toLowerCase());
       setCurrentPage(1);
-    }, 300),
-    []
-  );
+    }, 300);
+  }, [setSearchTerm, setCurrentPage]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     debouncedSearch(e.target.value);
@@ -49,7 +49,6 @@ export default function AlatPerangkatPage() {
 
   const { paginatedProducts, totalPages } = useMemo(() => {
     if (!products) return { paginatedProducts: [], totalPages: 0 };
-
     const filtered = searchTerm
       ? products.filter((p) =>
           p.product_name.toLowerCase().includes(searchTerm)
@@ -204,7 +203,7 @@ export default function AlatPerangkatPage() {
           <div className="flex lg:flex-row flex-col w-full items-center justify-between mt-2 gap-2">
             <div className="flex space-x-2 bg-gray-100 rounded-lg">
               <button
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-md lg:text-sm my-2 font-medium transition-all duration-200 text-xs ${
                   activeTab === "products"
                     ? "text-blue-600 border-b border-blue-600 bg-white/80 shadow-md"
                     : "text-gray-400 hover:text-black hover:border-b"
@@ -214,7 +213,17 @@ export default function AlatPerangkatPage() {
                 Semua Produk
               </button>
               <button
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                className={`px-4 py-2 rounded-md lg:text-sm my-2 font-medium transition-all duration-200 text-xs ${
+                  activeTab === "loaned"
+                    ? "text-green-600 border-b border-green-600 bg-white/80 shadow-md"
+                    : "text-gray-400 hover:text-black hover:border-b"
+                }`}
+                onClick={() => setActiveTab("loaned")}
+              >
+                Barang Dipinjam
+              </button>
+              <button
+                className={`px-4 py-2 rounded-md lg:text-sm my-2 font-medium transition-all duration-200 text-xs ${
                   activeTab === "damaged"
                     ? "text-red-600 border-b border-red-600 bg-white/80 shadow-md"
                     : "text-gray-400 hover:text-black hover:border-b"
@@ -282,8 +291,14 @@ export default function AlatPerangkatPage() {
             onPageChange={handlePageChange}
           />
         )
-      ) : (
+      ) : activeTab === "damaged" ? (
         <DamagedItemsTable
+          products={products || []}
+          onRepair={handleRepair}
+          onRetire={handleRetire}
+        />
+      ) : (
+        <LoanedItemsTable
           products={products || []}
           onRepair={handleRepair}
           onRetire={handleRetire}

@@ -79,36 +79,34 @@ export default function ProductsTable({
                       </div>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <div className="font-bold text-sm lg:text-base max-w-[150px] lg:max-w-[200px] truncate mx-auto">
+                      <div className="font-bold text-xs lg:text-sm max-w-[150px] lg:max-w-[200px] truncate mx-auto">
                         {product.product_name}
                       </div>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {product.category?.category_name || "-"}
                       </span>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {product.quantity}
                       </span>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
-                      <span className="text-sm lg:text-base">
+                      <span className="text-xs lg:text-sm">
                         {availableCount}
                       </span>
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
                       <span
                         className={`badge border-0 text-xs lg:text-sm ${
-                          product.product_avaible === 0
+                          availableCount === 0
                             ? "bg-[#FF8282] text-[#740938]"
                             : "bg-[#B8F1B0] text-[#215B63]"
                         }`}
                       >
-                        {product.product_avaible === 0
-                          ? "Tidak Tersedia"
-                          : "Tersedia"}
+                        {availableCount === 0 ? "Tidak Tersedia" : "Tersedia"}
                       </span>
                     </td>
 
@@ -335,7 +333,7 @@ export default function ProductsTable({
                           d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
                         />
                       </svg>
-                      {product.product_avaible}
+                      {product.product_available}
                     </div>
                   </div>
 
@@ -345,12 +343,12 @@ export default function ProductsTable({
                     </div>
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                        product.product_avaible === 0
+                        product.product_available === 0
                           ? "bg-gradient-to-r from-red-100 to-red-50 text-red-700 border border-red-200"
                           : "bg-gradient-to-r from-green-100 to-emerald-50 text-green-700 border border-green-200"
                       }`}
                     >
-                      {product.product_avaible === 0 ? (
+                      {product.product_available === 0 ? (
                         <>
                           <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                           Tidak Tersedia
