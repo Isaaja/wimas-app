@@ -156,12 +156,29 @@ export default function LoanDetailModal({
 
   const getSptFileUrl = (sptFile: string | null | undefined): string | null => {
     if (!sptFile) return null;
+
+    // Jika sudah full URL
     if (sptFile.startsWith("http")) return sptFile;
-    if (sptFile.startsWith("public/")) {
-      return sptFile.replace("public/", "/");
+
+    // Jika path relatif namun sudah di dalam "uploads/"
+    if (sptFile.startsWith("uploads/")) {
+      return `/uploads/spt/${sptFile.replace("uploads/", "")}`;
     }
-    if (sptFile.startsWith("/")) return sptFile;
-    return `/${sptFile}`;
+
+    // Jika berasal dari public/
+    if (sptFile.startsWith("public/")) {
+      const cleaned = sptFile.replace("public/", "").replace("uploads/", "");
+      return `/uploads/spt/${cleaned}`;
+    }
+
+    // Jika dimulai dari /
+    if (sptFile.startsWith("/")) {
+      const cleaned = sptFile.replace("/", "").replace("uploads/", "");
+      return `/uploads/spt/${cleaned}`;
+    }
+
+    // Default (nama file biasa)
+    return `/uploads/spt/${sptFile}`;
   };
 
   const getAccessToken = (): string | null => {
@@ -912,7 +929,7 @@ export default function LoanDetailModal({
                               Produk tidak ditemukan
                             </p>
                             <p className="text-xs text-gray-500">
-                              Tidak ada produk yang cocok dengan "{searchTerm}"
+                              Tidak ada produk yang cocok dengan {searchTerm}
                             </p>
                             <button
                               onClick={() => setSearchTerm("")}
