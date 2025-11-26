@@ -80,11 +80,10 @@ export async function approveLoanWithUnits(
   unitAssignments: { product_id: string; unit_ids: string[] }[]
 ) {
   return prisma.$transaction(async (tx) => {
+    // Ambil loan beserta request items
     const loan = await tx.loan.findUnique({
       where: { loan_id: loanId },
-      include: {
-        requestItems: true,
-      },
+      include: { requestItems: true },
     });
 
     if (!loan) throw new NotFoundError("Loan not found");
@@ -93,6 +92,7 @@ export async function approveLoanWithUnits(
       throw new InvariantError("Loan sudah diproses sebelumnya");
     }
 
+    // Validasi setiap request item
     for (const req of loan.requestItems) {
       const assignment = unitAssignments.find(
         (a) => a.product_id === req.product_id
@@ -110,29 +110,25 @@ export async function approveLoanWithUnits(
         );
       }
 
+      // Validasi setiap unit
       for (const unitId of assignment.unit_ids) {
         const unit = await tx.productUnit.findUnique({
           where: { unit_id: unitId },
         });
 
-        if (!unit) {
-          throw new NotFoundError(`Unit ${unitId} tidak ditemukan`);
-        }
-
-        if (unit.product_id !== req.product_id) {
+        if (!unit) throw new NotFoundError(`Unit ${unitId} tidak ditemukan`);
+        if (unit.product_id !== req.product_id)
           throw new InvariantError(
             `Unit ${unitId} bukan milik product ${req.product_id}`
           );
-        }
-
-        if (unit.status !== "AVAILABLE") {
+        if (unit.status !== "AVAILABLE")
           throw new InvariantError(
             `Unit ${unitId} tidak tersedia (Status: ${unit.status})`
           );
-        }
       }
     }
 
+    // Proses peminjaman: buat loanItem & update status unit
     for (const assignment of unitAssignments) {
       for (const unitId of assignment.unit_ids) {
         await tx.loanItem.create({
@@ -149,18 +145,24 @@ export async function approveLoanWithUnits(
           data: { status: "LOANED" },
         });
       }
+
+      // **Kurangi quantity product sesuai jumlah unit dipinjam**
+      await tx.product.update({
+        where: { product_id: assignment.product_id },
+        data: {
+          quantity: { decrement: assignment.unit_ids.length },
+        },
+      });
     }
 
+    // Update status loan menjadi APPROVED
     return tx.loan.update({
       where: { loan_id: loanId },
       data: { status: LoanStatus.APPROVED },
       include: {
         borrower: true,
         items: {
-          include: {
-            product: true,
-            unit: true,
-          },
+          include: { product: true, unit: true },
         },
         report: true,
       },

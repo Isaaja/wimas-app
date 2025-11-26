@@ -101,14 +101,12 @@ export default function ProductsTable({
                     <td className="border-t border-black/10 text-center py-3 px-2">
                       <span
                         className={`badge border-0 text-xs lg:text-sm ${
-                          product.product_avaible === 0
+                          availableCount === 0
                             ? "bg-[#FF8282] text-[#740938]"
                             : "bg-[#B8F1B0] text-[#215B63]"
                         }`}
                       >
-                        {product.product_avaible === 0
-                          ? "Tidak Tersedia"
-                          : "Tersedia"}
+                        {availableCount === 0 ? "Tidak Tersedia" : "Tersedia"}
                       </span>
                     </td>
 

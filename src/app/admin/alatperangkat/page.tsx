@@ -50,7 +50,6 @@ export default function AlatPerangkatPage() {
 
   const { paginatedProducts, totalPages } = useMemo(() => {
     if (!products) return { paginatedProducts: [], totalPages: 0 };
-
     const filtered = searchTerm
       ? products.filter((p) =>
           p.product_name.toLowerCase().includes(searchTerm)
