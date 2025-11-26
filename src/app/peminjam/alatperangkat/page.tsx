@@ -15,8 +15,17 @@ import { useRouter } from "next/navigation";
 
 function sortProductsWithOutOfStockLast(products: any[]): any[] {
   return [...products].sort((a, b) => {
-    const aAvailable = a.product_avaible || 0;
-    const bAvailable = b.product_avaible || 0;
+    const calculateAvailable = (product: any) => {
+      if (product.units && product.units.length > 0) {
+        return product.units.filter(
+          (u: any) => u.status === "AVAILABLE" && u.condition === "GOOD"
+        ).length;
+      }
+      return product.product_avaible || 0;
+    };
+
+    const aAvailable = calculateAvailable(a);
+    const bAvailable = calculateAvailable(b);
 
     if (aAvailable === 0 && bAvailable > 0) return 1;
     if (bAvailable === 0 && aAvailable > 0) return -1;

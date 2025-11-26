@@ -18,10 +18,14 @@ const calculateAvailableUnits = (
   units: any[] = [],
   product_avaible?: number
 ): number => {
-  if (product_avaible !== undefined) {
-    return product_avaible;
+  if (units && units.length > 0) {
+    const actuallyAvailable = units.filter(
+      (unit) => unit.status === "AVAILABLE" && unit.condition === "GOOD"
+    ).length;
+    return actuallyAvailable;
   }
-  return units.filter((unit) => unit.status === "AVAILABLE").length;
+
+  return product_avaible || 0;
 };
 
 export default function ProductCard({
