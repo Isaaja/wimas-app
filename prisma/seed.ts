@@ -527,7 +527,7 @@ async function seedProducts() {
     {
       product_id: "cb5iw1qnl41gyu1en3nqqjph",
       product_name: "Antenna Dipole 200 MHz – 500 MHz",
-      product_image: null,
+      product_image: "/uploads/products/200-500-MHz-1Y05050-MVDP200X3.png.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
