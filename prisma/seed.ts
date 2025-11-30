@@ -527,7 +527,7 @@ async function seedProducts() {
     {
       product_id: "cb5iw1qnl41gyu1en3nqqjph",
       product_name: "Antenna Dipole 200 MHz – 500 MHz",
-      product_image: "/uploads/products/200-500-MHz-1Y05050-MVDP200X3.png.webp",
+      product_image: "/uploads/products/200-500-MHz-1Y05050-MVDP200X3.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -567,7 +567,7 @@ async function seedProducts() {
     {
       product_id: "cjotyeuhj0hgjpkvv4zovesl",
       product_name: "Antenna High Gain",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-High-Gain.webp",
       quantity: 4,
       product_available: 4,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -577,7 +577,7 @@ async function seedProducts() {
     {
       product_id: "ctpv13fr8loknid9ezlmypsj",
       product_name: "Antena Horn > 2 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Antena-Horn-2-GHz.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -587,7 +587,7 @@ async function seedProducts() {
     {
       product_id: "cinovoiqezxpxme9mg87dy9s",
       product_name: "Antena Horn 1 - 18 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Antena-Horn-2-GHz.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -597,7 +597,7 @@ async function seedProducts() {
     {
       product_id: "c0ijpo2l77vs3af2bkfavqsb",
       product_name: "Antenna Horn SHF / EHF 15 – 40 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Horn-SHF-EHF-15-40.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -607,7 +607,7 @@ async function seedProducts() {
     {
       product_id: "cijff8muua8r2ktau2kjerdi",
       product_name: "Antenna Larsen VHF",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Larsen-VHF.webp",
       quantity: 4,
       product_available: 4,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -617,7 +617,7 @@ async function seedProducts() {
     {
       product_id: "c1mscwva0vkeklyez4oszsmv",
       product_name: "Antenna Frekuensi Counter",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Frekuensi-Counter.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -627,7 +627,8 @@ async function seedProducts() {
     {
       product_id: "cjtmdiv463bpaxx7cafcsmjb",
       product_name: "Antenna Digital Scanner Trunk Tracker",
-      product_image: null,
+      product_image:
+        "/uploads/products/Antenna-Digital-Scanner-Trunk-Tracker.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -647,7 +648,7 @@ async function seedProducts() {
     {
       product_id: "c6ak2i661g9d7rbmalnpefl8",
       product_name: "Antenna Loop H-Field Passive",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Loop-H-Field-Passive.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -657,7 +658,7 @@ async function seedProducts() {
     {
       product_id: "cp2mu83xl8sks8jt65gf21sa",
       product_name: "Antenna Mini Biconical",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Mini-Biconical.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -667,7 +668,7 @@ async function seedProducts() {
     {
       product_id: "c6ssexdf0vu58in1pflk7erj",
       product_name: "Antenna Broadband",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Broadband.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -677,7 +678,7 @@ async function seedProducts() {
     {
       product_id: "ceditb04zomq9vmuixr8lay6",
       product_name: "Antenna Minimum Directional 9 KHz - 32 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Minimum-Directional.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -687,7 +688,7 @@ async function seedProducts() {
     {
       product_id: "c15pt1dri7grr22r9mk99t7v",
       product_name: "Barcode",
-      product_image: null,
+      product_image: "/uploads/products/Barcode.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -697,7 +698,7 @@ async function seedProducts() {
     {
       product_id: "cnf3y2odrw94lj4ub5gebuzo",
       product_name: "Cable Low Loss, N Connector",
-      product_image: null,
+      product_image: "/uploads/products/Cable-Low-Loss,-N-Connector.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -707,7 +708,7 @@ async function seedProducts() {
     {
       product_id: "cvofbxi5r91hcz4zrp8twtpx",
       product_name: "Cable Low Loss, SMA Connector",
-      product_image: null,
+      product_image: "/uploads/products/Cable-Low-Loss,-SMA-Connector.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -717,7 +718,7 @@ async function seedProducts() {
     {
       product_id: "c4fr9wr47o1rbe4pcs27eg2r",
       product_name: "Cable Low Noise Coaxial",
-      product_image: null,
+      product_image: "/uploads/products/Cable-Low-Noise-Coaxial.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
