@@ -131,7 +131,8 @@ def pre_validate_spt_text(text):
     if "SURAT TUGAS" not in text_upper:
         return False, "Dokumen bukan Surat Tugas"
         
-    pattern = r"NOMOR.*BALMON\.33"
+    # UBAH DI SINI: dari BALMON.33 menjadi KP
+    pattern = r"NOMOR.*KP"
     
     if not re.search(pattern, text_upper, re.DOTALL):
         return False, "Nomor surat tidak sesuai format"
@@ -330,8 +331,9 @@ def process_pdf():
                 print("⚠️ analyze_text_with_llm returned None")
                 return jsonify({"error": "Analysis Failed", "details": "LLM extraction returned empty data"}), 500
             
+            # UBAH DI SINI: dari BALMON.33 menjadi KP
             final_nomor_surat = extracted_data.get('nomor_surat', '')
-            if "BALMON.33" not in final_nomor_surat.upper():
+            if "KP" not in final_nomor_surat.upper():
                 return jsonify({"error": "Invalid SPT Format"}), 400
             
             final_output = create_final_output(extracted_data)
