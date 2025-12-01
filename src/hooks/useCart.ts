@@ -254,7 +254,9 @@ export function useCart(options: UseCartOptions = {}) {
     () =>
       cart.reduce((total, item) => {
         const itemPrice =
-          typeof item.product_avaible === "number" ? item.product_avaible : 0;
+          typeof item.product_available === "number"
+            ? item.product_available
+            : 0;
         return total + itemPrice * item.quantity;
       }, 0),
     [cart]
@@ -285,9 +287,9 @@ export function useCart(options: UseCartOptions = {}) {
     const errors: string[] = [];
 
     cart.forEach((item) => {
-      if (item.quantity > item.product_avaible) {
+      if (item.quantity > item.product_available) {
         errors.push(
-          `${item.product_name} melebihi stok yang tersedia (Stok: ${item.product_avaible})`
+          `${item.product_name} melebihi stok yang tersedia (Stok: ${item.product_available})`
         );
       }
       if (item.quantity <= 0) {

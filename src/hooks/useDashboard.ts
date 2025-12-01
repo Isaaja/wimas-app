@@ -25,7 +25,7 @@ export interface DashboardStats {
 export interface LowStockProduct {
   product_id: string;
   product_name: string;
-  product_avaible: number;
+  product_available: number;
   category: {
     category_name: string;
   } | null;

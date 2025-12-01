@@ -36,13 +36,12 @@ export default function AlatPerangkatPage() {
   const deleteUnit = useDeleteUnit();
   const itemsPerPage = 4;
 
-  const debouncedSearch = useCallback(
-    debounce((term: string) => {
+  const debouncedSearch = useMemo(() => {
+    return debounce((term: string) => {
       setSearchTerm(term.toLowerCase());
       setCurrentPage(1);
-    }, 300),
-    []
-  );
+    }, 300);
+  }, [setSearchTerm, setCurrentPage]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     debouncedSearch(e.target.value);
@@ -50,7 +49,6 @@ export default function AlatPerangkatPage() {
 
   const { paginatedProducts, totalPages } = useMemo(() => {
     if (!products) return { paginatedProducts: [], totalPages: 0 };
-
     const filtered = searchTerm
       ? products.filter((p) =>
           p.product_name.toLowerCase().includes(searchTerm)
