@@ -928,7 +928,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000908l3f5j5t9k2",
       product_name: "RIG VHF/UHF Alinco DR-620 TA",
-      product_image: null,
+      product_image: "/uploads/products/RIG-VHFUHF-Alinco-DR-620-TA.webp",
       quantity: 6,
       product_available: 6,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -938,7 +938,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k001008l3d6k6u0l3",
       product_name: "RIG VHF/UHF Yaesu FT-8800 R/E",
-      product_image: null,
+      product_image: "/uploads/products/RIG-VHFUHF-Yaesu-FT-8800-RE.webp",
       quantity: 5,
       product_available: 5,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -948,7 +948,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k001108l3a7l7v1m4",
       product_name: "RIG Motorola GM3688",
-      product_image: null,
+      product_image: "/uploads/products/RIG-Motorola-GM3688.webp",
       quantity: 3,
       product_available: 3,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -958,7 +958,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k001208l3e8m8w2n5",
       product_name: "Transceiver HF ICOM",
-      product_image: null,
+      product_image: "/uploads/products/Transceiver-HF-ICOM.webp",
       quantity: 1,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -968,7 +968,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k001308l3c9n9x3o6",
       product_name: "Transceiver HF/VHF/UHF ICOM IC-706",
-      product_image: null,
+      product_image: "/uploads/products/Transceiver-HFVHFUHF-ICOM-IC-706.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -978,7 +978,7 @@ async function seedProducts() {
     {
       product_id: "cy3g9g9fy5nf4f4jch4ochje",
       product_name: "RIG VHF PT. INTI",
-      product_image: null,
+      product_image: "/uploads/products/RIG-VHF-PT.INTI.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -988,7 +988,7 @@ async function seedProducts() {
     {
       product_id: "clfw7ltmvsrhvw7yn4go4rcj",
       product_name: "Transceiver HF Yaesu",
-      product_image: null,
+      product_image: "/uploads/products/Transceiver-HF-Yaesu.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -998,7 +998,7 @@ async function seedProducts() {
     {
       product_id: "cc32ekqn5qs4gddqz845u6ge",
       product_name: "Digital Scanner Trunk Tracker",
-      product_image: null,
+      product_image: "/uploads/products/Digital-Scanner-Trunk-Tracker.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1008,7 +1008,7 @@ async function seedProducts() {
     {
       product_id: "cror3psbrcmqijph4xta8avq",
       product_name: "Field Strength 9 - 30 MHz",
-      product_image: null,
+      product_image: "/uploads/products/Field-Strength-9–30-MHz.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1018,7 +1018,7 @@ async function seedProducts() {
     {
       product_id: "c3bxgvn89rtvo0pmgigdot9v",
       product_name: "Field Strength Analyzer 2.9 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Field-Strength-Analyzer-2.9-GHz.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1028,7 +1028,7 @@ async function seedProducts() {
     {
       product_id: "csg2ps0dntzc708wuva06qly",
       product_name: "Frequency Counter MFJ-886",
-      product_image: null,
+      product_image: "/uploads/products/Frequency-Counter-MFJ-886.webp",
       quantity: 3,
       product_available: 3,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1038,7 +1038,7 @@ async function seedProducts() {
     {
       product_id: "cowbu26hfl3nf3pk63wsmgus",
       product_name: "Frequency Counter ScanPro SP-760",
-      product_image: null,
+      product_image: "/uploads/products/Frequency-Counter-ScanPro-SP-760.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1048,7 +1048,7 @@ async function seedProducts() {
     {
       product_id: "cgmav533f5vly32amelyvy4s",
       product_name: "GPS Receiver (PR 100)",
-      product_image: null,
+      product_image: "/uploads/products/GPS-Receiver-(PR-100).webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1058,7 +1058,7 @@ async function seedProducts() {
     {
       product_id: "coxxwuvj2faizuicgki2jogr",
       product_name: "GPS Receiver",
-      product_image: null,
+      product_image: "/uploads/products/GPS-Receiver.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1068,7 +1068,7 @@ async function seedProducts() {
     {
       product_id: "c0ew4diqmt6vg27mo2kwdlwp",
       product_name: "GPS GARMIN 78S",
-      product_image: null,
+      product_image: "/uploads/products/GPS-GARMIN-78S.webp",
       quantity: 3,
       product_available: 3,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1078,7 +1078,7 @@ async function seedProducts() {
     {
       product_id: "c8pyyel36r707wy7cs1mm48h",
       product_name: "Multimeter",
-      product_image: null,
+      product_image: "/uploads/products/Multimeter.webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1088,7 +1088,7 @@ async function seedProducts() {
     {
       product_id: "c6q3ygss50t6xan8t2ocjb99",
       product_name: "Receiver Portable (PR 100)",
-      product_image: null,
+      product_image: "/uploads/products/Receiver-Portable-(PR-100).webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1098,7 +1098,7 @@ async function seedProducts() {
     {
       product_id: "csd2co2lahvxc9r2x5w81wdo",
       product_name: "Receiver Portable (PR 200)",
-      product_image: null,
+      product_image: "/uploads/products/Receiver-Portable-(PR-200).webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1108,7 +1108,7 @@ async function seedProducts() {
     {
       product_id: "czemikta3wrzt8ac5572nvoh",
       product_name: "Spectrum Analyzer 1 MHz - 20 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Spectrum-Analyzer-1-MHz–20-GHz.webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1118,7 +1118,7 @@ async function seedProducts() {
     {
       product_id: "ckc9p39650su49dahmf225ib",
       product_name: "Spectrum Analyzer 9 KHz - 20 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Spectrum-Analyzer-9-kHz–20-GHz.webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1128,7 +1128,7 @@ async function seedProducts() {
     {
       product_id: "c6ozxe9cp8pvaakjwhze87un",
       product_name: "Spectrum Analyzer TV Digital",
-      product_image: null,
+      product_image: "/uploads/products/Spectrum-Analyzer-TV-Digital.webp",
       quantity: 3,
       product_available: 3,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1138,7 +1138,7 @@ async function seedProducts() {
     {
       product_id: "cg39rofk5ovbx4s0c9mrc7ti",
       product_name: "Spectrum Analyzer 100 KHz - 9 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Spectrum-Analyzer-100-KHz-9-GHz.webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1148,7 +1148,8 @@ async function seedProducts() {
     {
       product_id: "cet9luo0d65hit7x7nr4cwlz",
       product_name: "Spectrum Analyzer 100 KHz - 26.5 GHz",
-      product_image: null,
+      product_image:
+        "/uploads/products/Spectrum-Analyzer-100-KHz-26.5-GHz.webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1158,7 +1159,7 @@ async function seedProducts() {
     {
       product_id: "ccet6zwhyghy7onjg4o674vg",
       product_name: "Spectrum Analyzer 32 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Spectrum-Analyzer-32GHz.webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1168,7 +1169,7 @@ async function seedProducts() {
     {
       product_id: "cyk1y8vo2i892q4jjxsoer5r",
       product_name: "Spectrum Analyzer 9 KHz - 43 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Spectrum-Analyzer-9-KHz-43-GHz.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -1178,7 +1179,7 @@ async function seedProducts() {
     {
       product_id: "cre709qi29e16fs68spjgsw7",
       product_name: "Signal Generator",
-      product_image: null,
+      product_image: "/uploads/products/Signal-Generator.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",

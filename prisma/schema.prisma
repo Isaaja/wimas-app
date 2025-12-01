@@ -35,21 +35,21 @@ model Category {
 }
 
 model Product {
-  product_id        String            @id @db.VarChar(32)
-  product_name      String            @unique
-  product_image     String?
-  quantity          Int
-  product_available Int
-  category_id       String
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  loanItems         LoanItem[]
-  requestItems      LoanRequestItem[]
-  category          Category          @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
-  units             ProductUnit[]
+  product_id      String            @id @db.VarChar(32)
+  product_name    String            @unique
+  product_image   String?
+  quantity        Int
+  product_avaible Int
+  category_id     String
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  loanItems       LoanItem[]
+  requestItems    LoanRequestItem[]
+  category        Category          @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  units           ProductUnit[]
 
   @@index([category_id])
-  @@index([product_available])
+  @@index([product_avaible])
 }
 
 model ProductUnit {
