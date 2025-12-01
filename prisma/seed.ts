@@ -537,7 +537,7 @@ async function seedProducts() {
     {
       product_id: "c9qa4hza2o2n3xg9mh8i559l",
       product_name: "Antenna Dipole 470 MHz – 1.7 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Dipole-470-MHz–1.7-GHz.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -547,7 +547,7 @@ async function seedProducts() {
     {
       product_id: "csfuku4o7t2abygd296m2rhe",
       product_name: "Antenna Distribution Control System",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Distribution-Control-System.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -557,7 +557,7 @@ async function seedProducts() {
     {
       product_id: "cg38of5jbu9qk0z7f5vjwxsi",
       product_name: "Antenna Active Direction Control System",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Active-Direction-Control-System.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -638,7 +638,7 @@ async function seedProducts() {
     {
       product_id: "ckpze00glqfudw5b64pks6cd",
       product_name: "Antenna Set",
-      product_image: null,
+      product_image: "/uploads/products/Antenna-Set.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
