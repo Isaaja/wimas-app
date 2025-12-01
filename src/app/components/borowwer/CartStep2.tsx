@@ -1,6 +1,15 @@
 // components/CartStep2And3.tsx
 import { useState } from "react";
-import { Calendar, FileText, X, Loader2, Sparkles } from "lucide-react";
+import {
+  Calendar,
+  FileText,
+  X,
+  Loader2,
+  Sparkles,
+  CheckCircle2,
+  MapPin,
+  Building,
+} from "lucide-react";
 
 interface ReportData {
   spt_number: string;
@@ -373,19 +382,54 @@ export default function CartStep2({
 
         {/* Preview Data */}
         {isReportValid && (
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-            <h4 className="font-medium text-green-800 mb-2 flex items-center gap-2">
-              ✅ Data SPT Valid
-            </h4>
-            <div className="text-sm text-green-700 space-y-1">
-              <p>📄 No. SPT: {reportData.spt_number}</p>
-              <p>🎯 Tujuan: {reportData.destination}</p>
-              <p>📍 Tempat: {reportData.place_of_execution}</p>
-              <p>
-                📅 Periode:{" "}
-                {new Date(reportData.start_date).toLocaleDateString("id-ID")} -{" "}
-                {new Date(reportData.end_date).toLocaleDateString("id-ID")}
-              </p>
+          <div className="bg-green-300/25 p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center w-8 h-8 bg-green-100 rounded-full">
+                <CheckCircle2 className="w-5 h-5 text-green-600" />
+              </div>
+              <h4 className="font-semibold text-gray-900">Data SPT Valid</h4>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-gray-700">
+                <FileText className="w-4 h-4 text-gray-400" />
+                <span className="text-sm">
+                  No. SPT:{" "}
+                  <span className="font-medium">{reportData.spt_number}</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-gray-700">
+                <MapPin className="lg:w-6 lg:h-6 w-12 h-12 text-gray-400" />
+                <span className="text-sm">
+                  Tujuan:{" "}
+                  <span className="font-medium">{reportData.destination}</span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-gray-700">
+                <Building className="w-4 h-4 text-gray-400" />
+                <span className="text-sm">
+                  Tempat:{" "}
+                  <span className="font-medium">
+                    {reportData.place_of_execution}
+                  </span>
+                </span>
+              </div>
+
+              <div className="flex items-center gap-3 text-gray-700">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span className="text-sm">
+                  Periode:{" "}
+                  <span className="font-medium">
+                    {new Date(reportData.start_date).toLocaleDateString(
+                      "id-ID"
+                    )}{" "}
+                    -{" "}
+                    {new Date(reportData.end_date).toLocaleDateString("id-ID")}
+                  </span>
+                </span>
+              </div>
             </div>
           </div>
         )}

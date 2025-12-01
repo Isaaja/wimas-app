@@ -49,6 +49,20 @@ export default function DamagedItemsTable({
     return matchSearch;
   });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  const onPageChange = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+  };
+
   const totalDamaged = damagedItems.length;
 
   const getConditionBadge = () => {
@@ -119,7 +133,7 @@ export default function DamagedItemsTable({
                   </td>
                 </tr>
               ) : (
-                filteredItems.map((item, index) => (
+                paginatedItems.map((item, index) => (
                   <tr
                     key={
                       item.unit_id ||
@@ -370,6 +384,32 @@ export default function DamagedItemsTable({
           ))
         )}
       </div>
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
+          <div className="text-sm text-gray-600">
+            <span className="text-sm">
+              Hal {currentPage} dari {totalPages}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+            >
+              Sebelumnya
+            </button>
+
+            <button
+              className="btn btn-sm btn-outline"
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Berikutnya
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

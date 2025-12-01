@@ -1,9 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
-import { Eye, EyeOff, View, FileText, RefreshCcwDot } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  View,
+  FileText,
+  RefreshCcwDot,
+  Filter,
+  X,
+} from "lucide-react";
 import LoanDetail from "./LoanDetail";
 import ReturnModal from "./ReturnModal";
 import Swal from "sweetalert2";
@@ -12,9 +20,11 @@ import {
   hasUnitAssignments,
   type Loan,
   type LoanHistory,
+  getUniqueProducts,
 } from "@/hooks/useLoans";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
+import DateFilter from "../common/DateFilter";
 
 interface LoanTableProps {
   loans: (Loan | LoanHistory)[];
@@ -41,6 +51,77 @@ export default function LoanTable({
   );
   const { mutate: returnLoan, isPending: isReturning } = useReturnLoan();
   const router = useRouter();
+  const [startDate, setStartDate] = useState<string>("");
+  const [endDate, setEndDate] = useState<string>("");
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const filteredLoans = useMemo(() => {
+    if (!startDate && !endDate) return loans;
+
+    return loans.filter((loan) => {
+      if (!loan.created_at) return false;
+
+      const loanDate = new Date(loan.created_at);
+      loanDate.setHours(0, 0, 0, 0);
+      const loanTime = loanDate.getTime();
+
+      if (startDate && endDate) {
+        const startTime = new Date(startDate).setHours(0, 0, 0, 0);
+        const endTime = new Date(endDate).setHours(23, 59, 59, 999);
+        return loanTime >= startTime && loanTime <= endTime;
+      } else if (startDate) {
+        const startTime = new Date(startDate).setHours(0, 0, 0, 0);
+        return loanTime >= startTime;
+      } else if (endDate) {
+        const endTime = new Date(endDate).setHours(23, 59, 59, 999);
+        return loanTime <= endTime;
+      }
+
+      return true;
+    });
+  }, [loans, startDate, endDate]);
+
+  const getDisplayDateRange = () => {
+    if (startDate && endDate) {
+      return `${formatDateOnly(startDate)} - ${formatDateOnly(endDate)}`;
+    } else if (startDate) {
+      return `Dari ${formatDateOnly(startDate)}`;
+    } else if (endDate) {
+      return `Sampai ${formatDateOnly(endDate)}`;
+    }
+    return "Semua Periode";
+  };
+
+  const quickFilters = [
+    { label: "Hari Ini", days: 0 },
+    { label: "7 Hari", days: 7 },
+    { label: "30 Hari", days: 30 },
+    { label: "Bulan Ini", days: -1 },
+  ];
+
+  const applyQuickFilter = (days: number) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    let start = new Date();
+
+    if (days === -1) {
+      start = new Date(today.getFullYear(), today.getMonth(), 1);
+      start.setHours(0, 0, 0, 0);
+    } else {
+      start = new Date(today);
+      start.setDate(today.getDate() - days);
+      start.setHours(0, 0, 0, 0);
+    }
+
+    setStartDate(start.toISOString().split("T")[0]);
+    setEndDate(end.toISOString().split("T")[0]);
+    setShowDatePicker(false);
+    onPageChange(1);
+  };
 
   const formatDateOnly = (dateString: string | null | undefined) => {
     if (!dateString) return "-";
@@ -60,14 +141,43 @@ export default function LoanTable({
     return statusMap[status] || { label: status, class: "badge-ghost" };
   };
 
+  const clearFilters = () => {
+    setStartDate("");
+    setEndDate("");
+    setShowDatePicker(false);
+    onPageChange(1);
+  };
+
+  const handleStartDateChange = (date: string) => {
+    setStartDate(date);
+    onPageChange(1);
+  };
+
+  const handleEndDateChange = (date: string) => {
+    setEndDate(date);
+    onPageChange(1);
+  };
+
   const getSptFileUrl = (sptFile: string | null | undefined): string | null => {
     if (!sptFile) return null;
+
     if (sptFile.startsWith("http")) return sptFile;
-    if (sptFile.startsWith("public/")) {
-      return sptFile.replace("public/", "/");
+
+    if (sptFile.startsWith("uploads/")) {
+      return `/uploads/spt/${sptFile.replace("uploads/", "")}`;
     }
-    if (sptFile.startsWith("/")) return sptFile;
-    return `/${sptFile}`;
+
+    if (sptFile.startsWith("public/")) {
+      const cleaned = sptFile.replace("public/", "").replace("uploads/", "");
+      return `/uploads/spt/${cleaned}`;
+    }
+
+    if (sptFile.startsWith("/")) {
+      const cleaned = sptFile.replace("/", "").replace("uploads/", "");
+      return `/uploads/spt/${cleaned}`;
+    }
+
+    return `/uploads/spt/${sptFile}`;
   };
 
   const getMainBorrower = (loan: Loan | LoanHistory) => {
@@ -116,7 +226,15 @@ export default function LoanTable({
   };
 
   const getItemsCount = (loan: Loan | LoanHistory) => {
-    return loan.items?.length || 0;
+    if (!loan.items) return 0;
+
+    if (loan.status === "REQUESTED") {
+      const uniqueProducts = new Set(loan.items.map((item) => item.product_id));
+      return uniqueProducts.size;
+    } else {
+      const uniqueProducts = getUniqueProducts(loan);
+      return uniqueProducts.length;
+    }
   };
 
   const getReportData = (loan: Loan | LoanHistory) => {
@@ -145,7 +263,6 @@ export default function LoanTable({
       setActioningLoanId(loanToReturn.loan_id);
       returnLoan(loanToReturn.loan_id, {
         onSuccess: () => {
-          toast.success("Barang berhasil dikembalikan!");
           setLoanToReturn(null);
           setActioningLoanId(null);
         },
@@ -165,9 +282,12 @@ export default function LoanTable({
     router.push(`/peminjam/nota/${loanId}`);
   };
 
-  const totalPages = Math.ceil(loans.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredLoans.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const currentLoans = loans.slice(startIndex, startIndex + itemsPerPage);
+  const currentLoans = filteredLoans.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   const handleViewDetail = (loan: Loan | LoanHistory) => {
     setSelectedLoan(loan);
@@ -197,187 +317,214 @@ export default function LoanTable({
 
   return (
     <div className="space-y-4">
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead className="bg-gray-100 text-gray-700">
-              <tr>
-                <th className="whitespace-nowrap">No</th>
-                <th className="whitespace-nowrap">Peminjam</th>
-                <th className="whitespace-nowrap">No. SPT</th>
-                <th className="whitespace-nowrap">Tanggal Peminjaman</th>
-                <th className="whitespace-nowrap">Total Barang</th>
-                <th className="whitespace-nowrap">Status</th>
-                <th className="whitespace-nowrap text-center">Dokumen</th>
-                <th className="whitespace-nowrap text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentLoans.map((loan, index) => {
-                const statusInfo = getStatusBadge(loan.status || "UNKNOWN");
-                const isProcessing = actioningLoanId === loan.loan_id;
-                const report = getReportData(loan);
-                const sptFileUrl = getSptFileUrl(report?.spt_file);
-                const mainBorrower = getMainBorrower(loan);
-                const totalItems = getTotalItems(loan);
-                const itemsCount = getItemsCount(loan);
-                const invitedUsersCount = getInvitedUsersCount(loan);
-                const hasUnits = hasUnitAssignments(loan as Loan);
+      <DateFilter
+        startDate={startDate}
+        endDate={endDate}
+        filteredCount={filteredLoans.length}
+        onStartDateChange={handleStartDateChange}
+        onEndDateChange={handleEndDateChange}
+        onClearFilters={clearFilters}
+        formatDateOnly={formatDateOnly}
+      />
 
-                return (
-                  <tr key={loan.loan_id} className="hover">
-                    <td className="border-t border-black/10 font-medium">
-                      {startIndex + index + 1}
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium text-gray-900">
-                          {mainBorrower}
-                        </div>
-                        {invitedUsersCount > 0 && (
-                          <div className="text-xs text-gray-500">
-                            +{invitedUsersCount} peserta
-                          </div>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm">{report?.spt_number || "-"}</div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm space-y-1">
-                        <div>
-                          {formatDateOnly(report?.start_date)} -{" "}
-                          {formatDateOnly(report?.end_date)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDateOnly(loan.created_at)}
-                        </div>
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="text-sm font-medium">
-                        {totalItems} barang
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {itemsCount} jenis
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="flex flex-col gap-1">
-                        <span className={`badge ${statusInfo.class} badge-sm`}>
-                          {statusInfo.label}
-                        </span>
-                        {hasUnits && (
-                          <span className="badge badge-outline badge-sm text-xs">
-                            Ada unit
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    <td className="border-t border-black/10 text-center">
-                      {sptFileUrl ? (
-                        <div className="flex flex-col gap-1 items-center">
-                          <a
-                            href={sptFileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
-                            data-tip="Lihat Dokumen SPT"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </a>
-                          <span className="text-xs text-gray-500">SPT</span>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-1 items-center">
-                          <span
-                            className="text-gray-400 lg:tooltip"
-                            data-tip="Tidak Ada Dokumen SPT"
-                          >
-                            <EyeOff className="w-4 h-4" />
-                          </span>
-                          <span className="text-xs text-gray-400">-</span>
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="border-t border-black/10">
-                      <div className="flex justify-center items-center gap-1">
-                        <button
-                          className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
-                          data-tip="Lihat Detail"
-                          onClick={() => handleViewDetail(loan)}
-                        >
-                          <View className="w-4 h-4" />
-                        </button>
-
-                        {loan.status === "APPROVED" && (
-                          <button
-                            className="btn btn-ghost btn-xs text-orange-600 lg:tooltip"
-                            data-tip="Kembalikan Barang"
-                            onClick={() => handleReturn(loan)}
-                            disabled={isProcessing || isReturning}
-                          >
-                            {isProcessing ? (
-                              <span className="loading loading-spinner loading-xs"></span>
-                            ) : (
-                              <RefreshCcwDot className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
-
-                        {(loan.status === "APPROVED" ||
-                          loan.status === "RETURNED" ||
-                          loan.status === "DONE") && (
-                          <button
-                            className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
-                            data-tip="Lihat Nota"
-                            onClick={() => handleViewNota(loan.loan_id)}
-                          >
-                            <FileText className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+      {filteredLoans.length === 0 ? (
+        <div className="alert alert-warning">
+          <span>Tidak ada data peminjaman pada periode yang dipilih.</span>
+        </div>
+      ) : (
+        <>
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead className="bg-gray-100 text-gray-700">
+                  <tr>
+                    <th className="whitespace-nowrap">No</th>
+                    <th className="whitespace-nowrap">Peminjam</th>
+                    <th className="whitespace-nowrap">No. SPT</th>
+                    <th className="whitespace-nowrap">Tanggal Peminjaman</th>
+                    <th className="whitespace-nowrap">Total Barang</th>
+                    <th className="whitespace-nowrap">Status</th>
+                    <th className="whitespace-nowrap text-center">Dokumen</th>
+                    <th className="whitespace-nowrap text-center">Aksi</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {currentLoans.map((loan, index) => {
+                    const statusInfo = getStatusBadge(loan.status || "UNKNOWN");
+                    const isProcessing = actioningLoanId === loan.loan_id;
+                    const report = getReportData(loan);
+                    const sptFileUrl = getSptFileUrl(report?.spt_file);
+                    const mainBorrower = getMainBorrower(loan);
+                    const totalItems = getTotalItems(loan);
+                    const itemsCount = getItemsCount(loan);
+                    const invitedUsersCount = getInvitedUsersCount(loan);
+                    const hasUnits = hasUnitAssignments(loan as Loan);
 
-      {totalPages > 1 && (
-        <div className="flex justify-between items-center mt-4">
-          <div className="text-sm text-gray-600">
-            Menampilkan {startIndex + 1}-
-            {Math.min(startIndex + itemsPerPage, loans.length)} dari{" "}
-            {loans.length} data
+                    return (
+                      <tr key={loan.loan_id} className="hover">
+                        <td className="border-t border-black/10 font-medium">
+                          {startIndex + index + 1}
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="space-y-1">
+                            <div className="text-sm font-medium text-gray-900">
+                              {mainBorrower}
+                            </div>
+                            {invitedUsersCount > 0 && (
+                              <div className="text-xs text-gray-500">
+                                +{invitedUsersCount} peserta
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm">
+                            {report?.spt_number || "-"}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm space-y-1">
+                            <div>
+                              {formatDateOnly(report?.start_date)} -{" "}
+                              {formatDateOnly(report?.end_date)}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {formatDateOnly(loan.created_at)}
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="text-sm font-medium">
+                            {totalItems} barang
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {itemsCount} jenis
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`badge ${statusInfo.class} badge-sm`}
+                            >
+                              {statusInfo.label}
+                            </span>
+                            {hasUnits && (
+                              <span className="badge badge-outline badge-sm text-xs">
+                                Ada unit
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="border-t border-black/10 text-center">
+                          {sptFileUrl ? (
+                            <div className="flex flex-col gap-1 items-center">
+                              <a
+                                href={sptFileUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-ghost btn-xs text-blue-600 lg:tooltip"
+                                data-tip="Lihat Dokumen SPT"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </a>
+                              <span className="text-xs text-gray-500">SPT</span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-1 items-center">
+                              <span
+                                className="text-gray-400 lg:tooltip"
+                                data-tip="Tidak Ada Dokumen SPT"
+                              >
+                                <EyeOff className="w-4 h-4" />
+                              </span>
+                              <span className="text-xs text-gray-400">-</span>
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="border-t border-black/10">
+                          <div className="flex justify-center items-center gap-1">
+                            <button
+                              className="btn btn-ghost btn-xs text-blue-500 lg:tooltip"
+                              data-tip="Lihat Detail"
+                              onClick={() => handleViewDetail(loan)}
+                            >
+                              <View className="w-4 h-4" />
+                            </button>
+
+                            {loan.status === "APPROVED" && (
+                              <button
+                                className="btn btn-ghost btn-xs text-orange-600 lg:tooltip"
+                                data-tip="Kembalikan Barang"
+                                onClick={() => handleReturn(loan)}
+                                disabled={isProcessing || isReturning}
+                              >
+                                {isProcessing ? (
+                                  <span className="loading loading-spinner loading-xs"></span>
+                                ) : (
+                                  <RefreshCcwDot className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+
+                            {(loan.status === "APPROVED" ||
+                              loan.status === "RETURNED" ||
+                              loan.status === "DONE") && (
+                              <button
+                                className="btn btn-ghost btn-xs text-green-600 lg:tooltip"
+                                data-tip="Lihat Nota"
+                                onClick={() => handleViewNota(loan.loan_id)}
+                              >
+                                <FileText className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={currentPage === 1}
-            >
-              Sebelumnya
-            </button>
-            <button
-              className="btn btn-sm btn-outline"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Berikutnya
-            </button>
-          </div>
-        </div>
+
+          {totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row justify-between items-center gap-3 mt-4">
+              <div className="text-sm text-gray-600">
+                Menampilkan {startIndex + 1}-
+                {Math.min(startIndex + itemsPerPage, filteredLoans.length)} dari{" "}
+                {filteredLoans.length} data
+              </div>
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => onPageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  Sebelumnya
+                </button>
+                <div className="flex items-center gap-2 px-3">
+                  <span className="text-sm">
+                    Hal {currentPage} dari {totalPages}
+                  </span>
+                </div>
+                <button
+                  className="btn btn-sm btn-outline"
+                  onClick={() => onPageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  Berikutnya
+                </button>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       <ReturnModal

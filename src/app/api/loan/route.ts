@@ -63,17 +63,15 @@ export async function POST(req: Request) {
         spt_file,
       },
     });
-
     const result = await sendEmail({
       to: "isaiantmaulana2004@gmail.com",
-      subject: "SEKOO ISA KIH INGFO",
+      subject: "[PERMINTAAN] Peminjaman Barang",
       borrowers: [...owner, ...invited],
       items: listProduct,
-      status: "permintaan",
+      status: "Permintaan",
     });
 
-    console.log(invited);
-
+    console.log(result);
     if (!result) {
       throw new InvariantError("Pesan tidak masuk");
     }

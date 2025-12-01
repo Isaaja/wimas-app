@@ -15,8 +15,20 @@ import { useRouter } from "next/navigation";
 
 function sortProductsWithOutOfStockLast(products: any[]): any[] {
   return [...products].sort((a, b) => {
-    if (a.product_avaible === 0 && b.product_avaible > 0) return 1;
-    if (b.product_avaible === 0 && a.product_avaible > 0) return -1;
+    const calculateAvailable = (product: any) => {
+      if (product.units && product.units.length > 0) {
+        return product.units.filter(
+          (u: any) => u.status === "AVAILABLE" && u.condition === "GOOD"
+        ).length;
+      }
+      return product.product_available || 0;
+    };
+
+    const aAvailable = calculateAvailable(a);
+    const bAvailable = calculateAvailable(b);
+
+    if (aAvailable === 0 && bAvailable > 0) return 1;
+    if (bAvailable === 0 && aAvailable > 0) return -1;
     return 0;
   });
 }
@@ -32,6 +44,32 @@ export default function AlatPerangkatPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showFloatingButton, setShowFloatingButton] = useState(false);
+
+  const getCartQuantity = useCallback(
+    (productId: string) => {
+      const cartItem = cart.find((item) => item.product_id === productId);
+      return cartItem ? cartItem.quantity : 0;
+    },
+    [cart]
+  );
+
+  const handleAddToCart = useCallback(
+    (product: any, quantity: number) => {
+      const currentQty = getCartQuantity(product.product_id);
+      const availableUnits =
+        product.units?.filter((u: any) => u.status === "AVAILABLE").length || 0;
+
+      if (currentQty + quantity > availableUnits) {
+        toast.error(
+          `Stok tidak mencukupi! Tersedia: ${availableUnits}, Di keranjang: ${currentQty}`
+        );
+        return;
+      }
+
+      addToCart(product, quantity);
+    },
+    [cart, addToCart, getCartQuantity]
+  );
 
   const debouncedSearch = useCallback(
     debounce((term: string) => {
@@ -194,8 +232,9 @@ export default function AlatPerangkatPage() {
               <ProductCard
                 key={p.product_id}
                 product={p}
-                onAdd={addToCart}
+                onAdd={handleAddToCart}
                 canBorrow={canBorrow}
+                currentCartQuantity={getCartQuantity(p.product_id)}
               />
             ))
           ) : (

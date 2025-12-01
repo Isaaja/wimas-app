@@ -31,7 +31,8 @@ export default function ProductModal({
     product_name: "",
     product_image: "",
     quantity: 0,
-    product_avaible: 1,
+    product_available: 1,
+    units: [],
   });
 
   useEffect(() => {
@@ -39,9 +40,10 @@ export default function ProductModal({
       setFormData({
         category_id: productToEdit.category_id,
         product_name: productToEdit.product_name,
-        product_image: productToEdit.product_image,
+        product_image: productToEdit.product_image || "",
         quantity: productToEdit.quantity,
-        product_avaible: productToEdit.product_avaible,
+        product_available: productToEdit.product_available,
+        units: productToEdit.units || [],
       });
     } else {
       setFormData({
@@ -49,7 +51,8 @@ export default function ProductModal({
         product_name: "",
         product_image: "",
         quantity: 0,
-        product_avaible: 1,
+        product_available: 1,
+        units: [],
       });
     }
   }, [productToEdit]);
@@ -78,7 +81,8 @@ export default function ProductModal({
             product_name: "",
             product_image: "",
             quantity: 0,
-            product_avaible: 1,
+            product_available: 1,
+            units: [],
           });
           toast.success("Produk berhasil ditambahkan!");
           onClose();
@@ -107,18 +111,18 @@ export default function ProductModal({
 
       const toastId = "product-availability-warning";
 
-      if (name === "product_avaible") {
-        const product_avaible = parsedValue as number;
+      if (name === "product_available") {
+        const product_available = parsedValue as number;
         const quantity = prev.quantity;
 
-        if (product_avaible > quantity) {
+        if (product_available > quantity) {
           if (!toast.isActive(toastId)) {
             toast.warning("Ketersediaan tidak boleh melebihi jumlah stok!");
           }
-          newData.product_avaible = quantity;
+          newData.product_available = quantity;
         }
 
-        if (product_avaible === 0) {
+        if (product_available === 0) {
           if (!toast.isActive("product-unavailable")) {
             toast.info("Produk menjadi tidak tersedia.", {
               toastId: "product-unavailable",
@@ -222,8 +226,8 @@ export default function ProductModal({
               </label>
               <input
                 type="number"
-                name="product_avaible"
-                value={formData.product_avaible}
+                name="product_available"
+                value={formData.product_available}
                 onChange={handleChange}
                 className="input input-bordered w-full bg-white border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 placeholder="1"
