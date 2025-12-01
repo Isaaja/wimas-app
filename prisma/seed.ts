@@ -728,7 +728,7 @@ async function seedProducts() {
     {
       product_id: "cvr4zs99di1uun61647w08bu",
       product_name: "Cable Low Noise",
-      product_image: null,
+      product_image: "/uploads/products/Cable-Low-Noise.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -738,7 +738,7 @@ async function seedProducts() {
     {
       product_id: "czxa96phgwzi5u1skmjsdy68",
       product_name: "Cable Low Noise Coaxial 1 m dan 10 m",
-      product_image: null,
+      product_image: "/uploads/products/Cable-Low-Noise-Coaxial-1m-dan-10.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -748,7 +748,7 @@ async function seedProducts() {
     {
       product_id: "c5k0b88ft89p0vtplwbxt4s3",
       product_name: "Cable Low Noise Coaxial Rugged phase-stable",
-      product_image: null,
+      product_image: "/uploads/products/Cable-Low-Noise-Coaxial-Rugged-Phase-Stable.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -758,7 +758,7 @@ async function seedProducts() {
     {
       product_id: "cpojqmsxi0skdkdgnklqglxe",
       product_name: "Connector Set Sunmoon",
-      product_image: null,
+      product_image: "/uploads/products/Connector-Set-Sunmoon.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -768,7 +768,7 @@ async function seedProducts() {
     {
       product_id: "cpmmqexpze34twbbpm041oru",
       product_name: "Connector All Combination",
-      product_image: null,
+      product_image: "/uploads/products/Connector-All-Combination.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -778,7 +778,7 @@ async function seedProducts() {
     {
       product_id: "cn7i9egb98mje7vidzbb7ipn",
       product_name: "Laptop (LJK)",
-      product_image: null,
+      product_image: "/uploads/products/Laptop-LJK.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -788,7 +788,7 @@ async function seedProducts() {
     {
       product_id: "coc03byo3whb3k4j19a16h5a",
       product_name: "Laptop (BTS Test)",
-      product_image: null,
+      product_image: "/uploads/products/Laptop-BTSTest.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -798,7 +798,7 @@ async function seedProducts() {
     {
       product_id: "c5ic3fm86azx1ybnu80zutyr",
       product_name: "Laptop MUX",
-      product_image: null,
+      product_image: "/uploads/products/Laptop-MUX.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -808,7 +808,7 @@ async function seedProducts() {
     {
       product_id: "cqrla14apvkw1m8e3elmaot3",
       product_name: "Laptop HILVX",
-      product_image: null,
+      product_image: "/uploads/products/Laptop-Hilux.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -818,7 +818,7 @@ async function seedProducts() {
     {
       product_id: "cjdx4h4jsfq9ks9vqcr3vlaf",
       product_name: "Laptop (Navara)",
-      product_image: null,
+      product_image: "/uploads/products/Laptop-Navara.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -828,7 +828,7 @@ async function seedProducts() {
     {
       product_id: "ckcj544xtibhtxfhucyxj7fv",
       product_name: "Scanner",
-      product_image: null,
+      product_image: "/uploads/products/Scanner.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -838,7 +838,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000008l3c1nz8e9w",
       product_name: "Communication Receiver AQR AR - 3000",
-      product_image: null,
+      product_image: "/uploads/products/Communication-Receiver-AQR-AR3000.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -848,7 +848,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000108l3b6nz4f2a",
       product_name: "Communication Receiver/AOR A-2002",
-      product_image: null,
+      product_image: "/uploads/products/Communication-Receiver-AOR-A2002.webp",
       quantity: 1,
       product_available: 1,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -858,7 +858,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000208l38f9v1e5b",
       product_name: "HT Alinco DJ-180T",
-      product_image: null,
+      product_image: "/uploads/products/HT-Alinco-DJ180T.webp",
       quantity: 3,
       product_available: 3,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -868,7 +868,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000308l3f2a7m3c6",
       product_name: "HT Motorola GP-2000",
-      product_image: null,
+      product_image: "/uploads/products/HT-Motorola-GP2000.webp",
       quantity: 2,
       product_available: 2,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -878,7 +878,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000408l3a5d8n4d7",
       product_name: "HT UHF Alinco DJ-496 TFN",
-      product_image: null,
+      product_image: "/uploads/products/HT-UHF-Alinco-DJ-496-TFN.webp",
       quantity: 8,
       product_available: 8,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -888,7 +888,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000508l3e7f1p5e8",
       product_name: "HT V/UHF Yaesu VX-6R",
-      product_image: null,
+      product_image: "/uploads/products/HT-V-UHF-Yaesu-VX-6R.webp",
       quantity: 10,
       product_available: 10,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -898,7 +898,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000608l3c8g2q6f9",
       product_name: "HT VHF Motorola CP 1660",
-      product_image: null,
+      product_image: "/uploads/products/HT-VHF-Motorola-CP-1660.webp",
       quantity: 10,
       product_available: 11,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -908,7 +908,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000708l3b9h3r7g0",
       product_name: "Receiver All Band 100 KHz - 2.6 GHz",
-      product_image: null,
+      product_image: "/uploads/products/Receiver-All-Band-100-kHz–2.6-GHz.webp",
       quantity: 1,
       product_available: 0,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
@@ -918,7 +918,7 @@ async function seedProducts() {
     {
       product_id: "clx9a4x8k000808l39i4s8h1j",
       product_name: "RIG VHF Alinco DR. 135",
-      product_image: null,
+      product_image: "/uploads/products/RIG-VHF-Alinco-DR-135.webp",
       quantity: 3,
       product_available: 4,
       category_id: "cmi25k3uu0000ib04ydwdd9g1",
