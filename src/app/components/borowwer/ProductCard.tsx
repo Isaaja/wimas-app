@@ -150,23 +150,26 @@ export default function ProductCard({
             </div>
           )}
           {canBorrow && !isOutOfStock && (
-            <div className="card-actions justify-center mt-2 sm:mt-4 ">
+            <div className="flex flex-col md:flex-row items-stretch gap-2 md:gap-3 w-full">
               <button
-                className="btn btn-info btn-xs sm:btn-sm text-xs sm:text-sm lg:w-44 w-full transition-all transform hover:scale-105"
+                className="btn btn-info w-full md:flex-1 h-auto min-h-[2.5rem] md:min-h-[2rem] lg:min-h-[2.5rem] text-sm transition-all hover:brightness-110"
                 onClick={openModal}
               >
-                <span className="hidden xs:inline text-white">
-                  Lihat Detail
-                </span>
-                <span className="xs:hidden text-white">Detail</span>
-                <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 ml-1 text-white" />
+                <div className="flex items-center justify-center gap-1 w-full">
+                  <span className="hidden md:inline text-white">
+                    Lihat Detail
+                  </span>
+                  <span className="md:hidden text-white">Detail</span>
+                  <ArrowRight className="w-4 h-4 flex-shrink-0 text-white ml-1" />
+                </div>
               </button>
+
               <button
                 onClick={handleQuickAdd}
-                className="btn btn-xs sm:btn-sm lg:w-12 w-full bg-green-500 hover:bg-green-600 border-0 text-white shadow-lg transition-all transform hover:scale-110"
+                className="btn w-full md:w-12 h-auto min-h-[2.5rem] md:min-h-[2rem] lg:min-h-[2.5rem] bg-green-500 hover:bg-green-600 border-0 text-white shadow-lg transition-all hover:brightness-110"
                 title="Tambah ke Keranjang"
               >
-                <ShoppingCart className="w-3 h-3" />
+                <ShoppingCart className="w-4 h-4 mx-auto" />
               </button>
             </div>
           )}
