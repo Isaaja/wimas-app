@@ -80,7 +80,6 @@ export async function approveLoanWithUnits(
   unitAssignments: { product_id: string; unit_ids: string[] }[]
 ) {
   return prisma.$transaction(async (tx) => {
-    // Ambil loan beserta request items
     const loan = await tx.loan.findUnique({
       where: { loan_id: loanId },
       include: { requestItems: true },
@@ -92,7 +91,6 @@ export async function approveLoanWithUnits(
       throw new InvariantError("Loan sudah diproses sebelumnya");
     }
 
-    // Validasi setiap request item
     for (const req of loan.requestItems) {
       const assignment = unitAssignments.find(
         (a) => a.product_id === req.product_id
@@ -110,7 +108,6 @@ export async function approveLoanWithUnits(
         );
       }
 
-      // Validasi setiap unit
       for (const unitId of assignment.unit_ids) {
         const unit = await tx.productUnit.findUnique({
           where: { unit_id: unitId },
@@ -128,7 +125,6 @@ export async function approveLoanWithUnits(
       }
     }
 
-    // Proses peminjaman: buat loanItem & update status unit
     for (const assignment of unitAssignments) {
       for (const unitId of assignment.unit_ids) {
         await tx.loanItem.create({
@@ -145,17 +141,8 @@ export async function approveLoanWithUnits(
           data: { status: "LOANED" },
         });
       }
-
-      // **Kurangi quantity product sesuai jumlah unit dipinjam**
-      await tx.product.update({
-        where: { product_id: assignment.product_id },
-        data: {
-          quantity: { decrement: assignment.unit_ids.length },
-        },
-      });
     }
 
-    // Update status loan menjadi APPROVED
     return tx.loan.update({
       where: { loan_id: loanId },
       data: { status: LoanStatus.APPROVED },
