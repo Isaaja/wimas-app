@@ -1,4 +1,3 @@
-// components/CartStep2And3.tsx
 import { useState } from "react";
 import {
   Calendar,
@@ -194,15 +193,15 @@ export default function CartStep2({
           </div>
         )}
 
-        {localDocsFile && (
+        {docsFile && (
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-700 font-medium">
-                  📄 File: {localDocsFile.name}
+                  📄 File: {docsFile.name}
                 </p>
                 <p className="text-xs text-gray-600 mt-1">
-                  Ukuran: {(localDocsFile.size / 1024 / 1024).toFixed(2)} MB
+                  Ukuran: {(docsFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
               </div>
               <button
