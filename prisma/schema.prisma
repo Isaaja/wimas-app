@@ -39,7 +39,7 @@ model Product {
   product_name    String            @unique
   product_image   String?
   quantity        Int
-  product_avaible Int
+  product_available Int
   category_id     String
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
@@ -49,7 +49,7 @@ model Product {
   units           ProductUnit[]
 
   @@index([category_id])
-  @@index([product_avaible])
+  @@index([product_available])
 }
 
 model ProductUnit {

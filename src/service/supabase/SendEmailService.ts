@@ -122,7 +122,7 @@ export async function sendEmail({
 `;
 
     const data = await resend.emails.send({
-      from: "isaiantmaulana@resend.dev",
+      from: "no-reply@isaiantmaulana.my.id",
       to,
       subject,
       html: htmlTemplate,

@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       },
     });
     const result = await sendEmail({
-      to: "isaiantmaulana2004@gmail.com",
+      to: "111202214416@mhs.dinus.ac.id",
       subject: "[PERMINTAAN] Peminjaman Barang",
       borrowers: [...owner, ...invited],
       items: listProduct,
