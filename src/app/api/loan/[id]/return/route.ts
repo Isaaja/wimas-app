@@ -30,7 +30,7 @@ export async function POST(
 
     // Kirim email
     const email = await sendEmail({
-      to: "isaiantmaulana2004@gmail.com",
+      to: "111202214416@gmail.com",
       subject: "[PERMINTAAN] Pengembalian Barang",
       borrowers: [...owner, ...invited],
       items: listProduct,
