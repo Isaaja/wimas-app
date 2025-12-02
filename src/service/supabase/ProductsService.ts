@@ -51,14 +51,7 @@ async function checkProduckName(product_name: string) {
  * - serialNumber manual (user input)
  */
 export async function addProduct(payload: any) {
-  const {
-    product_name,
-    product_image,
-    quantity,
-    category_id,
-    product_available,
-    units,
-  } = payload;
+  const { product_name, product_image, quantity, category_id, units } = payload;
 
   await checkProduckName(product_name);
 
@@ -80,7 +73,6 @@ export async function addProduct(payload: any) {
         product_image: defaultImage,
         quantity,
         category_id,
-        product_available,
       },
     });
 
@@ -110,7 +102,6 @@ export async function updateProductById(
     product_image?: string;
     quantity?: number;
     category_id?: string;
-    product_available?: number;
     units?: { serialNumber: string }[];
   }
 ) {
@@ -205,16 +196,8 @@ export async function updateUnitCondition(
       },
     });
 
-    if (unit.status !== "AVAILABLE" && condition === "GOOD") {
-      await prisma.product.update({
-        where: { product_id: unit.product_id },
-        data: {
-          product_available: {
-            increment: 1,
-          },
-        },
-      });
-    }
+    // Note: Available count is calculated from units filtering using getAvailableCount()
+    // No need to manually update availability
 
     return updatedUnit;
   } catch (error: any) {
@@ -233,26 +216,20 @@ export async function deleteUnit(unit_id: string) {
       throw new NotFoundError("Unit tidak ditemukan");
     }
 
-    const deletedUnit = await prisma.productUnit.delete({
+    await prisma.productUnit.delete({
       where: { unit_id },
     });
 
     const newQuantity = unit.product.quantity - 1;
 
-    const newAvailable =
-      unit.status === "AVAILABLE"
-        ? Math.max(0, unit.product.product_available - 1)
-        : unit.product.product_available;
-
     await prisma.product.update({
       where: { product_id: unit.product_id },
       data: {
         quantity: newQuantity,
-        product_available: newAvailable,
       },
     });
 
-    return deletedUnit;
+    return unit;
   } catch (error: any) {
     throw new InvariantError(error.message || "Gagal menghapus unit");
   }

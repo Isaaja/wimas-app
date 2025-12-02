@@ -34,21 +34,13 @@ export async function PUT(
 
     const { id } = await context.params;
 
-    const {
-      product_name,
-      product_image,
-      quantity,
-      category_id,
-      product_available,
-      units,
-    } = body;
+    const { product_name, product_image, quantity, category_id, units } = body;
 
     const result = await updateProductById(id, {
       product_name,
       product_image,
       quantity,
       category_id,
-      product_available,
       units,
     });
 

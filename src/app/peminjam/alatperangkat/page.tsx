@@ -12,20 +12,12 @@ import CartSummary from "@/app/components/borowwer/CartSummary";
 import debounce from "lodash.debounce";
 import Loading from "@/app/components/common/Loading";
 import { useRouter } from "next/navigation";
+import { getAvailableCount } from "@/lib/productUtils";
 
 function sortProductsWithOutOfStockLast(products: any[]): any[] {
   return [...products].sort((a, b) => {
-    const calculateAvailable = (product: any) => {
-      if (product.units && product.units.length > 0) {
-        return product.units.filter(
-          (u: any) => u.status === "AVAILABLE" && u.condition === "GOOD"
-        ).length;
-      }
-      return product.product_available || 0;
-    };
-
-    const aAvailable = calculateAvailable(a);
-    const bAvailable = calculateAvailable(b);
+    const aAvailable = getAvailableCount(a);
+    const bAvailable = getAvailableCount(b);
 
     if (aAvailable === 0 && bAvailable > 0) return 1;
     if (bAvailable === 0 && aAvailable > 0) return -1;

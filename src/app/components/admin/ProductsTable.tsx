@@ -1,5 +1,6 @@
 import { Product } from "@/hooks/useProducts";
 import Image from "next/image";
+import { useState } from "react";
 
 interface ProductTableProps {
   products: Product[];
@@ -20,6 +21,11 @@ export default function ProductsTable({
   onDelete,
   onPageChange,
 }: ProductTableProps) {
+  const [selectedImage, setSelectedImage] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
+
   const getStartingNumber = (index: number) => {
     return (currentPage - 1) * itemsPerPage + index + 1;
   };
@@ -31,6 +37,15 @@ export default function ProductsTable({
       ).length || 0
     );
   };
+
+  const handleImageClick = (imageUrl: string, productName: string) => {
+    setSelectedImage({ url: imageUrl, name: productName });
+  };
+
+  const closeModal = () => {
+    setSelectedImage(null);
+  };
+
   return (
     <>
       <div className="hidden lg:block bg-white rounded-lg shadow overflow-hidden">
@@ -61,7 +76,16 @@ export default function ProductsTable({
                     </td>
                     <td className="border-t border-black/10 text-center py-3 px-2">
                       <div className="avatar flex justify-center">
-                        <div className="mask w-16 h-16 lg:w-20 lg:h-20 rounded-md">
+                        <div
+                          className="mask w-16 h-16 lg:w-20 lg:h-20 rounded-md cursor-pointer transition-all duration-200 hover:scale-105 active:scale-95 shadow-md hover:shadow-lg"
+                          onClick={() =>
+                            product.product_image &&
+                            handleImageClick(
+                              product.product_image,
+                              product.product_name
+                            )
+                          }
+                        >
                           {product.product_image ? (
                             <Image
                               src={product.product_image}
@@ -166,6 +190,7 @@ export default function ProductsTable({
       <div className="lg:hidden space-y-4">
         {products.map((product: Product, index: number) => {
           const itemNumber = getStartingNumber(index);
+          const availableCount = getAvailableCount(product);
 
           return (
             <div
@@ -180,7 +205,16 @@ export default function ProductsTable({
                     </div>
                   </div>
                   <div className="avatar">
-                    <div className="mask w-14 h-14 rounded-xl border-2 border-white shadow-lg">
+                    <div
+                      className="mask w-14 h-14 rounded-xl border-2 border-white shadow-lg cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() =>
+                        product.product_image &&
+                        handleImageClick(
+                          product.product_image,
+                          product.product_name
+                        )
+                      }
+                    >
                       {product.product_image ? (
                         <Image
                           src={product.product_image}
@@ -333,7 +367,7 @@ export default function ProductsTable({
                           d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
                         />
                       </svg>
-                      {product.product_available}
+                      {availableCount}
                     </div>
                   </div>
 
@@ -343,12 +377,12 @@ export default function ProductsTable({
                     </div>
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                        product.product_available === 0
+                        availableCount === 0
                           ? "bg-gradient-to-r from-red-100 to-red-50 text-red-700 border border-red-200"
                           : "bg-gradient-to-r from-green-100 to-emerald-50 text-green-700 border border-green-200"
                       }`}
                     >
-                      {product.product_available === 0 ? (
+                      {availableCount === 0 ? (
                         <>
                           <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                           Tidak Tersedia
@@ -390,6 +424,42 @@ export default function ProductsTable({
           </button>
         </div>
       </div>
+
+      {/* Image Modal */}
+      <dialog
+        className={`modal ${selectedImage ? "modal-open" : ""}`}
+        data-theme="light"
+      >
+        <div className="modal-box w-1/2 max-w-5xl p-0">
+          <div className="sticky top-0 bg-base-100 border-b px-6 py-4 flex justify-between items-center z-10">
+            <h3 className="font-bold text-lg truncate pr-4">
+              {selectedImage?.name}
+            </h3>
+            <button
+              onClick={closeModal}
+              className="btn btn-sm btn-circle btn-ghost"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="p-6">
+            {selectedImage && (
+              <div className="flex justify-center items-center">
+                <Image
+                  src={selectedImage.url}
+                  width={1200}
+                  height={1200}
+                  alt={selectedImage.name}
+                  className="w-full h-auto object-contain max-h-[100vh] md:max-h-[60vh]"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={closeModal}>close</button>
+        </form>
+      </dialog>
     </>
   );
 }

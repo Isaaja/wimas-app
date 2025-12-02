@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useState } from "react";
+import { getAvailableCount } from "@/lib/productUtils";
 
 export interface Product {
   product_id: string;
@@ -7,7 +8,6 @@ export interface Product {
   product_image: string | null;
   quantity: number;
   category_id: string;
-  product_available: number;
   category?: {
     category_id: string;
     category_name: string;
@@ -29,7 +29,6 @@ export interface CreateProductPayload {
   product_image: string;
   quantity: number;
   category_id: string;
-  product_available: number;
   units: { serialNumber: string }[];
 }
 
@@ -506,7 +505,6 @@ export const useCreateProduct = () => {
         product_image: newProduct.product_image,
         quantity: newProduct.quantity,
         category_id: newProduct.category_id,
-        product_available: newProduct.product_available,
         createdAt: new Date(),
         updatedAt: new Date(),
         isOptimistic: true,
@@ -772,7 +770,7 @@ export const useAvailableProducts = () => {
   const { data: products, ...queryInfo } = useProducts();
 
   const availableProducts = useMemo(
-    () => products?.filter((product) => product.product_available > 0) || [],
+    () => products?.filter((product) => getAvailableCount(product) > 0) || [],
     [products]
   );
 

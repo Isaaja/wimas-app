@@ -31,7 +31,6 @@ export default function ProductModal({
     product_name: "",
     product_image: "",
     quantity: 0,
-    product_available: 1,
     units: [],
   });
 
@@ -42,7 +41,6 @@ export default function ProductModal({
         product_name: productToEdit.product_name,
         product_image: productToEdit.product_image || "",
         quantity: productToEdit.quantity,
-        product_available: productToEdit.product_available,
         units: productToEdit.units || [],
       });
     } else {
@@ -51,7 +49,6 @@ export default function ProductModal({
         product_name: "",
         product_image: "",
         quantity: 0,
-        product_available: 1,
         units: [],
       });
     }
@@ -81,7 +78,6 @@ export default function ProductModal({
             product_name: "",
             product_image: "",
             quantity: 0,
-            product_available: 1,
             units: [],
           });
           toast.success("Produk berhasil ditambahkan!");
@@ -108,29 +104,6 @@ export default function ProductModal({
       }
 
       const newData = { ...prev, [name]: parsedValue };
-
-      const toastId = "product-availability-warning";
-
-      if (name === "product_available") {
-        const product_available = parsedValue as number;
-        const quantity = prev.quantity;
-
-        if (product_available > quantity) {
-          if (!toast.isActive(toastId)) {
-            toast.warning("Ketersediaan tidak boleh melebihi jumlah stok!");
-          }
-          newData.product_available = quantity;
-        }
-
-        if (product_available === 0) {
-          if (!toast.isActive("product-unavailable")) {
-            toast.info("Produk menjadi tidak tersedia.", {
-              toastId: "product-unavailable",
-              autoClose: 2000,
-            });
-          }
-        }
-      }
 
       return newData;
     });
@@ -216,29 +189,6 @@ export default function ProductModal({
                 min="0"
                 required
               />
-            </div>
-
-            <div className="form-control">
-              <label className="label">
-                <span className="label-text font-semibold text-gray-700">
-                  Ketersediaan
-                </span>
-              </label>
-              <input
-                type="number"
-                name="product_available"
-                value={formData.product_available}
-                onChange={handleChange}
-                className="input input-bordered w-full bg-white border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                placeholder="1"
-                min="0"
-                required
-              />
-              <label className="label">
-                <span className="label-text-alt text-gray-500">
-                  0 = Tidak tersedia, 1 = Tersedia
-                </span>
-              </label>
             </div>
           </div>
 

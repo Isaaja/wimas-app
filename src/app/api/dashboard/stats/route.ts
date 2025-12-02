@@ -25,9 +25,6 @@ export async function GET() {
     ] = await Promise.all([
       prisma.product.aggregate({
         _count: true,
-        _sum: {
-          product_available: true,
-        },
       }),
 
       prisma.user.groupBy({
@@ -44,7 +41,6 @@ export async function GET() {
         select: {
           product_id: true,
           product_name: true,
-          product_available: true,
           category: {
             select: {
               category_name: true,
@@ -175,11 +171,11 @@ export async function GET() {
       .map((product) => ({
         product_id: product.product_id,
         product_name: product.product_name,
-        product_available: product.units.length,
+        available_count: product.units.length,
         category: product.category,
       }))
-      .filter((product) => product.product_available < 10)
-      .sort((a, b) => a.product_available - b.product_available)
+      .filter((product) => product.available_count < 10)
+      .sort((a, b) => a.available_count - b.available_count)
       .slice(0, 5);
 
     const loanStats = loansData.reduce(
@@ -285,10 +281,16 @@ export async function GET() {
         borrow_count: item.count,
       }));
 
+    // Calculate total available products from units
+    const totalAvailableProducts = allProducts.reduce(
+      (sum, product) => sum + product.units.length,
+      0
+    );
+
     return successResponse({
       stats: {
         totalProducts: productsData._count,
-        totalAvailableProducts: productsData._sum.product_available || 0,
+        totalAvailableProducts,
         outOfStockProducts: outOfStockCount,
         lowStockProducts: lowStockProducts.length,
         totalUsers: userStats.admin + userStats.borrower,

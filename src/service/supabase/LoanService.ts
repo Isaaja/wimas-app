@@ -141,8 +141,17 @@ export async function approveLoanWithUnits(
           data: { status: "LOANED" },
         });
       }
+
+      // **Kurangi quantity product sesuai jumlah unit dipinjam**
+      // await tx.product.update({
+      //   where: { product_id: assignment.product_id },
+      //   data: {
+      //     quantity: { decrement: assignment.unit_ids.length },
+      //   },
+      // });
     }
 
+    // Update status loan menjadi APPROVED
     return tx.loan.update({
       where: { loan_id: loanId },
       data: { status: LoanStatus.APPROVED },

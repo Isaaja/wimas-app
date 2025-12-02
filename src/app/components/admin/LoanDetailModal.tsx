@@ -37,6 +37,7 @@ import {
   productHasUnits,
 } from "@/hooks/useLoans";
 import { useProducts, Product } from "@/hooks/useProducts";
+import { getAvailableCount } from "@/lib/productUtils";
 import { toast } from "react-toastify";
 import Link from "next/link";
 
@@ -339,9 +340,11 @@ export default function LoanDetailModal({
         return;
       }
 
-      if (item.quantity > product.product_available) {
+      if (item.quantity > getAvailableCount(product)) {
         toast.error(
-          `Stok ${product.product_name} tidak mencukupi. Dibutuhkan: ${item.quantity}, Stok tersedia: ${product.product_available}`
+          `Stok ${product.product_name} tidak mencukupi. Dibutuhkan: ${
+            item.quantity
+          }, Stok tersedia: ${getAvailableCount(product)}`
         );
         return;
       }
@@ -476,9 +479,11 @@ export default function LoanDetailModal({
       return;
     }
 
-    if (newQuantity > product.product_available) {
+    if (newQuantity > getAvailableCount(product)) {
       toast.error(
-        `Stok ${product.product_name} tidak mencukupi. Stok tersedia: ${product.product_available}`
+        `Stok ${
+          product.product_name
+        } tidak mencukupi. Stok tersedia: ${getAvailableCount(product)}`
       );
       return;
     }
@@ -517,7 +522,7 @@ export default function LoanDetailModal({
       return;
     }
 
-    if (product.product_available <= 0) {
+    if (getAvailableCount(product) <= 0) {
       toast.error(`Stok ${product.product_name} habis, tidak bisa ditambahkan`);
       return;
     }
@@ -533,7 +538,7 @@ export default function LoanDetailModal({
 
       if (existingItemIndex >= 0) {
         const currentQuantity = editedItems[existingItemIndex].quantity;
-        const availableStock = product.product_available;
+        const availableStock = getAvailableCount(product);
 
         if (currentQuantity >= availableStock) {
           toast.error(
@@ -636,7 +641,7 @@ export default function LoanDetailModal({
   const filteredProducts = products.filter(
     (product) =>
       product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      product.product_available > 0
+      getAvailableCount(product) > 0
   );
 
   const selectedProductIds = editedItems.map((item: any) => item.product_id);
@@ -878,7 +883,7 @@ export default function LoanDetailModal({
                             key={product.product_id}
                             onClick={() => addProduct(product)}
                             disabled={
-                              product.product_available <= 0 ||
+                              getAvailableCount(product) <= 0 ||
                               addingProducts[product.product_id] ||
                               isUpdating
                             }
@@ -890,14 +895,16 @@ export default function LoanDetailModal({
                                   <p className="text-sm font-medium text-gray-800">
                                     {product.product_name}
                                   </p>
-                                  {product.product_available <= 0 && (
+                                  {getAvailableCount(product) <= 0 && (
                                     <span className="px-1.5 py-0.5 bg-red-100 text-red-700 text-xs rounded">
                                       Stok Habis
                                     </span>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-3 text-xs text-gray-500">
-                                  <span>Stok: {product.product_available}</span>
+                                  <span>
+                                    Stok: {getAvailableCount(product)}
+                                  </span>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2 ml-3">
@@ -905,7 +912,7 @@ export default function LoanDetailModal({
                                   <span className="text-xs text-blue-600">
                                     Menambah...
                                   </span>
-                                ) : product.product_available > 0 ? (
+                                ) : getAvailableCount(product) > 0 ? (
                                   <>
                                     <Plus className="w-4 h-4 text-blue-600 flex-shrink-0" />
                                     <span className="text-xs text-blue-600 font-medium">
