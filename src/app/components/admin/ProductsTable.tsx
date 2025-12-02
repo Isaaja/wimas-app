@@ -166,6 +166,7 @@ export default function ProductsTable({
       <div className="lg:hidden space-y-4">
         {products.map((product: Product, index: number) => {
           const itemNumber = getStartingNumber(index);
+          const availableCount = getAvailableCount(product);
 
           return (
             <div
@@ -333,7 +334,7 @@ export default function ProductsTable({
                           d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
                         />
                       </svg>
-                      {product.product_available}
+                      {availableCount}
                     </div>
                   </div>
 
@@ -343,12 +344,12 @@ export default function ProductsTable({
                     </div>
                     <span
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
-                        product.product_available === 0
+                        availableCount === 0
                           ? "bg-gradient-to-r from-red-100 to-red-50 text-red-700 border border-red-200"
                           : "bg-gradient-to-r from-green-100 to-emerald-50 text-green-700 border border-green-200"
                       }`}
                     >
-                      {product.product_available === 0 ? (
+                      {availableCount === 0 ? (
                         <>
                           <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
                           Tidak Tersedia

@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { ArrowRight, ShoppingCart } from "lucide-react";
 import ProductDetailModal from "./ProductDetailModal";
 import Image from "next/image";
+import { getAvailableCount } from "@/lib/productUtils";
 
 interface ProductCardProps {
   product: Product;
@@ -13,20 +14,6 @@ interface ProductCardProps {
   canBorrow?: boolean;
   currentCartQuantity?: number;
 }
-
-const calculateAvailableUnits = (
-  units: any[] = [],
-  product_available?: number
-): number => {
-  if (units && units.length > 0) {
-    const actuallyAvailable = units.filter(
-      (unit) => unit.status === "AVAILABLE" && unit.condition === "GOOD"
-    ).length;
-    return actuallyAvailable;
-  }
-
-  return product_available || 0;
-};
 
 export default function ProductCard({
   product,
@@ -36,7 +23,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const availableUnits = calculateAvailableUnits(product.units);
+  const availableUnits = getAvailableCount(product);
   const isOutOfStock = availableUnits === 0;
 
   const imageSrc =

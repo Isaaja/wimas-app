@@ -43,14 +43,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     console.log("BODY API:", body);
 
-    const {
-      product_name,
-      product_image,
-      quantity,
-      category_id,
-      product_available,
-      units,
-    } = body;
+    const { product_name, product_image, quantity, category_id, units } = body;
 
     ProductValidator.validateProductPayload(body);
 
@@ -59,7 +52,6 @@ export async function POST(req: Request) {
       product_image,
       quantity,
       category_id,
-      product_available,
       units,
     });
 
