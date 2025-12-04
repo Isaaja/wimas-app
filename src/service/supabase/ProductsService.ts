@@ -196,7 +196,7 @@ export async function updateUnitCondition(
       },
     });
 
-    // Note: Available count is calculated from units filtering using getAvailableCount()
+    // Note: product_available field is calculated from units filtering
     // No need to manually update availability
 
     return updatedUnit;
@@ -216,10 +216,18 @@ export async function deleteUnit(unit_id: string) {
       throw new NotFoundError("Unit tidak ditemukan");
     }
 
-    await prisma.productUnit.delete({
+    const deletedUnit = await prisma.productUnit.delete({
       where: { unit_id },
     });
 
+    const newQuantity = unit.product.quantity - 1;
+
+    const newAvailable =
+      unit.status === "AVAILABLE"
+        ? Math.max(0, unit.product.product_available - 1)
+        : unit.product.product_available;
+
+    await prisma.product.update({
     const newQuantity = unit.product.quantity - 1;
 
     await prisma.product.update({
@@ -227,15 +235,7 @@ export async function deleteUnit(unit_id: string) {
       data: {
         quantity: newQuantity,
       },
-    });
-
-    return unit;
-  } catch (error: any) {
-    throw new InvariantError(error.message || "Gagal menghapus unit");
-  }
-}
-
-// =====================================
+    });=================================
 // ✅ DELETE PRODUCT + CASCADE DELETE UNIT
 // =====================================
 export async function deleteProductById(id: string) {

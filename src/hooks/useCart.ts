@@ -3,7 +3,6 @@ import { useState, useCallback, useMemo } from "react";
 import { Product } from "@/hooks/useProducts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { LOAN_QUERY_KEYS } from "@/hooks/useLoans";
-import { getAvailableCount } from "@/lib/productUtils";
 
 export interface CartItem extends Product {
   quantity: number;
@@ -254,7 +253,10 @@ export function useCart(options: UseCartOptions = {}) {
   const totalPrice = useMemo(
     () =>
       cart.reduce((total, item) => {
-        const itemPrice = getAvailableCount(item);
+        const itemPrice =
+          typeof item.product_available === "number"
+            ? item.product_available
+            : 0;
         return total + itemPrice * item.quantity;
       }, 0),
     [cart]
@@ -285,10 +287,9 @@ export function useCart(options: UseCartOptions = {}) {
     const errors: string[] = [];
 
     cart.forEach((item) => {
-      const available = getAvailableCount(item);
-      if (item.quantity > available) {
+      if (item.quantity > item.product_available) {
         errors.push(
-          `${item.product_name} melebihi stok yang tersedia (Stok: ${available})`
+          `${item.product_name} melebihi stok yang tersedia (Stok: ${item.product_available})`
         );
       }
       if (item.quantity <= 0) {
