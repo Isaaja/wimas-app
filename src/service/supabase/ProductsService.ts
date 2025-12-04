@@ -222,20 +222,16 @@ export async function deleteUnit(unit_id: string) {
 
     const newQuantity = unit.product.quantity - 1;
 
-    const newAvailable =
-      unit.status === "AVAILABLE"
-        ? Math.max(0, unit.product.product_available - 1)
-        : unit.product.product_available;
-
-    await prisma.product.update({
-    const newQuantity = unit.product.quantity - 1;
-
     await prisma.product.update({
       where: { product_id: unit.product_id },
       data: {
         quantity: newQuantity,
       },
-    });=================================
+    });
+  } catch (error: any) {
+    throw new InvariantError(error.message || "Failed to Delete Unit Product");
+  }
+}
 // ✅ DELETE PRODUCT + CASCADE DELETE UNIT
 // =====================================
 export async function deleteProductById(id: string) {

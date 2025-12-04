@@ -26,10 +26,11 @@ export default function CartStep1({
     <div className="space-y-4">
       <div className="overflow-y-auto max-h-96 space-y-3">
         {cart.map((item) => {
-          const availableCount = item.units?.filter(
-            (unit) => unit.condition === "GOOD" && unit.status === "AVAILABLE"
-          ).length || 0;
-          
+          const availableCount =
+            item.units?.filter(
+              (unit) => unit.condition === "GOOD" && unit.status === "AVAILABLE"
+            ).length || 0;
+
           return (
             <div
               key={item.product_id}
@@ -39,7 +40,8 @@ export default function CartStep1({
                 <p className="font-medium text-gray-800">{item.product_name}</p>
                 <div className="flex items-center gap-4 mt-1">
                   <p className="text-sm text-gray-600">
-                    Jumlah: <span className="font-semibold">{item.quantity}</span>
+                    Jumlah:{" "}
+                    <span className="font-semibold">{item.quantity}</span>
                   </p>
                   <p className="text-xs text-gray-500">
                     Stock tersedia: {availableCount}
@@ -51,7 +53,10 @@ export default function CartStep1({
                   <button
                     className="join-item btn btn-xs btn-outline"
                     onClick={() =>
-                      onUpdateQty(item.product_id, Math.max(item.quantity - 1, 1))
+                      onUpdateQty(
+                        item.product_id,
+                        Math.max(item.quantity - 1, 1)
+                      )
                     }
                     disabled={item.quantity <= 1}
                   >

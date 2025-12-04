@@ -83,9 +83,13 @@ export async function POST(req: Request) {
 }
 
 export async function GET() {
-  const result = await getLoanedProducts();
-  if (result.length <= 0) {
-    throw new NotFoundError("Loan Not Found");
+  try {
+    const result = await getLoanedProducts();
+    if (result.length <= 0) {
+      throw new NotFoundError("Loan Not Found");
+    }
+    return successResponse(result);
+  } catch (error) {
+    return errorResponse(error);
   }
-  return successResponse(result);
 }
