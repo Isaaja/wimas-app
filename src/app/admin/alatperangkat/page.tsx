@@ -23,8 +23,6 @@ type TabType = "products" | "damaged" | "loaned";
 
 export default function AlatPerangkatPage() {
   const { data: products, isLoading, isError, error } = useProducts();
-  const createProduct = useCreateProduct();
-  const updateProduct = useUpdateProduct();
   const deleteProduct = useDeleteProduct();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -100,27 +98,6 @@ export default function AlatPerangkatPage() {
         });
       }
     });
-  };
-
-  const handleSave = (formData: any) => {
-    if (productToEdit) {
-      updateProduct.mutate(
-        {
-          id: productToEdit.product_id,
-          payload: formData,
-        },
-        {
-          onSuccess: () => toast.success("Produk berhasil diperbarui!"),
-          onError: (err: any) => toast.error(err.message),
-        }
-      );
-    } else {
-      createProduct.mutate(formData, {
-        onSuccess: () => toast.success("Produk berhasil ditambahkan!"),
-        onError: (err: any) => toast.error(err.message),
-      });
-    }
-    setIsModalOpen(false);
   };
 
   const handlePageChange = (page: number) => {
@@ -309,7 +286,6 @@ export default function AlatPerangkatPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         productToEdit={productToEdit}
-        onSave={handleSave}
       />
     </div>
   );

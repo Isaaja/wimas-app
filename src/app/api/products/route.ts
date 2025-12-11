@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prismaClient";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import ProductValidator from "@/validator/products";
 import { addProduct } from "@/service/supabase/ProductsService";
 import InvariantError from "@/exceptions/InvariantError";
 import { checkAuth } from "@/app/utils/auth";
 import { Prisma } from "@prisma/client";
 import { errorResponse, successResponse } from "@/app/utils/response";
+import { handleImageUpload } from "@/app/utils/fileupload";
 
 export async function GET(req: NextRequest) {
   try {
@@ -40,16 +41,48 @@ export async function POST(req: Request) {
   try {
     await checkAuth("ADMIN");
 
-    const body = await req.json();
-    console.log("BODY API:", body);
+    const contentType = req.headers.get("content-type") || "";
 
-    const { product_name, product_image, quantity, category_id, units } = body;
+    let productData;
+    let productImageUrl = "";
 
-    ProductValidator.validateProductPayload(body);
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+
+      const productDataJson = formData.get("productData") as string;
+
+      if (!productDataJson) {
+        throw new Error("productData is missing in form data");
+      }
+
+      productData = JSON.parse(productDataJson);
+
+      const imageFile = formData.get("image") as File;
+      if (imageFile) {
+        productImageUrl = await handleImageUpload(imageFile);
+      } else if (productData.product_image) {
+        productImageUrl = productData.product_image;
+      }
+    } else {
+      const body = await req.json();
+      productData = body;
+      productImageUrl = body.product_image || "";
+    }
+
+    console.log("BODY API:", productData);
+
+    const { product_name, quantity, category_id, units } = productData;
+
+    const payloadToValidate = {
+      ...productData,
+      product_image: productImageUrl,
+    };
+
+    ProductValidator.validateProductPayload(payloadToValidate);
 
     const result = await addProduct({
       product_name,
-      product_image,
+      product_image: productImageUrl,
       quantity,
       category_id,
       units,

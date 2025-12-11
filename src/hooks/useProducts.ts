@@ -139,6 +139,42 @@ const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
   return result?.data ?? result;
 };
 
+const fetchWithAuthMultipart = async (
+  url: string,
+  options: RequestInit = {}
+) => {
+  const token = getAccessToken();
+
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      ...(token && { Authorization: `Bearer ${token}` }),
+      // JANGAN set Content-Type untuk FormData, biarkan browser set otomatis
+      ...(options.headers && !("Content-Type" in options.headers)
+        ? options.headers
+        : {}),
+    },
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage = "Terjadi kesalahan pada server";
+
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson?.message || errorMessage;
+    } catch {
+      errorMessage = errorText || errorMessage;
+    }
+
+    throw new Error(errorMessage);
+  }
+
+  const result = await response.json();
+  return result?.data ?? result;
+};
+
 // ==================== OPTIMIZED API FUNCTIONS ====================
 const fetchProducts = async (
   params?: GetProductsParams
@@ -162,14 +198,19 @@ const fetchProductById = async (id: string): Promise<Product> => {
 };
 
 const createProduct = async (
-  payload: CreateProductPayload
+  payload: CreateProductPayload,
+  imageFile?: File
 ): Promise<Product> => {
-  const result = await fetchWithAuth("/api/products", {
+  const formData = new FormData();
+  formData.append("productData", JSON.stringify(payload));
+
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+
+  const result = await fetchWithAuthMultipart("/api/products", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: formData,
   });
   return result;
 };
@@ -177,16 +218,22 @@ const createProduct = async (
 const updateProduct = async ({
   id,
   payload,
+  imageFile,
 }: {
   id: string;
   payload: Partial<Product>;
+  imageFile?: File;
 }): Promise<Product> => {
-  const result = await fetchWithAuth(`/api/products/${id}`, {
+  const formData = new FormData();
+  formData.append("productData", JSON.stringify(payload));
+
+  if (imageFile) {
+    formData.append("image", imageFile);
+  }
+
+  const result = await fetchWithAuthMultipart(`/api/products/${id}`, {
     method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
+    body: formData,
   });
 
   return result;
@@ -491,8 +538,19 @@ export const useCreateProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createProduct,
-    onMutate: async (newProduct: CreateProductPayload) => {
+    mutationFn: ({
+      payload,
+      imageFile,
+    }: {
+      payload: CreateProductPayload;
+      imageFile?: File;
+    }) => createProduct(payload, imageFile),
+    onMutate: async ({
+      payload,
+    }: {
+      payload: CreateProductPayload;
+      imageFile?: File;
+    }) => {
       await queryClient.cancelQueries({ queryKey: PRODUCT_QUERY_KEYS.lists() });
 
       const previousProducts = queryClient.getQueryData(
@@ -501,10 +559,10 @@ export const useCreateProduct = () => {
 
       const optimisticProduct: Product & { isOptimistic?: boolean } = {
         product_id: `temp-${Date.now()}`,
-        product_name: newProduct.product_name,
-        product_image: newProduct.product_image,
-        quantity: newProduct.quantity,
-        category_id: newProduct.category_id,
+        product_name: payload.product_name,
+        product_image: payload.product_image,
+        quantity: payload.quantity,
+        category_id: payload.category_id,
         createdAt: new Date(),
         updatedAt: new Date(),
         isOptimistic: true,
@@ -519,7 +577,7 @@ export const useCreateProduct = () => {
     },
     onSuccess: (
       data: Product,
-      variables: CreateProductPayload,
+      variables: { payload: CreateProductPayload; imageFile?: File },
       context: any
     ) => {
       queryClient.setQueryData(
@@ -543,7 +601,11 @@ export const useCreateProduct = () => {
         refetchType: "inactive",
       });
     },
-    onError: (error: Error, variables: CreateProductPayload, context: any) => {
+    onError: (
+      error: Error,
+      variables: { payload: CreateProductPayload; imageFile?: File },
+      context: any
+    ) => {
       console.error("❌ Failed to create product:", error.message);
 
       if (context?.previousProducts) {
@@ -612,8 +674,16 @@ export const useUpdateProduct = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateProduct,
-    onMutate: async (variables: { id: string; payload: Partial<Product> }) => {
+    mutationFn: ({ 
+      id, 
+      payload, 
+      imageFile 
+    }: { 
+      id: string; 
+      payload: Partial<Product>; 
+      imageFile?: File 
+    }) => updateProduct({ id, payload, imageFile }),
+    onMutate: async (variables: { id: string; payload: Partial<Product>; imageFile?: File }) => {
       await queryClient.cancelQueries({
         queryKey: PRODUCT_QUERY_KEYS.detail(variables.id),
       });
@@ -650,7 +720,7 @@ export const useUpdateProduct = () => {
     },
     onSuccess: (
       updatedProduct: Product,
-      variables: { id: string; payload: Partial<Product> }
+      variables: { id: string; payload: Partial<Product>; imageFile?: File }
     ) => {
       // Ensure cache is updated with server data
       queryClient.setQueryData(
@@ -674,7 +744,7 @@ export const useUpdateProduct = () => {
     },
     onError: (
       error: Error,
-      variables: { id: string; payload: Partial<Product> },
+      variables: { id: string; payload: Partial<Product>; imageFile?: File },
       context: any
     ) => {
       console.error("❌ Failed to update product:", error.message);
