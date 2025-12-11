@@ -251,14 +251,8 @@ export function useCart(options: UseCartOptions = {}) {
     [cart]
   );
 
-  const totalPrice = useMemo(
-    () =>
-      cart.reduce((total, item) => {
-        const itemPrice = getAvailableCount(item);
-        return total + itemPrice * item.quantity;
-      }, 0),
-    [cart]
-  );
+  // totalPrice calculation placeholder (no price field available)
+  const totalPrice = useMemo(() => 0, [cart]);
 
   const itemCount = useMemo(() => cart.length, [cart]);
   const isCartEmpty = useMemo(() => cart.length === 0, [cart]);
