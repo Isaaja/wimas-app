@@ -64,7 +64,7 @@ export async function POST(req: Request) {
       },
     });
     const result = await sendEmail({
-      to: "erdin22xii@gmail.com",
+      to: "wimasadm123@gmail.com",
       subject: "[PERMINTAAN] Peminjaman Barang",
       borrowers: [...owner, ...invited],
       items: listProduct,

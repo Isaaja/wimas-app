@@ -71,22 +71,25 @@ export default function ProductModal({
         }
       );
     } else {
-      createProduct.mutate(formData, {
-        onSuccess: () => {
-          setFormData({
-            category_id: "",
-            product_name: "",
-            product_image: "",
-            quantity: 0,
-            units: [],
-          });
-          toast.success("Produk berhasil ditambahkan!");
-          onClose();
-        },
-        onError: (error) => {
-          toast.error(`Error: ${error.message}`);
-        },
-      });
+      createProduct.mutate(
+        { payload: formData },
+        {
+          onSuccess: () => {
+            setFormData({
+              category_id: "",
+              product_name: "",
+              product_image: "",
+              quantity: 0,
+              units: [],
+            });
+            toast.success("Produk berhasil ditambahkan!");
+            onClose();
+          },
+          onError: (error) => {
+            toast.error(`Error: ${error.message}`);
+          },
+        }
+      );
     }
   };
 

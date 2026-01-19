@@ -674,7 +674,7 @@ export default function LoanDetailModal({
 
   return (
     <div className={`modal ${isOpen ? "modal-open" : ""}`}>
-      <div className="modal-box p-0 max-w-4xl max-h-[85vh] flex flex-col bg-white border border-gray-200 mt-12">
+      <div className="modal-box p-0 max-w-2xl max-h-[85vh] flex flex-col bg-white border border-gray-200 mt-12 lg:ml-64 ml-0">
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-lg font-semibold text-gray-800">
