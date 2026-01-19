@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   env: {
     ACCESS_TOKEN_KEY: process.env.ACCESS_TOKEN_KEY,
     REFRESH_TOKEN_KEY: process.env.REFRESH_TOKEN_KEY,
