@@ -16,7 +16,7 @@ export async function POST(req: Request) {
 
     // Panggil Python service (localhost untuk development)
     const pythonServiceUrl =
-      process.env.PYTHON_SERVICE_URL || "http://localhost:8000";
+      process.env.PYTHON_SERVICE_URL || "https://nonderogatorily-repressible-seema.ngrok-free.dev";
     const res = await fetch(`${pythonServiceUrl}/process-pdf`, {
       method: "POST",
       body: payload,

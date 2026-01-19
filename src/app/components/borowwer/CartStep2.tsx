@@ -72,7 +72,7 @@ export default function CartStep2({
       formData.append("pdf", file);
 
       // Call Python service directly
-      const response = await fetch("http://localhost:8000/process-pdf", {
+      const response = await fetch("https://nonderogatorily-repressible-seema.ngrok-free.dev/process-pdf", {
         method: "POST",
         body: formData,
       });
