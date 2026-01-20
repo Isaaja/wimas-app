@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 
 export function errorResponse(
   error: any,
-  defaultMessage = "Terjadi kesalahan server"
+  defaultMessage = "Terjadi kesalahan server",
+  defaultStatusCode= 500
 ) {
-  const statusCode = error.statusCode || 500;
+  const statusCode = error.statusCode || defaultStatusCode;
   const message = error.message || defaultMessage;
 
   return NextResponse.json({ status: "fail", message }, { status: statusCode });

@@ -7,15 +7,40 @@ import { checkAuth } from "@/app/utils/auth";
 import { Prisma } from "@prisma/client";
 import { errorResponse, successResponse } from "@/app/utils/response";
 import { handleImageUpload } from "@/app/utils/fileupload";
+import { rateLimiter } from "@/lib/rateLimiter";
 
 export async function GET(req: NextRequest) {
   try {
-    const { searchParams } = new URL(req.url);
-    const productName = searchParams.get("product_name");
-    const sort = searchParams.get("sort") || "createdAt";
-    const order = searchParams.get("order") || "desc";
+     const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0] ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
 
-    const where = productName
+    const rateLimit = await rateLimiter({
+      key: ip,
+      limit: 5,
+      window: 60,
+    });
+
+    if (!rateLimit.allowed) {
+      return errorResponse('fail',
+        `Too many requests. Try again in ${rateLimit.reset}s`, 429
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+
+    const productName = searchParams.get("product_name");
+
+    const page = Math.max(Number(searchParams.get("page")) || 1, 1);
+    const limit = Math.min(Number(searchParams.get("limit")) || 10, 100);
+    const skip = (page - 1) * limit;
+
+    const sort = searchParams.get("sort") || "createdAt";
+    const order =
+      searchParams.get("order") === "asc" ? "asc" : "desc";
+
+    const where: Prisma.ProductWhereInput = productName
       ? {
           product_name: {
             contains: productName,
@@ -24,13 +49,36 @@ export async function GET(req: NextRequest) {
         }
       : {};
 
-    const products = await prisma.product.findMany({
-      where,
-      include: { category: true, units: true },
-      orderBy: { [sort]: order === "asc" ? "asc" : "desc" },
-    });
+     const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          units: true,
+        },
+        orderBy: {
+          [sort]: order,
+        },
+        skip,
+        take: limit,
+      }),
+      prisma.product.count({ where }),
+    ]);
 
-    return successResponse(products, "Successfully fetched products");
+    return successResponse({
+      data: products,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+      sorting: {
+        sort,
+        order,
+      }
+        },
+         "Successfully fetched products");
   } catch (error) {
     console.error("Error fetching products:", error);
     return errorResponse("Internal Server Error");
