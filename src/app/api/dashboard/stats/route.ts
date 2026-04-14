@@ -26,7 +26,7 @@ export async function GET() {
       prisma.product.aggregate({
         _count: true,
         _sum: {
-          product_available: true,
+          quantity: true,
         },
       }),
 
@@ -288,7 +288,7 @@ export async function GET() {
     return successResponse({
       stats: {
         totalProducts: productsData._count,
-        totalAvailableProducts: productsData._sum.product_available || 0,
+        totalAvailableProducts: productsData._sum.quantity || 0,
         outOfStockProducts: outOfStockCount,
         lowStockProducts: lowStockProducts.length,
         totalUsers: userStats.admin + userStats.borrower,
